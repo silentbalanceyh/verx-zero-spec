@@ -1,0 +1,82 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 列过滤
+
+前边章节讲解了 **列渲染** 相关内容，最后看看列表中的 **列过滤**，列过滤部分直接上配置，主要配置如下：
+
+- `$filter.type`：列过滤类型。
+- `$filter.config`：此类型对应的配置信息。
+
+==== `SEARCH`
+
+搜索框类型：
+
+[source,json]
+----
+[
+    {
+        "metadata": "name,圈子名称,,true",
+        "$filter.type": "SEARCH",
+        "$filter.config": {
+            "placeholder": "输入名称",
+            "button": {
+                "search": "搜索",
+                "reset": "重置"
+            }
+        }
+    }
+]
+----
+
+==== `DIRECT` (默认)
+
+布尔选择类型：
+
+[source,json]
+----
+[
+    {
+        "metadata": "active,是否启用,LOGICAL,true",
+        "$mapping": {
+            "true": "启用",
+            "false": "禁用"
+        },
+        "$filter.config.dataType": "BOOLEAN",
+        "$filter.config.items": [
+            "true,启用",
+            "false,禁用"
+        ],
+        "$filter.config.button": {
+            "yes": "确认",
+            "reset": "重置"
+        },
+        "$filter.config.width": {
+            "radio": 110,
+            "button": 55
+        }
+    }
+]
+----
+
+==== `DATUM`
+
+字典类型：
+
+[source,json]
+----
+[
+    {
+        "metadata": "floor,楼层,DATUM",
+        "$datum": "xxxxx",
+        "$filter.type": "DATUM",
+        "$filter.config.button": {
+            "yes": "确认",
+            "reset": "重置"
+        }
+    }
+]
+----
+
+

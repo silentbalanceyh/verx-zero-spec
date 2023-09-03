@@ -1,0 +1,268 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 文档管理
+
+目录配置最初的设计目的只是为了做 *文档管理* （企业内部云盘），目前Zero中已经包含了 *文档管理* 模块，本章针对此模块讲解目录配置，并给您解析使用何种模式隔离存储。文档管理主界面如下：
+
+image:zis-document.png[0,1024]
+
+文档管理主要支持的功能如下：
+
+- 目录自动化规划生成新的目录树。
+- 自由创建、删除、更新新目录信息。
+- 上传、下载文件。
+- 浏览系统级文档，可直接浏览流程、公告、部门等共享文档。
+- 可实现按不同维度的文档分享功能。
+- 实现了文档回收的回收站功能（二次删除）。
+- 对接不同存储引擎实现异构目录结构。
+- 可对目录、文件实现ACL的访问控制，和 `zero-rbac` 集成提供权限管理端。
+
+=== 目录配置
+
+==== 核心表结构
+
+目录配置中存储了当前系统中的目录树，它的核心表结构如下：
+
+[options="header"]
+|====
+|属性|列|含义
+|name| `NAME`|目录名称，如上边合同管理，其目录名称为 `合同管理`，只包含了当前目录名称。
+|code| `CODE`|目录编号，根据存储的唯一路径执行过 `HASH` 运算并生成了 `MD5` 加密的唯一键，系统可根据该值直接读取单个目录。
+|storePath| `STORE_PATH`|目录的最终存储路径，如上述 `合同管理`，存储路径为 `/apps/xc/document/系统文档/合同管理`，顶层目录结构参考 link:#__CONFIG_APP_DIR[关于目录结构,windows="_blank"] 中的设置，此处的存储路径不包含开启集成服务的部分，方便做应用级目录迁移。
+|linkedPath| `LINKED_PATH`|当目录像Linux中一样开启了软链接，那么该路径会执行虚拟链接模式，`type = LINK` 生效，近似于快捷方式存储了目录地址的引用。
+|parentId| `PARENT_ID` |构成目录树的专用父目录ID属性。
+|category| `CATEGORY` |目录链接的主分类和主要类型，该类型决定了目录使用什么方式拼合到左侧目录树中。
+|type| `TYPE` |目录的类型，目前有三种：INTEGRATION / STORE / LINK。
+|owner| `OWNER` |除系统自动创建的目录拥有者为 `zero-environment`，其他目录是谁创建谁是拥有者。
+|integrationId| `INTEGRATION_ID`|关联集成配置，若类型为 `INTEGRATION` 时会使用，关联之后才执行存储转移和存储隔离，不关联时则不考虑存储转移和存储隔离。
+|runComponent| `RUN_COMPONENT` |目录规划执行组件，主要辅助文件读写，文件读写在Zero Extension中包含两个步骤：目录搜索、文件读写，该组件负责目录搜索功能。
+|visit| `VISIT` |当前目录的访问模式，`visit = true` 表示共有目录，而 `visit = false` 表示私有目录。
+|visitMode| `VISIT_MODE` |此处数据结构为 JsonArray，通常包含 `["r", "w", "x"]` 三个维度，和Linux文件系统保持一致。
+|visitRole| `VISIT_ROLE` |允许访问该目录的角色信息。
+|visitGroup| `VISIT_GROUP` |允许访问该目录的组信息。
+|visitComponent| `VISIT_COMPONENT` | 若要执行自定义访问控制，该属性可自定义目录访问控制组件。
+|====
+
+说明几点：
+
+- `storePath` 中只包含了应用根目录，即 `zero-ambient` 中定义的存储根路径，如上边提到的 `/apps/xc/document` 实际是在应用级配置文件中定义。
+- `category` 会影响目录的基本规划，每个主目录的生成依靠此处的目录规划程序，如现在系统中包含如下值：
++
+[options="header"]
+|====
+|category值|含义
+|department|部门文档，读取部门构造左侧树。
+|workflow|流程文档，读取流程分类（服务目录）构造左侧树。
+|document|系统文档，为整个应用中常用的文档提供左侧树的基础目录规划。
+|====
++
+--
+Zero Extension中还有一个不成文的约定，就是系统规划程序初始化的出厂设置（如目录默认值）是不可以更改的，如上图中 `销售部` 这个目录您是不能删除的，包括在后台管理员这个层级也不可以轻易删除最早规划程序生成的核心目录。
+--
+
+- `type` 主要有三种，这三种代表了存储规划的三种不同模式：
++
+[options="header"]
+|====
+|类型|含义
+|STORE|（默认值），不使用任何集成服务，直接根据远程上传的方式构建存储。
+|INTEGRATION|和集成配置对接，若集成配置是基于FTP的则采用FTP存储，若集成配置是基于SSH的则采用SSH协议存储。
+|LINK|软链接、快捷方式，该值通常表示此目录仅仅是一个类似快捷方式的目录（网页模式）。
+|====
+
+- `visitMode` 访问模式主要包含三种：
++
+[options="header"]
+|====
+|标记|含义
+|r|只读权限，可读取目录、打开目录、下载目录中的文件。
+|w|可写权限，在目录中创建目录，上传新文件。
+|x|执行权限，可重命名目录、删除目录（包括硬删除和软删除）。
+|====
+
+==== 异构目录规划[[__MOD_IS_DIR_STORE]]
+
+Zero Extension集成服务中的目录可支持异构源定义，即根据不同的 `category` 可构造不同的目录源，它的整体结构如下：
+
+image:zis-dir-plan.png[0,960]
+
+[CAUTION]
+====
+注意图中此处的 `runComponent` 是 `X_CATEGORY` 中定义的目录规划组件，而不是存储在 `I_DIRECTORY` 中的 `runComponent`，目录表中存储的组件不是目录规划组件，而是目录操作组件（后边会讲解）。
+====
+
+从上图可知，启用集成服务和不启用集成服务在目录规划上复杂度更高，而在整个目录管理中，每个目录有自定义的 `integrationId` ，目前在 *文档管理* 中，只有根目录采用了上图定义的目录规划模块，系统会根据组件定义内容规划目录存储。您可以将目录想象成一个虚拟入口，其具体实现依赖内部配置，最终构成完整的目录树。
+
+_如果子目录没有配置对应的目录规划程序，则采用父目录的目录规划组件执行。_
+
+==== 目录规划组件
+
+Zero Extension中目录规划接口定义如下：
+
+[source,java]
+----
+package io.horizon.spi.feature;
+
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+
+/**
+ * X_CATEGORY Tree Component
+ */
+public interface Arbor {
+    /*
+     * Here categories is the base categories
+     * -- 1. Include `treeComponent` and `treeConfig`
+     * -- 2. Append the new data following original categories
+     */
+    Future<JsonArray> generate(JsonObject category, JsonObject configuration);
+}
+----
+
+目前的目录规划您可直接参考下边几个类的代码。
+
+[options="header"]
+|====
+|类型|组件名|所属项目|含义
+|workflow|io.horizon.spi.feature.CatalogArbor|zero-ambient|流程文档，按服务目录的目录规划组件。
+|document|io.horizon.spi.feature.WholeArbor|zero-ambient|系统文档，按全站点配置的目录规划组件。
+|department|io.horizon.spi.feature.DepartmentArbor|zero-erp|部门文档，按部门配置的目录规划组件。
+|====
+
+==== 目录操作组件
+
+除了目录规划组件以外，系统中还定义了目录操作专用接口（目录操作组件存储于 `I_DIRECTORY` 表中的 `runComponent` ），接口定义如下：
+
+[source,java]
+----
+package io.vertx.mod.is.uca.command;
+
+import cn.vertxup.integration.domain.tables.pojos.IDirectory;
+import io.vertx.core.Future;
+import io.vertx.core.buffer.Buffer;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.up.atom.Kv;
+
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
+
+/**
+ * File System Here for integration
+ */
+public interface Fs {
+    /*
+     * Tree Directory Initialize / Trash Directory Initialize
+     */
+    IDirectory initTree(JsonObject directory);
+
+    void initTrash();
+
+    /*
+     * 1. Sync Data between ( Actual / Database )
+     * 2. Command: mkdir
+     */
+    Future<JsonArray> synchronize(JsonArray data, JsonObject config);
+
+    // ------------------- Cmd --------------------
+    /*
+     * Command: mkdir
+     * - JsonArray
+     * - JsonObject
+     */
+    Future<JsonArray> mkdir(JsonArray data);
+
+    Future<JsonObject> mkdir(JsonObject data);
+
+    /*
+     * Command: rm
+     * - JsonArray
+     */
+    Future<JsonArray> rm(JsonArray data);
+
+    Future<JsonObject> rm(JsonObject data);
+
+    Future<Boolean> rm(Collection<String> storeSet);
+
+    /*
+     * Command: none
+     * - Rename folder
+     */
+    Future<Boolean> rename(String from, String to);
+
+    Future<Boolean> rename(Kv<String, String> kv);
+
+    Future<Boolean> rename(ConcurrentMap<String, String> transfer);
+
+    /*
+     * Read to Buffer
+     */
+    Future<Boolean> upload(ConcurrentMap<String, String> transfer);
+
+    Future<Buffer> download(String storePath);
+
+    Future<Buffer> download(Set<String> storeSet);
+
+}
+----
+
+目录操作组件中对应的底层文档命令如下：
+
+- mkdir ：创建目录
+- rm ：删除目录或文件
+- rename：重命名目录
+- upload / download：上传下载读取或写入文件内容
+
+现阶段内部实现组件：
+
+[options="header"]
+|====
+|组件名称|含义
+|io.vertx.mod.is.uca.command.FsDefault|默认存储模式下的目录操作组件，提供底层常用的本地存储目录和文件命令。
+|io.vertx.mod.is.uca.command.FsReadOnly|默认存储模式下的目录操作组件（只支持只读），提供底层本地存储目录和文件命令。
+|====
+
+==== 前端参数[[__MOD_IS_UPLOAD_PARAM]]
+
+目录规划的前端对接主要包含 `aiFileUpload, aiFileLogo, aiFileBatch` 三个核心组件，这三个组件都可以为您的应用配置如下片段：
+
+[source,json]
+----
+{
+    "optionJsx.ajax.uri": "/api/file/upload/:identifier?category=:category&directory=:directory",
+    "optionJsx.ajax.params": {
+        "identifier": "FIX:nm.law",
+        "category": "FIX:DOC.NORM.LAW",
+        "directory": "/合规文档/法规库",
+        "formula": "/${code}"
+    }
+}
+----
+
+此处的 `optionJsx.ajax.params` 中配置的参数会在前端执行 `Ux.formatExpr` 方法对 `URI` 执行表达式的填充，其中重要属性如下：
+
+[options="header",cols="2,8"]
+|====
+|属性|用法和含义
+|`identifier` |此属性位于上传的路径上，为特殊属性，对应到 `X_ATTACHMENT` 中的 `identifier`（模型统一标识），它表示这份上传文件对应的关联模型，且后端会直接关联到 `modelId / modelKey` 结构中（广义关联模型），使得 **文件** 变成通用型模块。
+|`category` a|二义性业务类别，此处的 `category` 用法：
+
+- 硬关联：若是硬关联则 `category` 中的值通常是 `X_CATEGORY` 中对应的属性值（常用： `key`、`code` 属性）。
+- 软关联：软关联一般使用 `IFX` 前缀，这种模式下，您可以直接在前端书写关联的属性信息，并且此种关联具有 **第二自由度**，您书写的值可以不和 `X_CATEGORY` 表挂钩，只要该值可以查询到对应记录信息即可。
+|`directory` |（启用 `zero-is` ），此属性为规划的目录路径：`storeRoot + storePath` 之下的目录路径。
+|`formula` |（启用 `zero-is` ），当您在集成服务中依赖 **上传数据** 来动态构造目录时，此属性才会变得有意义，此属性可打开 **动态目录** 功能。
+|====
+
+====
+关于 `X_ATTACHMENT` 的位置问题？为什么 `X_ATTACHMENT` 没有位于 `zero-is` 集成模块，而是位于 `zero-ambient` 模块中，这里有几个历史原因和设计原因：
+
+1. `zero-is` 是后开发的模块，主要提供集成服务，且集成服务中也会包含 **目录服务**，此模块开发时候 `zero-ambient` 已经上线。
+2. 切割了 **文件** 和 **目录** 的关系，在很多传统应用使用过程中，由于应用规模比较小，一个单纯的 `X_ATTACHMENT` 表已经可以满足 **上传/下载** 需求，此时不用启用 `zero-is` 服务也可以完成对应功能。
+3. **目录集成服务** 中除了常用本地服务以外，也定义了 **虚拟目录** 的概念，包括在 **虚拟目录** 和集成配合时可支持其他协议的异构目录，整个功能属于比较大的功能块。
+
+最终达到的效果是：`zero-ambient` 可提供 **上传/下载** 功能块，但只有带上 `zero-is` 之后，才可以开启企业级 **目录管理**，且提供了各种不同的目录功能。
+====
+

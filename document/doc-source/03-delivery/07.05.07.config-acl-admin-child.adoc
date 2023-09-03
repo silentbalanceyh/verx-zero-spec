@@ -1,0 +1,223 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+==== 父子嵌套调用[[__SPEC_CONFIG_ACL_CHILD]]
+
+父子调用过程主要存在于流程管理中，流程管理的基本布局如下：
+
+image:zero-p-admin-wf.png[0,1024]
+
+上述结构图中，出现了父子级区域，所以本章主要讲解父子级区域的核心流程，父子级区域同样会走 `initializer` 和 `requester` 的基础流程，中间部分的内容是不会变化的，但有几个点需要注意：
+
+1. 子组件执行 `requester` 的时间并非是提交前，而是触发 `Checkbox` 时，当子组件触发了 `Checkbox` 中的 `onChange` 函数，子类的 `requester` 流程就直接启动，最终会生成完整的请求结构，并且将结构中的 `resource` 回传到父类回调函数中。
+2. 父组件状态 `state` 中 `$keyChild` 的完整结构就是 `resource = data`，但和不带父子结构的内容有所差异的地方在于，此处的 `resource` 包含了当前父区域下所有子区域关联的资源，一般和 `webBind` 中定义的资源保持一致。
+3. `OUT_C` 表面上看起来是一个 `requester` 函数，实际是一个组合函数，它负责将所有合法的 `$keyChild` 中存在的资源集体打包，最终构造发送到后端接口中的标准化请求数据。
+
+[CAUTION]
+====
+理解清楚了 `$keyChild` 中的数据结构，就等价于完全理解了父子级调用关系。
+====
+
+==== 示例/格式
+
+===== S_PATH中的DM_CONFIG
+
+[source,json]
+----
+{
+    "items": {
+        "root": "BAG-MENU",
+        "exclude": [
+            "zero.desktop"
+        ],
+        "children": [
+            "SC-MENU,服务目录菜单",
+            {
+                "key": "NAV-MENU",
+                "title": "主页快捷菜单",
+                "value": [
+                    "NAV-MENU",
+                    "REPO-MENU"
+                ]
+            },
+            "SIDE-MENU,应用主菜单"
+        ]
+    },
+    "webAction": {
+        "icon": "upload",
+        "text": "保存",
+        "type": "primary",
+        "key": "__ID_MENU_SAVE",
+        "connectId": "__CID_MENU_SAVE"
+    }
+}
+----
+
+上述配置中的 `items` 节点是 `HxSite` 专用的配置信息，此处就不介绍相关内容，而 `webAction` 定义了页面专用按钮：连接点和被连接点的按钮配置相关信息。另外一种 `items` 的配置如下：
+
+[source,json]
+----
+    "items": {
+        "dao": "cn.vertxup.workflow.domain.tables.daos.WFlowDao"
+    }
+----
+
+这种情况下需要结合 `DM_CONDITION` 中的查询条件来实现维度数据的拉取工作。
+
+===== S_PATH中的DM_MAPPING
+
+[source,json]
+----
+{
+    "name": "label",
+    "code": "key",
+    "definitionKey": "value",
+    "type": "type"
+}
+----
+
+===== S_PATH中的UI_CONDITION
+
+[source,json]
+----
+{
+    "sigma": "`${sigma}`",
+    "appId": "`${appId}`",
+    "": true
+}
+----
+
+===== S_PATH中的UI_CONFIG
+
+[source,json]
+----
+{
+    "dao": "cn.vertxup.ambient.domain.tables.daos.XMenuDao",
+    "output": {
+        "group": "type"
+    }
+}
+----
+
+此处的 `output` 可以包含不同的模式，现阶段主要支持两种：
+
+1. 直接以 JsonArray 的方式返回数据到前端。
+2. 以按照某个维度字段分组的方式将原始 JsonArray 计算生成一个 JsonObject，最终返回到前端。（ `initializer` 和 `requester` 会在前端自动计算数据源，所以不用过于担心结构问题。）
+
+===== S_PATH中的UI_SURFACE
+
+[source,json]
+----
+{
+    "webComponent": "HxSite",
+    "webBind": {
+        "HxSite": "res.menu.read"
+    },
+    "webTree": {
+        "parent": "parentId",
+        "title": "text",
+        "text": "text",
+        "value": "name",
+        "sort": "order"
+    },
+    "webData": {
+        "paramView": {
+            "view": "DEFAULT",
+            "position": "DEFAULT"
+        },
+        "paramDefault": "ALL",
+        "initializer": "IN_H",
+        "requester": "OUT_H"
+    }
+}
+----
+
+带父子级的 `UI_SURFACE` 参考如下（父类）：
+
+[source,json]
+----
+{
+    "webComponent": "HxFlow",
+    "webChildren": [
+        {
+            "component": "HxQueue",
+            "key": "rule.flow.queue"
+        },
+        {
+            "component": "HxAction",
+            "key": "rule.flow.action"
+        }
+    ],
+    "webBind": {
+        "HxQueue": "res.views.fetch",
+        "HxAction": "res.op.by.control"
+    },
+    "webWelcome": {
+        "header": {
+            "label": "选择流程",
+            "value": "流程编码"
+        },
+        "alert": {
+            "message": "流程权限说明",
+            "description": [
+                "您可以在当前页面设置不同角色针对不同流程的相关权限。",
+                "`保存`操作只会保存当前选择流程的权限配置。",
+                "`保存所有`操作会一次性保存当前页面所有设置过的流程权限配置。",
+                "视图权限用于设置该角色在不同列表可访问的视图可见性以及视图的特殊定制。",
+                "操作权限用于设置该角色在不同流程节点可执行的按钮集合以及特殊定制。"
+            ]
+        }
+    },
+    "webData": {
+        "requester": "OUT_C"
+    }
+}
+----
+
+[CAUTION]
+====
+一般如果带有父组件，组件本身的触发会在父类实现，而父类的 `webData` 就不配置和底层资源相关的任何数据以及 `initializer`，如上边片段可知，仅提供 `requester` 部分做输出数据组合就可以了，这种场景下父类做的主要工作是 *组合数据*。
+====
+
+带资源访问者的子类使用的 `UI_SURFACE` 配置：
+
+[source,json]
+----
+{
+    "webNode": {
+        "event": "节点值",
+        "name": "流程节点名称",
+        "action": "操作列表",
+        "empty": "请选择您要设置权限的流程节点"
+    },
+    "webData": {
+        "paramIn": {
+            "workflow": "PROP:workflow.value",
+            "event": "STATE:node.event"
+        },
+        "paramView": {
+            "position": ":workflow",
+            "view": ":event"
+        },
+        "paramVisit": {
+            "phase": "EAGER",
+            "mode": "REPLACE",
+            "identifier": "ui.op",
+            "type": "OP",
+            "seekKey": ":workflow/:event/DEFAULT"
+        },
+        "paramDefault": "ALL",
+        "initializer": "IN_HV_BY",
+        "requester": "OUT_H"
+    }
+}
+----
+
+[TIP]
+====
+上述配置片段是目前已经存在的片段信息，提供片段仅让您有所参考，如此您就可以彻底理解 *管理端* 的基本配置了，扩展开发管理端也变得相对容易很多，剩余关于权限在请求流程中的内容后续补充文档来加以说明。
+====
+
+
+
+

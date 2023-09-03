@@ -1,0 +1,599 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== Option选项配置
+
+==== 选项：搜索类
+
+搜索类选项设置都采用 `search` 作为前缀，定义了列表的如下功能：
+
+- 基础搜索
+- 高级搜索
+- 视图管理（查询条件部分）
+
+搜索类参考配置如下：
+
+[source,json]
+----
+{
+    "search.cond": [
+        "name,c",
+        "code,c"
+    ],
+    "search.enabled": true,
+    "search.confirm.clear": "该操作会清空所有的查询条件，确认清空？",
+    "search.op.redo": "清除条件",
+    "search.op.advanced": "高级搜索",
+    "search.op.view": "查询条件",
+    "search.placeholder": "名称/编码",
+    "search.advanced": true,
+    "search.advanced.width": "40%",
+    "search.advanced.title": "搜索用户组",
+    "search.advanced.notice": {
+        "message": "注意！",
+        "description": [
+            "高级搜索条件优先级会大于普通搜索，一旦触发，普通搜索条件会被重置。",
+            "高级搜索表单中的搜索条件会被保存，再次打开时会重置到上次的搜索状态。"
+        ]
+    },
+    "search.criteria.window": "当前查询条件,保存,关闭,false,900,true,btnCriteria",
+    "search.criteria.view": {
+        "selected": "当前视图：",
+        "confirm": "您正在更改当前视图的查询条件，一旦更改后查询数据会有变化，确认？"
+    }
+}
+----
+
+===== `search.cond`
+
+列表主页搜索框中的查询命中条件，此处查询命中条件会构造成 `OR` 的方式执行查询，如示例中会生成SQL语句：
+
+[source,sql]
+----
+-- NAME / name,  CODE / code
+WHERE NAME LIKE '%xx%' OR CODE LIKE '%xx%'
+----
+
+===== `search.enabled`
+
+基础搜索框的开关，若此处 `search.enabled = false` 则自动隐藏列表头部的搜索框。
+
+===== `search.confirm.clear`
+
+image:exp-opt-search.confirm.clear.png[]
+
+点击清除查询条件按钮过程中，此选项可直接设置弹出框的呈现文字。
+
+===== `search.op.redo`
+
+是否呈现搜索框右侧的 **清除条件** 的按钮，若存在该选项则显示，且值为鼠标移上去过后的浮游文字。
+
+===== `search.op.advanced`
+
+设置搜索框右侧的 **高级搜索** 的按钮文字，高级搜索会使用另外一个配置来指定 **开/关**，所以高级搜索功能打开时若没有设置当前选项只是不显示浮游文字，但高级搜索功能依旧可用。
+
+===== `search.op.view`
+
+是否呈现搜索框右侧的 **查询条件** 的按钮，若存在此选项则显示，其值为鼠标移到按钮上的浮游文字。
+
+===== `search.placeholder`
+
+基础搜索框上的水印文字设置，一般此属性和 `search.cond` 配合设置。
+
+image:exp-opt-search.placeholder.png[]
+
+===== `search.advanced`
+
+和 `search.enabled` 类似，此按钮是高级搜索的开关，您可以设置此选项开启或关闭高级搜索。
+
+===== `search.advanced.width`
+
+高级搜索是在右边以抽屉的方式弹出界面，抽屉窗口中是一个 **查询条件设置表单** （ `FormFilter`），此属性设置窗口位于页面中的宽度，若您的查询条件比较多可以考虑将此值设置得更大。
+
+===== `search.advanced.title`
+
+抽屉窗口顶部的标题文字，您可以自定义呈现的文字信息。
+
+===== `search.advanced.notice`
+
+抽屉窗口上半部分的提示文字，用于提示用户高级搜索表单的基本用法。
+
+image:exp-opt-search.advanced.notice.png[0,800]
+
+===== `search.criteria.notice`
+
+**查询条件** 弹框顶部可设置提示消息，此提示消息可以显示在弹框顶部，和高级搜索提示文字格式一致。
+
+===== `search.criteria.window`
+
+若开启了 **查询条件** 设置的功能，此属性指定了查询条件弹出窗口的相关配置，内置使用了 **组件解析器** 解析该窗口。
+
+===== `search.criteria.view`
+
+**查询条件** 功能可以对当前选择视图进行 **视图编辑**，这种模式下，此组件对应的文字使用当前选项执行配置，此处的配置主要针对过场效果文字进行定义。
+
+image:exp-opt-search.criteria.view.png[0,800]
+
+===== `search.grid`
+
+列表模板选择，您可以按照您所喜好设置对应的 `grid` 信息，系统有默认值存在。
+
+==== 选项：页签部分
+
+页签配置主要是针对 `<Tab/>` 类组件，此处设置相对比较简单，支持两种模式：
+
+- 若外层页带了 `<PageCard/>` 做主容器，此种场景下页签可使用 **标准模式** 配置。
+- 若外层页没有使用任何容器组件，页面可以作为独立容器来使用，这种场景下您依旧可以设置顶部的标题。
+
+页签部分选项参考配置：
+
+[source,json]
+----
+{
+    "tabs.title": "FTP配置",
+    "tabs.container": true,
+    "tabs.list": "FTP配置列表",
+    "tabs.add": "添加FTP配置",
+    "tabs.edit": "编辑FTP配置"
+}
+----
+
+===== `tabs.container`
+
+此选项用于切换当前页签的模式：**标准模式** / **独立容器模式**，若值为 true，那么页签容器可以自带标题信息，而忽略外层容器对象。
+
+===== `tabs.title`
+
+当页签使用 **独立容器** 模式时，您可以通过此选项指定页签的 **标题** 文字。
+
+===== `tabs.list`
+
+列表页页签头文字。
+
+===== `tabs.add`
+
+列表打开添加页时（ `mode=ADD` ），页签头文字。
+
+===== `tabs.edit`
+
+列表打开编辑页时（ `mode=EDIT` ），页签头文字。
+
+===== `tabs.type`
+
+对应 `<Tab/>` 组件的类型，直接绑定到 `AntD` 的原生属性中。
+
+===== `tabs.count`
+
+当前页面可以打开的最大数量，设置数量之后，您不可以随意打开多余的页签。
+
+===== `tabs.disabled`
+
+是否开启 **单列表** 功能，当前 `ExListComplex` 列表页是开启了 **单列表** 功能的，效果如下：
+
+image:exp-opt-tabs.diabled.png[,800]
+
+当你打开了 **添加页/编辑页** 时，第一个列表页的 **页签** 目前是被禁用的，只有关闭打开页签之后才可以回到列表中操作。
+
+[CAUTION]
+====
+此处这种 **集中** 处理的设计有助于使用者将精力集中在当前界面应该考虑的部分，而不至于分心去不同页签上操作不同单据，很多大企业的此部分没有做这样的改动，用户可以无限打开页签，事实证明很多错误信息的填写都是出现在页签和页签进行切换过程中，企业数字化流程中，Zero 推荐用户的 **单一职责** 模式处理业务，若您现在正在处理单个工单，那么您就集中精力处理此工单，而不要分心做其他事。
+====
+
+===== `tabs.extra.add`
+
+添加页右上角 Extra 的内容配置，可注入行为对容器右上角进行特殊的定制。
+
+===== `tabs.extra.edit`
+
+编辑页右上角 Extra 的内容配置，可注入行为对容器右上角进行特殊的定制。
+
+==== 选项：视图/模块
+
+模块和视图选择和安全视图在列表层处理有关，Zero Framework中的视图处理如下：
+
+[options="header",cols="2,8"]
+|====
+|视图参数|含义
+|`view` |当前接口位于的视图信息。
+|`position` |当前接口位于的位置信息，位置信息位于视图信息的高阶，您可以先指定位置，再指定视图。
+|====
+
+而此处的模块和视图的参数命名规则本身未统一，但位于不同的分类之下，由于这些参数定义的内容一致，所以放到一起来讲解。
+
+[source,json]
+----
+{
+    "identifier": "datum.room-rent",
+    "ajax.module": false,
+    "ajax.position": [
+        "ROUTE:type"
+    ]
+}
+----
+
+===== `identifier`
+
+当前列表绑定的后端模型统一标识符，此属性很重要，动态建模过程中甚至会影响到模型的形态问题，按 Zero Extension 部分的整体规划，模型后期可通过 `identifier` 从服务端的模型接口拉取当前模型相关的所有定义，而每个列表都会绑定一个 **主模型**。
+
+===== `ajax.module`
+
+若系统做了多表连接（ `JOIN` 模式），使用 **父主表** 模式时，管理模型的子表依赖核心参数 `module` 来绑定子模型的 `identifier` 标识符，此选项用于开启当前列表是否支持 `module` 参数，若不打开那么所有管理模式只会针对父模型进行管理，不会干涉到子模型的管理流程。
+
+===== `ajax.position`
+
+由于 `ExListComplex` 组件中已经存在视图管理，即 **视图** 相关的 `view` 参数本身就已经和个人设置执行了绑定，此参数用于鉴别 **页面位置**，示例中的定义可以看到当前页面配置的位置是根据路由中的 `type` 参数指定。当前选项是一个 `Array` 类型，所以您可以设置多个值来鉴别位置信息。最简单的场景是：
+
+- 待审批的工单，position 可以根据工单状态 `status` 来决定。
+- 已审批的工单，position 可以根据工单状态 `status` 来决定。
+
+这种场景下您就可以设置 `ajax.position` 来对位置参数进行设置。
+
+==== 选项：动态
+
+列表中的动态设置主要负责对 **列** 和 **操作** 进行控制，参考配置如下：
+
+[source,json]
+----
+{
+    "dynamic.op": false,
+    "dynamic.column": false,
+    "dynamic.switch": false
+}
+----
+
+===== `dynamic.op`
+
+此属性用于控制所有 **操作类** 的选项：
+
+- `false`：**操作类** 的所有选项直接以 `options` 中配置的为准，严格控制了当前列表所有允许的操作配置。
+- `true`：**操作类** 的所有选项直接通过接口 `/api/ui/ops` 读取，形成动态配置且可以直接在接口层执行 **权限控制**。
+
+===== `dynamic.column`
+
+此属性用于控制 `table` 中的列配置选项：
+
+- `false`：列表的列以 `table.columns` 中定义的列为准，纯前端资源文件定义列表列。
+- `true`：列表的列通过接口 `/api/columns/<module>/full` 读取，此处 `module` 为当前列表绑定的模型在 `zero-crud` 中形成的标准化接口。
+
+===== `dynamic.switch`
+
+此属性用于控制页面流程相关操作，`mode=ADD` 和 `mode=EDIT` 是否执行智能切换。
+
+- `false`：不执行智能切换，当您添加一条数据之后，直接返回列表首页（适合基础数据管理场景）。
+- `true`：执行智能切换，当您添加一条数据之后，直接从添加表单页跳转到编辑页（适合补充更新的场景）。
+
+==== 选项：操作类
+
+操作类的选项从两个维度对当前列表的 **操作按钮** 进行控制，参考配置如下：
+
+[source,json]
+----
+{
+    "op.open.add": "添加",
+    "op.batch.edit": "批量更新",
+    "op.batch.delete": "批量删除",
+    "op.extra.column": "修改显示列",
+    "op.extra.export": "导出",
+    "op.extra.import": "导入",
+    "op.extra.view": "视图管理",
+    "op.row.edit": true,
+    "op.row.delete": true,
+    "op.submit.add": "添加",
+    "op.submit.save": "保存",
+    "op.submit.delete": "删除",
+    "op.submit.reset": "重置",
+    
+    "id.submit.add": "$opAdd",
+    "id.submit.save": "$opSave",
+    "id.submit.reset": "$opReset",
+    "id.submit.delete": "$opDelete"
+}
+----
+
+操作类选项都是设置的列表中按钮上的文字，若不存在则直接删除此操作，存在则表示启用。比较特殊的情况就是设置成布尔中的 `false`，也会直接被关闭，上述配置中我刻意将 **连接点** 和操作控制配置分开。
+
+===== `op.open.add`
+
+列表内 open 区域（ 添加操作区域 ）内的主按钮，直接从列表页引导打开 `mode=ADD` 页签将用户引导到 **添加表单页**。
+
+====
+早期的版本中，open 区域还存在一个按钮 `op.open.filter`，此按钮负责清除查询条件，这个按钮存在的原因是早期的 `ExListComplex` 的数据流规划有问题，这个 BUG 已经在新版本中解决了，若您的配置中还碰到了此选项可以直接拿掉。
+====
+
+===== `op.batch.edit`
+
+列表内 batch 区域内的 **批量更新** 按钮，此按钮的触发会受到列表中选择数据的影响，只有您选择了数据记录之后才可点击此按钮。
+
+image:exp-opt-op.batch.png[0,800]
+
+[TIP]
+====
+此操作依赖 `component` 中的 `batch.editor` 配置定义，由于 **批量编辑** 窗口的内容和当前模型的 **属性** 有关联，所以无法设置默认配置，所以若您在列表开发中要打开 **批量功能**，就必须根据当前的模型提供批量编辑器的配置。
+====
+
+===== `op.batch.delete`
+
+列表内 batch 区域内的 **批量删除** 按钮，此按钮的触发必须让用户选中数据记录才可用（所有的删除级操作都会被 **确认类** 的选项影响，做前端的一个简单的删除拦截）。
+
+===== `op.extra.column`
+
+列表内 extra 区域内的 **列筛选** 按钮，列筛选按钮可以帮助用户更改当前列的 **个人视图**，您可以根据您想要查看的模型的列定义个人视图，定义之后您个人看到的列信息会保存在 **个人视图** 中，并且可通过 **视图管理** 进行再次调整。
+
+[TIP]
+====
+（有默认值）此操作依赖 `component` 中的 `extra.column` 配置定义，专用于定制列筛选组件。
+====
+
+===== `op.extra.export`
+
+列表内 extra 区域内的 **导出** 按钮，导出按钮会打开弹窗让用户自定义将要导出的列信息，然后导出 **模板化** 的文件，现阶段导出版本支持：**列选择、列排序** 的功能。
+
+[TIP]
+====
+（有默认值）此操作依赖 `component` 中的 `extra.export` 配置定义，用于定制导出窗口组件。
+====
+
+===== `op.extra.import`
+
+列表内 extra 区域内的 **导入** 按钮，导入按钮会打开弹框让用户上传 **模板化** 数据文件，然后导入数据记录。
+
+[TIP]
+====
+（有默认值）此操作依赖 `component` 中的 `extra.import` 配置定义，用于定制导入窗口组件。
+====
+
+===== `op.extra.view`
+
+列表内 extra 区域内的 **视图管理** 按钮，此按钮是一个入口，用户点击之后可进入视图管理界面管理当前环境中的所有 **个人视图**，个人视图可实现针对视图的 **增、删、改** 的基本操作。
+
+[TIP]
+====
+（有默认值）此操作依赖 `component` 中的 `extra.view` 配置定义，用于定制视图专用组件。
+====
+
+====
+上述所有配置中标记了（有默认值）的配置证明此配置不依赖组件配置也会有相关的默认行为，若您想要定制窗口中的各种文字，则可以追加新配置，新配置会覆盖 **默认值**。
+====
+
+===== `op.row.edit`
+
+列表行上的 **编辑** 按钮，若此处为 `false` 则直接导致编辑功能失效。
+
+===== `op.row.delete`
+
+列表行上的 **删除** 按钮，若此处为 `false` 则直接导致删除功能失效。
+
+===== `op.row.view`
+
+若您关闭了 **编辑** 按钮，您可以设置此值为**查看**按钮的文字，直接将行中的 **编辑** 转换成 **查看**，这个配置可以让您的系统还原到传统的**四页面（列表、添加、编辑、查看）**流模式。
+
+[NOTE]
+====
+关于 **行操作** 需要说明的是，它的权限会受到几个不同维度的影响，而不单纯的选项关闭，若您的选项打开也有可能导致行操作失效：
+
+- 选项中优先级最高，要完成行操作的其他定制，此处的行操作相关功能必须处于打开状态。
+- 针对数据记录中会存在 `metadata` 的属性，其中可控制记录的属性如：
++
+--
+[source,json]
+----
+{
+    "deletion": false,
+    "edition": true
+}
+----
+
+标准化行为中，若您的数据字段的 `metadata` 包含了上述两个属性，它可以控制单行记录的 **编辑** 和 **添加** 权限，此处是从系统层去控制。
+--
+- 在 `ExListComplex` 中可提供插件 `$plugins` 中的行编辑函数 `pluginRow` 对行的权限加以控制，计算最终的行权限信息，这个函数可根据每一行的数据独立计算形成按行提供权限。
+- 远程的 `zero-rbac` 模块配合 `zero-ui` 也可以对 **静态** 和 **动态** 两种不同的访问模式进行 **行权限** 控制。
+
+上述维度都是更改 **行操作** 的维度点，不同场景会有所区别。
+====
+
+===== `op.submit.add`
+
+当您打开添加页签（ `mode=ADD` ），右上角显示的 **添加** 按钮的文字设置。
+
+===== `op.submit.reset`
+
+当您打开添加页签（ `mode=ADD` ），右上角显示的 **重置** 按钮的文字设置。
+
+===== `op.submit.save`
+
+当您打开编辑页签（ `mode=EDIT` ），右上角显示的 **保存** 按钮的文字设置。
+
+===== `op.submit.delete`
+
+当您打开编辑页签（ `mode=EDIT` ），右上角显示的 **删除** 按钮的文字设置。
+
+===== `id.submit.add`
+
+表单上的 **连接点**，添加表单（ `mode=ADD` ）中的添加按钮。列表页中右上角的按钮位于 `<Tabs/>` 组件的 Extra 区域，并未位于页签内的表单组件中。
+
+[NOTE]
+====
+参考如下截图：
+
+image:exp-opt-id.submit.add.png[0,800]
+
+前文提到的 `op.submit.xx` 选项设置的是箭头发起位置的按钮文字，箭头指向的地方有表单内配置好的 `aiAction` 渲染（ `hidden=true` ）的表单标准提交按钮，这些提交按钮的 `id` 由 `id.submit` 进行设置。参考添加表单中按钮配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "$button",
+        "hidden": true,
+        "optionJsx.extension": [
+            "$opAdd,添加,SUBMIT,primary",
+            "$opReset,重置,RESET"
+        ],
+        "span": 24
+    }
+]
+----
+====
+
+所以示例中设置的 `id.submit.add` 实际就是表单中 `$opAdd,添加,SUBMIT,primary` 解析的第一个值，而此按钮的触发依靠的是 `op.submit.add` 这个按钮触发。
+
+===== `id.submit.reset`
+
+表单上的 **连接点**，添加表单（ `mode=ADD` ）中的重置按钮。
+
+===== `id.submit.save`
+
+表单上的 **连接点**，编辑表单（ `mode=EDIT` ）中的保存按钮。
+
+===== `id.submit.delete`
+
+表单上的 **连接点**，编辑表单（ `mode=EDIT` ）中的删除按钮。
+
+==== 选项：窗口类
+
+整个 `ExListComplex` 有五个子窗口，每个窗口会包含两部分配置
+
+- 外层窗口配置（窗口类选项配置）
+- 内层组件配置（在 `component` 中配置）
+
+参考配置：
+
+[source,json]
+----
+{
+    "window.batch.editor": "选择批量更新的字段,更新,关闭,false,640,true,btnBatchEdit",
+    "window.extra.column": "请选择您要显示的列,leftTop,640,true",
+    "window.extra.export": "选择导出字段,导出,关闭,false,720,true,btnExport",
+    "window.extra.import": "请上传导入文件,导入,关闭,false,720,true,btnImport",
+    "window.extra.view": "视图管理,right,400,true,btnView"
+}
+----
+
+===== `window.batch.editor`
+
+批量编辑弹出窗口配置，组件配置位于 `component` 中的 `batch.editor` 中。
+
+===== `window.extra.column`
+
+列选择浮游窗口配置，组件配置位于 `component` 中的 `extra.column` 中。
+
+===== `window.extra.export`
+
+导出弹出窗口配置，组件配置位于 `component` 中的 `extra.export` 中。
+
+===== `window.extra.import`
+
+导入弹出窗口配置，组件配置位于 `component` 中的 `extra.import` 中。
+
+===== `window.extra.view`
+
+视图管理抽屉窗口配置，组件配置位于 `component` 中的 `extra.view` 中。
+
+==== 选项：Ajax类
+
+远程通信类的配置直接和 `zero-crud` 中的 15 个API地址绑定，由于操作是位于 `Op.js` 中，所以单记录的 **添加、保存、删除** 的 API 配置未存在于选项配置中。
+
+参考如下配置：
+
+[source,json]
+----
+{
+    "ajax.search.uri": "/api/room-rent/search",
+    "ajax.get.uri": "/api/room-rent/:key",
+    "ajax.delete.uri": "/api/room-rent/:key",
+    "ajax.batch.delete.uri": "/api/batch/room-rent/delete",
+    "ajax.batch.update.uri": "/api/batch/room-rent/update",
+    "ajax.column.full": "/api/columns/room-rent/full",
+    "ajax.column.my": "/api/columns/room-rent/my",
+    "ajax.column.save": "/api/columns/room-rent/my",
+    "ajax.file.export": "/api/room-rent/export",
+    "ajax.file.import": "/api/room-rent/import"
+}
+----
+
+===== `ajax.search.uri`
+
+HTTP方法：`POST`，列表页主接口，支持服务端分页、排序、列过滤功能，Zero 中标准的 `Qr` 语法接口，有时也作为辅助数据提取的接口来使用。
+
+===== `ajax.get.uri`
+
+HTTP方法：`GET`，单记录读取主接口，查看页和编辑页打开之前访问此接口读取数据记录。
+
+===== `ajax.delete.uri`
+
+HTTP方法：`DELETE`，单记录删除主接口，**行删除** 和编辑页的 **删除** 按钮都会使用此接口。
+
+===== `ajax.batch.delete.uri`
+
+HTTP方法：`DELETE`，多记录批量删除主接口。
+
+===== `ajax.batch.update.uri`
+
+HTTP方法：`PUT`，多记录批量更新主接口。
+
+===== `ajax.column.full`
+
+HTTP方法：`GET`，若开启了 **动态列** 功能，列表会从此接口直接拉取模型所有的 **可用属性集**，而不再使用 `table.columns` 中的配置，此接口用于加载 **全列** 配置数据。
+
+===== `ajax.column.my`
+
+HTTP方法：`GET`，不论是否开启 **动态列** 功能，此接口和后端 `zero-rbac` 配合读取个人视图，个人视图有两部分内容是会影响列表的：
+
+- `criteria`：当前视图使用的默认的查询条件。
+- `projection`：当前视图使用的默认的列过滤（我的列）信息。
+
+===== `ajax.column.save`
+
+HTTP方法：`PUT`，若您使用了 **查询条件** 管理和 **列筛选保存** 两个按钮提供的管理功能时，会触发此接口刷新个人在当前列表的视图信息。
+
+===== `ajax.file.export`
+
+HTTP方法：`POST`，导出方法专用接口。
+
+===== `ajax.file.import`
+
+HTTP方法：`POST`，导入方法专用接口。
+
+[TIP]
+====
+上述标准化的接口是 `zero-crud` 提供，为了简化配置其 HTTP 方法是固定的，这一点可能不太适合您做个人自定义，但由于功能比较完善，直接使用 Zero Extension 中的接口即可，实在要定义可使用 `@Adjust` 注解直接在后端开发覆盖原始接口。
+====
+
+==== 选项：拦截类
+
+拦截类选项主要用于在操作之前的进一步提示，通常会给用户一个 `confirmation` 的确认过程。
+
+配置参考：
+
+[source,json]
+----
+{
+    "confirm.delete": "确认删除当前租借记录？",
+    "confirm.batch.delete": "您确认要删除所有选中的租借记录？",
+    "confirm.clean.filter": "该操作将清空所有的查询条件，确认？",
+    "message.batch.delete": "您所选择的记录已经全部删除成功！"
+}
+----
+
+===== `confirm.delete`
+
+单记录删除之前的确认，配置之后在删除之前会有提示信息。
+
+===== `confirm.batch.delete`
+
+批量删除之前的用户确认信息。
+
+===== `confirm.clean.filter`
+
+查询条件删除之前的用户确认信息。
+
+===== `message.batch.delete`
+
+批量删除之后呈现的成功信息。
+
+===== `message.batch.update`
+
+批量更新之后呈现的成功信息。
+
+

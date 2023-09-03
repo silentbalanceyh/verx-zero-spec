@@ -1,0 +1,119 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 前端规范
+
+=== 项目规范
+
+前端项目主要基于 link:https://www.vertxui.cn[Zero UI,windows="_blank"] 框架进行定制和修改，您可以使用 *ai init* 命令执行此部分的初始化，最终生成的项目即为本章的核心项目结构——即：*Zero UI前端脚手架*。
+
+[TIP]
+====
+不改动的配置直接忽略不计，所有使用 *yarn eject* 出来的核心配置仅提供和Zero UI相关的配置信息，其他配置不在白皮书中讲解，您可以上网查询相关资料了解 *yarn eject* 命令结果的各文件职责。本规范三个章节的内容分别位于：
+
+- 项目结构：根目录说明
+- 自动化脚本：scripts目录说明
+- 源代码：src目录说明
+
+====
+
+==== 项目结构
+
+[options="header",cols="2,2,6"]
+|====
+|类型|路径|说明
+|image:i-folder.png[,20] / image:i-json.svg[,20] 目录|.zero/|Zero Ai工具默认工作目录，配合 link:https://www.vertxai.cn[Zero Ai] 工具箱工作。
+|image:i-folder.png[,20] / image:i-webpack.svg[,20] 目录|config/|Webpack主配置目录，该目录来源于 *yarn eject* 命令结果。
+|image:i-env.svg[,20] 文件|config/env.js|环境变量连接专用脚本文件，*.env.development / .env.production* 双环境选择脚本。
+|image:i-javascript.svg[,20] 文件|config/modules.js|前端模块化专用JS配置，Zero UI模块化的 *核心配置*。
+|image:i-webpack.svg[,20] 文件|config/webpack.config.js|前端Webpack主配置文件，Zero UI修改过的配置。
+|image:i-folder.png[,20] / image:i-asciidoc.svg[,20] 目录|document/|AsciiDoc文档服务器专用目录。
+|image:i-folder.png[,20] / image:i-json.svg[,20] 目录|document/doc-config/|JsDoc配置目录、AsciiDoc配置目录。
+|image:i-folder.png[,20] / image:i-asciidoc.svg[,20] 目录|document/doc-source/|AsciiDoc源代码目录。
+|image:i-folder.png[,20] / image:i-html5.svg[,20] 目录|document/doc-web/|（*git不提交*）HTML5生成的AsciiDoc可查看静态源码目录。
+|image:i-folder.png[,20] / image:i-html5.svg[,20] 目录|public/|应用静态站点目录，主骨架，包含了SPA入口：index.html。
+|image:i-folder.png[,20] / image:i-javascript.svg[,20] 目录|scripts/|Zero UI启动脚本。
+|image:i-folder.png[,20] / image:i-java.svg[,20] 目录|src/|Zero UI源代码目录。
+|image:i-babel.svg[,20] 文件|.babelrc|Babel专用转译配置文件，启用Babel环境的规范申明。
+|image:i-env.svg[,20] 文件|.env.development.tpl|协同开发环境变量模板文件（所有开发人员各自独立，使用时重命名）。
+|image:i-env.svg[,20] 文件|.env.production|生产环境变量文件。
+|image:i-eslint.svg[,20] 文件|.eslintignore|EsLint规范检查忽略文件，忽略声明的目录不做代码规范性检查。
+|image:i-git.svg[,20] 文件|.gitignore|（Zero UI定制）Git专用忽略文件，跳过声明文件不执行代码提交。
+|image:i-npm.svg[,20] 文件|package.json|项目基础信息定义文件。
+|image:i-markdown.svg[,20] 文件|README.md|首页Markdown介绍文件。
+|image:i-bash.svg[,20] 文件|run-cache.sh|清理缓存专用脚本。
+|image:i-bash.svg[,20] 文件|run-doc.sh|文档服务器，doc生成文档、server运行文档服务器。
+|image:i-bash.svg[,20] 文件|run-update.sh|包更新专用脚本。
+|image:i-bash.svg[,20] 文件|run-ux.sh|前端分发脚本。
+|image:i-cmd.svg[,20] 文件|run-zero.bat|Windows启动脚本。
+|image:i-bash.svg[,20] 文件|run-zero.sh|Linux/Unix启动脚本。
+|image:i-markdown.svg[,20] 文件|SUMMARY.md|Gitbook专用目录文件。
+|image:i-tsconfig.svg[,20] 文件|tsconfig.json|TypeScript配置文件。
+|====
+
+==== 自动化脚本
+
+[options="header",cols="2,2,6"]
+|====
+|类型|路径|说明
+|image:i-javascript.svg[,20] 文件|scripts/build.js|生产构建专用脚本。
+|image:i-javascript.svg[,20] 文件|scripts/start.js|开发调试启动专用脚本。
+|image:i-jest.svg[,20] 文件|scripts/test.js|测试专用脚本。
+|image:i-json.svg[,20] 文件|scripts/zrun-package.json|包更新过滤设置，设置不更新的包，锁定版本专用。
+|image:i-javascript.svg[,20] 文件|scripts/zrun-route.js|自动化路由专用生成脚本。
+|====
+
+==== 环境变量
+
+在ZeroUI中，环境变量用于控制不同环境的打包处理，脚手架中存在两个环境变量文件：*.env.development.tpl / .env.production*，在开发环境中由于每个人手中拿到的开发环境存在差异性，所以需要执行下边脚本才能进入正式流程开发：
+
+[source,bash]
+----
+# 准备开发环境变量文件
+cp .env.development.tpl .env.development
+----
+
+[IMPORTANT]
+====
+上边步骤十分重要，若根目录没有 *.env.development* 文件会导致启动过程中无法加载正确的环境变量引起失败，且该文件存在于 .gitignore 文件中不会提交，每个人手中的文件则不会引起修改冲突。
+====
+
+当前ZeroUI中支持的环境变量表如下（您也可以参考 *.env.development* 中的注释信息）：
+
+[options="header",cols="3,1,6"]
+|====
+|环境变量名|类型|说明
+|PORT|原生|前端运行的端口号，若不设置会使用npm常用端口 *3000*。
+|HOST|原生|前端开放可访问的HOST限制设置，不设置则采用 *0.0.0.0*，表示广域网可访问。
+|WSD_OK|原生|Websocket相关环境变量。
+|image:i-core.png[,20] Z_APP|后端|应用系统名称，对应 X_APP 表中的name字段，读取默认应用配置的专用参数，*多应用* 环境中的应用标识。
+|image:i-core.png[,20] Z_ENDPOINT|后端|后端远程RESTful的端地址，Ajax请求基地址。
+|image:i-core.png[,20] Z_TITLE|后端|当前应用的默认标题，仅用于Webpack打包静态HTML模板时使用。
+|image:i-core.png[,20] Z_LANGUAGE|后端|当前应用使用的语言信息，语音信息会对系统中的locale值产生影响，同时会影响远程加载配置的显示属性以及资源包的读取。
+|image:i-core.png[,20] Z_X_HEADER_SUPPOER|后端|若启用了自定义头文件，则使用选项，会追加 X-App-Id，X-App-Key，X-Sigma，X-Tenant-Id，X-Lang 等自定义头（*多语言、多应用、多租户、多样式* 基础）。
+|image:i-core.png[,20] Z_ROUTE|前端|React-Router路由基地址，代表应用本身，不同应用应该拥有不同的路由地址。
+|image:i-core.png[,20] Z_K_SESSION|前端|SessionStorage中的会话前缀，多个账号访问同一浏览器时需要使用该前缀标识访问应用。
+|image:i-core.png[,20] Z_K_EVENT|前端|Redux事件前缀，调试时可从事件前缀中查看当前Redux树来源于哪个应用。
+|image:i-core.png[,20] Z_ENTRY_LOGIN|前端|特殊页面：登录页。
+|image:i-core.png[,20] Z_ENTRY_ADMIN|前端|特殊页面：管理主页。
+|image:i-core.png[,20] Z_ENTRY_FIRST|前端|特殊页面：密码修改页（首次登录所需）。
+|image:i-core.png[,20] image:i-config.svg[,20] Z_PLUGIN|扩展|（目录 /app@plugin）是否启用插件。
+|image:i-core.png[,20] image:i-config.svg[,20] Z_DEV_MOCK|扩展|（目录 /app@mock）是否启用模拟器，*模拟器* 可让您隔离后端运行独立前端（官方Demo使用了全Mock），可以代替Mock Server执行单接口调试。
+|image:i-bug.png[,20] Z_DEV_MONITOR|开发调试|是否开启开发工具，若开启开发工具，使用快捷键 HOME 可直接调出调试控制台。
+|image:i-bug.png[,20] Z_DEV_DEBUG|开发调试|是否打开常用调试日志。
+|image:i-bug.png[,20] Z_DEV_AJAX|开发调试|是否打开后端交互调试日志。
+|image:i-bug.png[,20] Z_DEV_FORM|开发调试|是否打开表单引擎调试日志。
+|image:i-bug.png[,20] Z_DEV_QR|开发调试|是否打开 ComplexList 专用日志。
+|image:i-core.png[,20] Z_SHARED|样式|当前应用默认样式前缀，遵循此规则才可通过样式校验。
+|image:i-core.png[,20] Z_CSS_COLOR|样式|全局默认色彩，动态样式中会受到工具的影响。
+|image:i-core.png[,20] Z_CSS_FONT|样式|全局默认字体字号。
+|image:i-core.png[,20] Z_CSS_RADIUS|样式|全局默认圆角矩形弧度设置（根据Ant 5.0规范支持2px, 4px, 6px, 8px，默认 6px）。
+|image:i-config.svg[,20] Z_CSS_SKIN_MODULE|样式|（实验版）动态样式中设置皮肤专用目录的皮肤套件。
+|image:i-config.svg[,20] Z_CSS_SKIN_NAME|样式|（实验版）动态样式中皮肤名称，可设置深色或浅色模式。
+|image:i-config.svg[,20] Z_CSS_SKIN_TOOL|样式|（实验版）打开可调整样式的工具，现阶段开发启用，生产环境隐藏。
+|====
+
+[IMPORTANT]
+====
+不论是在生产环境还是开发环境，带 image:i-core.png[,20] 的环境变量都是必须配置的，若不配置核心环境变量有可能引起无法和您定制内容一致的问题导致启动失败。
+====

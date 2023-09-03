@@ -1,0 +1,8 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiAddressSelector`
+
+专用地址选择器，用来选择：`国家/省会/城市/二级市` 四个层级专用的选择器，由于此选择器目前在项目中没有整体使用，所以现阶段没有直接可参考的配置代码，暂不做说明，后续来补充。
+

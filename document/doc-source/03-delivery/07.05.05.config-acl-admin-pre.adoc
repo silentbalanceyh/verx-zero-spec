@@ -1,0 +1,118 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+==== In/Out预处理
+
+参考下边的完整流程图，前边三个服务端接口已经讲解过，本章节主要讲解 `In/Out` 的数据预处理流程（棕色部分）的代码逻辑：
+
+image:zero-p-admin-flow.png[0,1024]
+
+远程数据读取后，一般的 `Hx` 组件属性会包含如下核心结构：
+
+[options="header"]
+|====
+|属性|子属性|类型|含义
+|$anchors|无|props / JsonArray|被连接的按钮 `__CID` 主键，可能存在多个。
+|$initial|无|props / JsonObject|初始化值专用，一般为 `owner / ownerType` 信息。
+|$owner|无|props / JsonObject|当前拥有者信息，角色权限中则是角色信息，用户权限中则是用户信息。
+|$region|无|props / JsonObject|当前单区域元数据信息（来自 `/api/authority/region-d/:key` 接口，数据结构同上。
+|$bindValue|无|props / String|当前组件绑定的资源code，如菜单管理中该值是 res.menu.read。
+|config|webAction|props / JsonObject|当前组件的操作相关信息，同时包含 `__CID / __ID` 类按钮连接ID。
+||webBind|props / JsonObject|组件和资源绑定的基本信息，结构为：`webComponent = resource` 结构。
+||webComponent|props / String|当前组件名称（该属性已在外层消费）。
+||webData|props / JsonObject|组件绑定的数据流配置信息。
+||webTree|props / JsonObject|（非必须）维度部分设置树型菜单时的特殊配置。
+||webUi|props / JsonObject|对应后端的UI部分的配置信息。
+|data|无|props|当前组件的数据源信息，数据源会在预处理过程中执行 *分组之后拉平* 的计算。
+|$keySet|无|state / Set|当前组件为Checkbox类型时，用户交互时的选中值受控属性。
+|$keyDefault|无|state / Set|当前组件为Checkbox类型时，初始化进入界面时候的选中值集合。
+|$bindData|<resource>|state / JsonObject|当前组件使用（包括子组件）的所有数据信息。
+|$inited|h|state / JsonObject|当前组件消费的专用 ROWS 值。
+||q|state / JsonObject|当前组件消费的专用 CRITERIA 值。
+||v|state / JsonObject|当前组件消费的专用 PROJECTION 值。
+|====
+
+[TIP]
+====
+上述所有结构中，并非所有组件都包含全部结构，尤其是基础数据 data 的结构相对浮动，但大部分结构是一致的，最终可达到所有组件一致性。
+
+- 从上边的流程以及数据结构可以知道，aclIn的预处理过程就是生成 state 状态中的所有值的过程。
+- 而 aclOut 的预处理流程则刚好和 aclIn 相反，是通过 $keySet / $keyDefault 生成最终请求的过程。
+====
+
+===== In预处理流程
+
+In 的预处理流程会调用 aclRegionInit 函数，并构造前一小节提到的状态（state）中的所有数据信息。
+
+aclRegionInit 执行流程如下（ *注意aclIn是在哪个步骤被调用* ）：
+
+1. 先检查和判断 $bindData 的合法性，从前边章节可以知道 $bindData 的数据结构为：`resource = data(h,q,v)` 的结构，当出现子组件时，该属性会因为继承的关系直接有值，此时就不用从远程调用 `POST /api/authority/region-v/:key` 接口提取数据，即：*从远程加载单区域的数据是一次性行为，如果是父类组件，会一次性从远程加载所有绑定资源对应的数据信息（包括 S_VIEW 和 S_VISITANT）。*
+2. 根据 config 中的两个属性 `webBind / webComponent` 计算当前组件需要使用的资源数据：
+
++
+[source,json]
+----
+{
+    "HxSite": "res.menu.read"
+}
+----
+
++
+--
+$bindData 的结构是 `resource = data(h,q,v)` 的一个Map结构，而 `webComponent` 就是当前消费的组件名，最终计算的 `dataKey` 就是资源编码，提取的自然是资源数据。
+--
+
++
+[CAUTION]
+====
+当前权限管理中暂时不支持在同一个面板中使用不同组件修改同一资源的情况，而且从实际经验看起来这种情况大概率是配置有问题，交互层会导致数据流混乱。后续版本中会根据实际需求拓展成绑定的资源信息不止一个的情况，由于JS是弱类型，此处后续可使用类似如下：
+
+[source,json]
+----
+{
+    "HxSite": [
+        "res.menu.read",
+        "res.xxxx",
+        "..."
+    ]
+}
+----
+====
+
++
+--
+这一步完成之后，状态中会出现 `$inited` 变量（初始化数据变量），其中包括：`h, q, v, virtual, view, position` 等。
+--
+
+3. （AOP）执行 `keyFn2` 二阶函数重新处理 `$keySet`，该步骤通常是 *过滤、转换、计算* 等。
+4. 调用 `aclIn` 函数执行标准化计算 `$keySet`，并根据 `$keySet` 计算 `$keyDefault` 集合。
+
+上述流程中最后一步就会执行 aclIn 函数，它会直接调用 `webData` 中配置的 `initializer`，此处需要您关注的是 `initializer` 的第二参数 `param` 的数据结构：
+
+[options="header"]
+|====
+|属性|含义
+|webValue|（数据）直接绑定前边步骤计算出的 `$inited` 变量。
+|webData|（配置）从 config 中提取配置 `webData` 并生成该属性信息。
+|webFn|（行为）直接绑定 aclRegionInit 最外层传入的第二参，该参数是一个JsonObject类型，但包含了类似 `key2Fn, preFn` 等AOP层的基础函数，*带2表示2阶函数*。
+|====
+
+===== Out预处理流程
+
+Out 预处理流程是在最终点击 *保存* 按钮之前触发，主要目的是生成最终接口所需的数据信息，该流程的输入就是 `$keySet`。
+
+[TIP]
+====
+Zero前端组件中有一个不成文的规定，就是通常使用多选操作时，会生成 `$keySet / $keyDefault` 两个集合保存在状态中，`$keySet` 是随时变化的，记录了用户的操作最终结果，`$keyDefault` 只会在第一次进入界面时设置。
+====
+
+Out 预处理流程会直接调用 aclOut 函数，它会直接调用 `webData` 中配置的 `requester`，此处需要您关注的依旧是 `requester` 的第二参数 `param` 的数据结构：
+
+[options="header"]
+|====
+|属性|含义
+|webValue|（数据）直接绑定前边步骤计算的 `$inited` 变量。
+|webSelected|用户操作结果。
+|webData|（配置）从 config 中提取配置 `webData` 并生成该属性信息。
+|webOption|（外层配置）绑定外层传入的选项信息。
+|====

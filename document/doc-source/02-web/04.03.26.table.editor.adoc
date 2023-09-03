@@ -1,0 +1,86 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiTableEditor`
+
+表格编辑器，和 `DialogEditor` 类似，不同点在于表格编辑器不会有弹出框，通常直接在表格中编辑相关数据。配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "payment,付款方式,24,,aiTableEditor",
+        "optionJsx.config": {
+            "format": {
+                "type": "ARRAY",
+                "keyField": "name"
+            },
+            "table": {
+                "className": "ux_table_secondary",
+                "columns": [
+                ·   {
+                        "metadata": "quantity,数量,ROW",
+                        "$config": {
+                            "field": "aiInputNumber",
+                            "jsx": {
+                                "min": 1
+                            }
+                        }
+                    },
+                    {
+                        "metadata": "price,单价,CURRENCY"
+                    },
+                    {
+                        "metadata": "amount,金额,TOTAL",
+                        "$config": {
+                            "currency": "￥",
+                            "op": "M",
+                            "field": [
+                                "quantity",
+                                "price"
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    }
+]
+----
+
+当前组件中没有需要特殊说明的属性，基本遵循 `table` 的列表配置，但是此处需要讲一下 `optionJsx.config.format` 配置，这个配置为表格编辑器定义了数据的基本格式，如：
+
+[source,json]
+----
+{
+    "type": "ARRAY",
+    "keyField": "name"
+}
+----
+
+- `type` 定义了当前编辑器提交的数据格式，此处支持的数据格式如下：
+
++
+--
+[options="header",cols="2,8"]
+|====
+|格式|含义
+|`OBJECT`|标准的 Json Object 格式，对应 JavaScript 中的 `{}`。
+|`ARRAY`|标准的 Json Array 格式，对应 JavaScript 中的 `[{},{}]`。
+|`ARRAY_MAP`|直接将一个 Json Array 格式按某个字段转换成 `{}` 的格式，每一个 `key = value` 中 `value` 是单条记录集：`{}`。
+|`ARRAY_PURE`|纯 Array 格式，对应 JavaScript 中类似 `["",""]` 这种，和 `ARRAY` 不同点在于每个元素都是一个 **纯值**。
+|`ARRAY_GROUP`|直接将一个 Json Array 格式按某个字段转换成 `{}` 的格式，每一个 `key = value` 中的 `value` 是一个 Array：`[]`。
+|====
+--
+
+- `keyField` 由于是多记录表格编辑器，用此属性用于指定按什么字段执行去重，此属性定义的是记录的 **业务标识规则**。
+
+表格编辑器如下：
+
+image:exp-input-tableeditor.png[0,800]
+
+====
+列渲染器中一直存在 `EDITOR` 和 `ROW` 两种不同的列处理流程，这是设计上的一种失误，正常来说表格编辑都应该是带 `index`（索引）的模式，但由于在 `AntD` 的干扰下，`<Form/>` 内的组件和自定义组件的 onChange 函数层面有很大的不同，新版已经逐步统一，但在早期 `AntD 3.x` 的版本中双向绑定的原因，使得表格内编辑出现了类似 `onChange` 函数签名不一致的情况，为了兼容这种情况，Zero Ui提供了 `EDITOR` 和 `ROW` 两种列渲染器，针对不同的场景执行兼容型处理。这里未来是否可以统一还有待商榷，但目前引起的大部分表格编辑的 BUG 都是由于此处引起的，所以特此备注。
+====
+

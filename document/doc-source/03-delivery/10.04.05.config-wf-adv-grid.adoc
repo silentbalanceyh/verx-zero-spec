@@ -1,0 +1,303 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+===== 网格派工
+
+按照流程图的结构，可以根据节点分支数、某个分支上节点任务数分成如下四种任务类型：
+
+1. 单分支单任务
+2. 多分支单任务
+3. 单分支多任务
+4. 多分支多任务
+
+之所以定义这种派工模式为网格派工就在于最终拓扑结构如下：
+
+image:zwf-grid.png[0,1024]
+
+实际它是按照 *分支/任务* 两个维度产生的任务数量定义的分派模式，真正在设置过程中仅根据派工字段（ `toUser` ）的数据结构差异来完成了如此复杂的派工模式，参考下边表格理解不同派工的特征和使用场景：
+
+[CAUTION]
+====
+分支不同代表各自手中的任务可能相同可能不同，而分支相同只是多任务证明每个人收到的任务单是相同的。
+====
+
+[options="header"]
+|====
+|模式|系统代码|含义
+|单分支单任务|Standard|下一处理人是一个，而且流程分支只有一个，只会生成一个任务单。
+|多分支单任务|Fork a|下一任务是位于不同分支上的，而每个分支只有一个处理人，分支和分支之间任务可能不同，分支有多少，就生成多少任务单（可能相同可能不同）。
+
+这种模式多用于跨部门流程协同，每个部门分到的任务不一样。
+|单分支多任务|Multi a|下一任务是位于单个分支上，而该分支可能会存在多个处理人，每个人拿到的任务数量是一样的，人有多少，就生成多少相同任务单。
+
+这种模式多用于培训、会议签到，一个培训任务为所有参与人生成相关派工任务等，一个签到生成多个签到表任务。
+|多分支多任务|Grid|Fork和Multi的组合（任意场景都可满足）。
+|====
+
+===== 流转配置
+
+上述四种不同的派工仅在流转配置的派工属性（ `toUser` ）数据结构上有所区别：
+
+====== 数据部分
+
+_单分支单任务_
+
+[source,json]
+----
+{
+    "toUser": "用户ID"
+}
+----
+
+_单分支多任务_
+
+[source,json]
+----
+{
+    "toUser": [
+        "用户ID1",
+        "用户ID2",
+        "用户ID3"
+    ]
+}
+----
+
+[TIP]
+====
+单分支模式下，下一节点的名字系统可自动根据流程图进行设置，因此分支的派工结果不依赖节点名称。
+====
+
+_多分支单任务_
+
+[source,json]
+----
+{
+    "toUser": {
+        "node1": "用户ID1",
+        "node2": "用户ID2",
+        "node3": "用户ID3"
+    }
+}
+----
+
+_多分支多任务_
+
+[source,json]
+----
+{
+    "toUser": {
+        "node1": [
+            "用户ID11",
+            "用户ID12",
+            "用户ID13"
+        ],
+        "node2": "用户ID2",
+        "node3": [
+            "用户ID31",
+            "用户ID32"
+        ]
+    }
+}
+----
+
+====== 流转配置
+
+网格派工的配置数据存储在前文提到的组件流转配置中，需启用 `gateway` 配置节点，看个例子：
+
+[source,json]
+----
+    "e.start": {
+        "gateway": {
+            "e.sum.leader": "toUser.sum",
+            "e.sec.leader": "toUser.sec",
+            "e.run.leader": "toUser.run",
+            "e.biz.leader": "toUser.biz"
+        },
+        "data": {
+            "draft": "draft",
+            "leader": "escalate",
+            "g": "toUser"
+        }
+    },
+    "e.approve": {
+        "gateway": {
+            "e.sum.leader": "toUser.sum",
+            "e.sec.leader": "toUser.sec",
+            "e.run.leader": "toUser.run",
+            "e.biz.leader": "toUser.biz"
+        },
+        "data": {
+            "confirmed": "confirmed",
+            "leader": "escalate",
+            "g": "toUser"
+        },
+        "rule": [
+            {
+                "field": "confirmed",
+                "value": true
+            },
+            {
+                "field": "confirmed",
+                "value": false,
+                "todo": {
+                    "status": "REJECTED"
+                }
+            }
+        ]
+    },
+----
+
+简单说明：
+
+1. 此处的开始节点就是一个多分支单任务结构，每个分支会有一个特定的分支变量，该分支变量会从输入数据的 `toUser.xxx` 属性中提取数据，从此处结构可以知道 `toUser` 结构如：
++
+[source,json]
+----
+{
+    "sum": "xxx",
+    "sec": "xxx",
+    "run": "xxx",
+    "biz": "xxx"
+}
+----
+
+2. `gateway` 在此处用于配置多分支数据结构，如 `e.sun.leader / e.sec.leader / e.run.leader / e.biz.leader` 分别代表四个节点结构：
+
++
+--
+image:zwf-grid-fork.png[0,800]
+--
+
+3. 此处的参数 `g` 是 `gateway` 的缩写（路由数据），而路由数据从输入数据的 `toUser` 属性中读取。
+
+===== 表单行为增强
+
+表单行为增强配置是为了简化表单配置提供的快速配置技巧，此处使用几个例子来一一说明：
+
+====== 键值对模式
+
+对比下边两段键值对不同写法（旧版和新版）：
+
+_旧写法_
+[source,json]
+----
+    "$opDraft": {
+        "data": {
+             "draft": true,
+             "status": "DRAFT",
+             "phase": "DRAFT"
+        }
+    }
+----
+
+_新写法_
+[source,json]
+----
+    "$opDraft": {
+        "data": "draft=true:B,status=DRAFT,phase=DRAFT"
+    }
+----
+
+[TIP]
+====
+上述表达式中 `true:B` 表示将该值转换成布尔类型的值，系统默认从表达式中解析的值若无特殊说明都是字符串。
+====
+
+====== 数据抽取模式
+
+数据抽取模式直接看新写法：
+
+[source,json]
+----
+{
+            "indicator": "escalate",
+            "data": {
+                "true": "draft=false:B,status=PENDING,phase=PENDING",
+                "false": [
+                    "draft=false:B,status=PENDING,phase=PROCESS",
+                    {
+                        "inField": "toUser",
+                        "inSource": "runDept",
+                        "inPath": ":field.managerId",
+                        "outType": "OBJECT"
+                    }
+                ]
+            }
+}
+----
+
+上述写法中，请求数据会根据 `indicator` 配置属性检查输入属性 `escalate` 的值，最终得到赋值表：
+
+[options="header"]
+|====
+|escalate| true | false 
+|draft| false | false 
+|status| PENDING | PENDING
+|phase| PENDING | PROCESS
+|toUser|| 输入源为 `runDept` 属性，构建字段为 `toUser`，从数据源中提取属性路径 `:field.managerId`，最终构造成 `OBJECT` 类型（复杂运算）
+|====
+
+====== 双条件监测：
+
+双条件监测此处我就不讲解了，自己根据数据结构去阅读和理解，只是条件判断语法的一种扩展：
+
+[source,json]
+----
+{
+
+            "indicator": [
+                "confirmedOk",
+                "escalate"
+            ],
+            "data": {
+                "YES/true": {
+                    "confirmed": true,
+                    "phase": "ADMIT",
+                    "status": "PENDING",
+                    "commentApproval": "FORM:confirmedDesc"
+                },
+                "YES/false": {
+                    "confirmed": true,
+                    "phase": "PROCESS",
+                    "status": "PENDING",
+                    "commentApproval": "FORM:confirmedDesc",
+                    "toUser": {
+                        "inSource": "runDept",
+                        "inPath": ":field.managerId",
+                        "outType": "OBJECT"
+                    }
+                },
+                "NO/true": {
+                    "confirmed": false,
+                    "phase": "REJECTED",
+                    "status": "DRAFT",
+                    "commentReject": "FORM:confirmedDesc"
+                },
+                "NO/false": {
+                    "confirmed": false,
+                    "phase": "REJECTED",
+                    "status": "DRAFT",
+                    "commentReject": "FORM:confirmedDesc"
+                },
+                "BACK/true": {
+                    "confirmed": false,
+                    "phase": "REDO",
+                    "status": "DRAFT",
+                    "commentReject": "FORM:confirmedDesc"
+                },
+                "BACK/false": {
+                    "confirmed": false,
+                    "phase": "REDO",
+                    "status": "DRAFT",
+                    "commentReject": "FORM:confirmedDesc"
+                }
+            }
+}
+----
+
+[WARNING]
+====
+根据实践可知，Zero流程引擎中的 *网格派工* 可以解决大量的复杂派工场景问题，我在实际项目中测试过一个 87 节点（8个部门42人）的复杂流程，这是比较极端的测试；整个流程表现中，不论从流程图还是整体流转行为现阶段的Zero流程引擎都是可支撑的，有了这样的配置结构之后，您可以完成大量复杂的流程流转、分派、驳回、通过、拒绝、召回的快速开发，最后多说一句，87 节点的复杂流程在您熟悉Zero流程引擎的前提下，实施时间仅在 10 ~ 12 个小时左右。
+
+_这也是 Zero Extension 框架为您带来的福利，您可以在很快时间通过配置实施手段满足业务需求，降低开发和运维的成本_。
+====

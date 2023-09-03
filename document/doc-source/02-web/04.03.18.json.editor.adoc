@@ -1,0 +1,20 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiJsonEditor`
+
+标准的Json编辑器，内置使用可格式化高亮的Json，配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "options,额外配置,24,,aiJsonEditor",
+        "optionJsx.height": 160
+    }
+]
+----
+
+此组件除了高度以外其他内容不用设置，最终提交出来的数据为 `{}` 或 `[]` 的 JSON 格式，一般此编辑器是用来编辑配置文件专用的交互式控件。
+

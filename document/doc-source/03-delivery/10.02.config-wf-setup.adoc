@@ -1,0 +1,110 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 配置步骤
+
+==== 流程定义表
+
+Zero Extension中的流程配置存储在 `W_FLOW` 表中，该表存储了该流程的所有元数据，先对该表做一个结构说明：
+
+[options="header"]
+|====
+|属性名|列名|含义
+|name | `NAME` | 工作流名称（显示文字）
+|code | `CODE` | 工作流编码，Zero Extension专用唯一标识
+|type | `TYPE` | 工作流类型，管理工作流时使用工作流分类维度（字典分类 `zero.workflow.cat` ）
+|definitionKey | `DEFINITION_KEY` | 工作流编码，Camunda专用唯一标识，对应API中的 `getProcessDefinitionId`
+|authorizedComponent | `AUTHORIZED_COMPONENT` | 授权组件
+|authorizedConfig | `AUTHORIZED_CONFIG` | 授权组件配置
+|generateComponent | `GENERATE_COMPONENT` | 任务生成组件，Todo生成
+|generateConfig | `GENERATE_CONFIG` | 任务生成组件配置
+|runComponent | `RUN_COMPONENT` | 任务执行组件，Todo执行
+|runConfig | `RUN_CONFIG` | 任务执行组件配置
+|startComponent | `START_COMPONENT` | 流程启动组件
+|startConfig | `START_CONFIG` | 流程启动组件配置
+|endComponent | `END_COMPONENT` | 流程结束组件
+|endConfig | `END_CONFIG` | 流程结束组件配置
+|uiComponent | `UI_COMPONENT` | （保留）界面组件，后期扩展用
+|uiConfig | `UI_CONFIG` | 界面组件配置
+|uiAssist | `UI_ASSIST` | 界面辅助数据专用配置（字典类）
+|uiLinkage | `UI_LINKAGE` | 界面关联专用配置
+|====
+
+==== 组件解析
+
+`W_FLOW` 表中的组件、配置以及相关默认值一般如下（为了排版，此处的包 `io.vertx.mod.workflow.uca.component` 用缩写 `i.v.m.w.u.c` 代替）：
+
+[options="header"]
+|====
+|组件类|组件名|配置默认|说明
+|Authorized|||授权组件
+|Start| `i.v.m.w.u.c.TransferStart` | `workflow/<name>/component.start.json` | 开始组件
+|Run| `i.v.m.w.u.c.MovementNext` | `workflow/<name>/component.run.json` | 运行组件
+|Generate| `i.v.m.w.u.c.TransferStandard` | `workflow/<name>/component.generate.json` | 生成组件
+|End|||结束组件
+|====
+
+五种组件的协同工作运行拓扑图如下：
+
+image:zwf-component.png[0,960]
+
+整个协同工作流程中，支持递归执行的组件只有：`run` 和 `generate` 两种，整体运行组件会分成三种模式（注意 `Transaction` 部分）
+
+1. `startComponent`：创建工单专用组件，主要负责：*存草稿* / *直接提交* 两种特殊模式。
+2. `runComponent / generateComponent`：（ *递归运行* ）执行工单专用组件，主要负责 *标准提交*，中间节点提交处理：*通过、拒绝* 等，后续版本中的 *召回、驳回* 等。
+3. `runComponent / endComponent`：完成工单专用组件，主要负责 *关单提交*，最终节点的工单关闭处理。
+
+==== 单流程
+
+一个工作流的所有配置文件位于 `workflow/<code/definitionKey>` 目录下，对应的标准化配置文件如下：
+
+image:zwf-definition.png[0,1024]
+
+截图中呈现的是前文 *出差申请* 的流程定义图，配置文件作用如下，表中属性配置内容依赖 link:#__ENV_LOADING_EXCEL[Excel链接文件,window="_blank"] 导入：
+
+[options="header"]
+|====
+|文件名|约定 image:i-config.png[0,22] / 固定 image:i-config-t.png[0,22]|说明
+| `component.generate.json` | 约定 image:i-config.png[0,22] | `W_FLOW` 中 `generateConfig` 属性。
+| `component.run.json` | 约定 image:i-config.png[0,22] | `W_FLOW` 中 `runConfig` 属性。
+| `component.start.json` | 约定 image:i-config.png[0,22] | `W_FLOW` 中 `startConfig` 属性。
+| `ui.assist.json` | 约定 image:i-config.png[0,22] | `W_FLOW` 中 `uiAssist` 属性。
+| `ui.config.json` | 约定 image:i-config.png[0,22] | `W_FLOW` 中 `uiConfig` 属性。
+| `ui.linkage.json` | 约定 image:i-config.png[0,22] | `W_FLOW` 中 `uiLinkage` 属性。
+| `workflow.bpmn` | 固定 image:i-config-t.png[0,22] / image:zwf-camunda.svg[0,22] | 固定名称，Camunda 设计文件，Modeler工程文件。
+| `workflow.history.json` | 固定 image:i-config-t.png[0,22] | （表单）查看工单历史的表单定义文件。
+| `trip.admit.form` | 约定 image:i-config.png[0,22] / image:zwf-camunda.svg[0,22] | Camunda 表单设计文件，Modeler工程文件。
+| `trip.admin.form.json` | 约定 image:i-config.png[0,22] | （表单）节点 `e.admit` 绑定的表单配置文件。
+| `trip.approve.form` | 约定 image:i-config.png[0,22] / image:zwf-camunda.svg[0,22] | Camunda 表单设计文件，Modeler工程文件。
+| `trip.approve.form.json` | 约定 image:i-config.png[0,22] | （表单）节点 `e.approve` 绑定的表单配置文件。
+| `trip.draft.form` | 约定 image:i-config.png[0,22] / image:zwf-camunda.svg[0,22] | Camunda 表单设计文件，Modeler工程文件。
+| `trip.draft.form.json` | 约定 image:i-config.png[0,22] | （表单）节点 `e.draft` 绑定的表单配置文件。
+| `trip.start.form` | 约定 image:i-config.png[0,22] / image:zwf-camunda.svg[0,22] | Camunda 表单设计文件，Modeler工程文件。
+| `trip.start.form.json` | 约定 image:i-config.png[0,22] | （表单）节点 `e.start` 绑定的表单配置文件。
+|====
+
+[TIP]
+====
+上述表格中标注了 image:zwf-camunda.svg[0,22] 的文件是由 Modeler 工具可直接打开更改的文件，该工具主要负责以下任务：
+
+1. 打开 `workflow.bpmn` 文件做完整的基于BPMN的流程设计。
+2. 打开BPMN表单（ `.form` ）实现流程节点表单绑定、设计。
+====
+
+==== 部署连接
+
+上述配置准备完成后，您就可以在配置文件中追加 `resource` 节点导入该流程：
+
+[source,yaml]
+----
+  builtIn:
+    - workflow/workflow-erp.xlsx          # 办公类流程
+  resource:
+    - process.oa.trip                     # 出差申请
+    # .......
+----
+
+[WARNING]
+====
+目前版本中流程引擎的所有文件都是手工部署，但最终其内容都会导入流程元数据库，后续流程工具完成后，就可以实现动态部署和所见即所得的模式，简单说此处只是借用了文件作为配置载体，并未将配置固化，流程运行时也不会加载这些配置文件中的内容，而是直接从数据库中提取元数据。
+====

@@ -1,0 +1,187 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 模块连接[[__SPEC_BACKEND_BOOT]]
+
+Zero框架中拥有众多Extension模块和Infix插件，这些模块和插件互不关联，整体依赖结构如下：
+
+image:zapp-extension.png[0,1024]
+
+特殊说明：
+
+1. 核心框架只有四个项目，包含了容器以及所有底层架构。
+2. 扩展框架拥有一个底座项目 `zero-ke`，它负责将扩展模块连接到底层容器上。
+3. 插件项目、扩展模块各自独立，相互之间不存在任何依赖。
+4. `zero-vie` 是一个单机应用综合包（比较重），它引用了所有要使用的扩展模块构造单机应用。
+5. 新版的 `zero-doc` 没有出现在截图中。
+
+==== 扩展模块概览
+
+[options="header",cols="2,2,1,5"]
+|====
+|项目名称|包含表结构？|业务模块？|功能说明
+|`zero-ambient` | image:i-sql.png[0,22] 表前缀 `X_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |全局配置模块：应用配置、系统配置、模块配置、编号规则、关联规则、分类字典、列表字典、标签系统、附件系统、活动记录、操作历史、变更历史、日志系统，该模块支持的所有功能适用于其他所有模块
+|`zero-atom` | image:i-sql.png[0,22] 表前缀 `M_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |动态建模管理、关系管理
+|`zero-battery` | image:i-sql.png[0,22] 表前缀 `B_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |模块化架构
+|`zero-crud` | |image:i-config.png[0,22] 否|CRUD标准化十六接口模板化引擎
+|`zero-erp` | image:i-sql.png[0,22] 表前缀 `E_` |image:i-config-t.png[0,22] 是|企业管理、办公管理、客户管理
+|`zero-fm` | image:i-sql.png[0,22] 表前缀 `F_` |image:i-config-t.png[0,22] 是|金融管理、财务管理
+|`zero-graphic` | image:i-sql.png[0,22] 表前缀 `G_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |图管理，对接 Neo4j 执行拓扑图功能支撑结构
+|`zero-is` | image:i-sql.png[0,22] 表前缀 `I_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |目录管理、协议管理、FTP、RESTful外部集成管理
+|`zero-jet` | image:i-sql.png[0,22] 表前缀 `I_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |接口/任务管理，动态部署RESTful接口、后台任务和业务组件
+|`zero-ke` ||image:i-core.png[0,22] 否|扩展框架底座，所有项目的单线依赖项
+|`zero-lbs` | image:i-sql.png[0,22] 表前缀 `L_` |image:i-config-t.png[0,22] 是|地理定位服务、地址管理
+|`zero-psi` | image:i-sql.png[0,22] 表前缀 `P_` |image:i-config-t.png[0,22] 是|采购管理、仓库管理、销售管理
+|`zero-rbac` | image:i-sql.png[0,22] 表前缀 `S_` |image:i-config-t.png[0,22] 是|账号管理、角色管理、认证授权
+|`zero-tpl` | image:i-sql.png[0,22] 表前缀 `TPL_` |image:i-config.png[0,22] 否|消息模板、邮件模板、工单模板
+|`zero-ui` | image:i-sql.png[0,22] 表前缀 `UI_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |界面配置化管理
+|`zero-wf` | image:i-sql.png[0,22] 表前缀 `W_ / T_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |工作流引擎
+|`zero-vie` | |image:i-run.png[0,22] 否|单机应用专用统一项目依赖
+|`infix-hed` | |image:i-plugin.svg[0,22] 否|HED加密解密插件
+|`infix-mysql` | |image:i-plugin.svg[0,22] 否|（动态建模专用）MySQL数据库插件
+|`infix-oracle` | |image:i-plugin.svg[0,22] 否|（动态建模专用）Oracle数据库插件
+|====
+
+[CAUTION]
+====
+- 带有 image:i-jar.png[9,22] 符号的模块是对接低代码开发中心的核心模块。
+- 业务模块 image:i-config-t.png[0,22] 表示模块内部多是标准化业务相关内容，支撑类似ERP、CRM、PSI、ISO、ITSM、CMDB等各种业务场景的专用模块。
+- 带有 image:i-sql.png[0,22] 的模块表示模块内部拥有内置表结构，您若启用则需导入对应表结构。
+- 插件类项 image:i-plugin.svg[0,22] 按需导入（可插拔），引入POM文件之后才可生效。
+====
+
+==== 插件概览
+
+[options="header",cols="25,75"]
+|====
+|项目名称|功能说明
+|image:i-plugin.svg[0,22] zero-ifx-auth|异构认证模块，可插拔支持OAuth2、Basic、Digest等多种不同认证模式。
+|image:i-plugin.svg[0,22] zero-ifx-es|Elastic Search功能支持模块。
+|image:i-plugin.svg[0,22] zero-ifx-excel|Apache POI功能：Excel模板导入、导出功能支持。
+|image:i-plugin.svg[0,22] zero-ifx-feign|Feign客户端功能。
+|image:i-plugin.svg[0,22] zero-ifx-ftp|FTP文件系统集成管理功能。
+|image:i-plugin.svg[0,22] zero-ifx-git|GIT代码仓库集成管理功能。
+|image:i-plugin.svg[0,22] zero-ifx-history|image:i-bash.svg[,22]（自研发）删除备份功能。
+|image:i-plugin.svg[0,22] zero-ifx-iqiy|爱奇艺视频集成功能。
+|image:i-plugin.svg[0,22] zero-ifx-liquibase|Liquibase集成管理功能、元数据定义、代码生成等。
+|image:i-plugin.svg[0,22] zero-ifx-mongo|MongoDB专用访问模块。
+|image:i-plugin.svg[0,22] zero-ifx-neo4j|Neo4j集成管理功能。
+|image:i-plugin.svg[0,22] zero-ifx-redis|Redis缓存管理功能。
+|image:i-plugin.svg[0,22] zero-ifx-shell|image:i-bash.svg[,22]（自研发）DevOps结构的交互式命令行框架，Shell Framework。
+|image:i-plugin.svg[0,22] zero-ifx-sms|阿里云短信发送功能。
+|image:i-plugin.svg[0,22] zero-ifx-stomp|WebSocket提醒功能模块。
+|====
+
+==== SPI连接
+
+Zero Extension框架中模块众多，但都做到了可 *独立运行* 以及和其他模块 *协同运行*，协同运行时候模块和模块之间的调用主要基于Java语言中的SPI（Service Provider Interface），有了该实现，模块和模块之间不需在项目级创建依赖关系，它的工作原理参考下图（图为旧版、忽略包名）：
+
+image:zapp-extension-spi.png[0, 800]
+
+如上图所示：
+
+- `zero-ke` 中定义了接口：`io.vertx.up.plugin.database.DS`。
+- `zero-atom` 中将调用该接口实现相关业务逻辑。
+- `zero-jet` 模块中提供该接口的实现，并使用 `ServiceLoader` 的方式配置。
+
+[WARNING]
+====
+由于这部分内容改动比较大，图上的包名和文中包名可能有 *误*，但不影响您对此部分内容的理解，SPI部分的改动属于高频改动，若您在文档中找不到对应的SPI则可以直接在代码中搜索类名查看对应实现，此部分内容还会有 *更大调整*，所以最新版本文档不再提供 *实现类位置*，在代码中自行查找。
+
+[source,bash]
+----
+find . -name "*io.horizon.spi*"
+----
+
+====
+
+即使 `zero-atom` 模块不在POM表中引用 `zero-jet` 模块，只要环境中存在 `zero-jet` 模块，也会因为SPI的关系调用成功。现阶段Zero框架中所有SPI部分清单参考下表（所有SPI组件定义和实现都位于 `io.horizon.spi` 包或子包中，考虑到表格布局，表格中使用缩写格式）：
+
+[options="header",cols="8,3,3,6"]
+|====
+|接口/实现|调用模块（可多个）|被调用模块|说明
+|`i.h.s.HorizonIo` | vertx-ams | image:i-pojo.png[0,16] vertx-co | 新版 Agreed Metadata Specification 专用的规范连接专用包，用于连接 *建模 / 元模型* 规范专用，可跨 Vertx 和 Spring 等其他框架平台。
+|`i.h.s.BootIo` | vertx-ams | image:i-pojo.png[0,16] vertx-co | 新版 Agreed Metadata Specification 专用的启动器对接器，用于解析不同容器的启动器核心配置，装配启动器专用，可启动Vertx、Spring、OSGI、Jetty等不同容器专用。
+|`i.h.s.boot.HEquip` | vertx-ams | image:i-pojo.png[0,16] vertx-co | 新版 Agreed Metadata Specification 专用的配置装配器，用于装配核心配置生成高阶模型之下的统一配置管理平台，配置管理平台最终会对接核心配置 `HStation` 实现不同文件系统中的配置对接，后期可直接对接 `HStore` 实现存储隔离。
+|`i.h.s.ui.Apeak` | zero-crud | image:i-java.svg[0,16] zero-ui | 在 `ExListComplex` 组件中，系统会读取模型下列表的可访问全列信息，静态访问时走 `zero-crud` 静态列配置，动态访问时则访问 `zero-ui` 模块中存储的动态列，该接口负责连接。
+|`i.h.s.ui.ApeakMy` a| 
+- zero-crud
+- zero-vie | image:i-java.svg[0,16] zero-rbac | 和全列数据配合，读取视图中 *我的可见列* 专用接口，我的可见列不是存储在 `zero-ui` 中，而是以安全视图的方式存储在 `zero-rbac` 模块。
+|`i.h.s.ui.Form` | zero-wf | image:i-java.svg[0,16] zero-ui | 系统读取模型关联表单配置时，系统提供多种不同模式表单：静态表单、动态表单、流程表单，动态访问则访问 `zero-ui` 模块中存储的表单配置信息。
+|`i.h.s.cloud.query.HQBE` | vertx-up image:i-config.png[0,22] | image:i-java.svg[0,16] zero-ui | Zero中除了普通视图以外，支持定制类查询视图QBE（现阶段流程右上角下拉表），QBE可以为任意视图追加固定查询条件和权限限制以限制安全视图最终数据。
+|`i.h.s.feature.Valve` | zero-wf | image:i-java.svg[0,16] zero-ambient | 表达式规则引擎专用，规则表达式位于系统级，在 `X_ACTIVITY_RULE` 中定义，它告知系统什么时候生成操作日志。
+|`i.h.s.modeler.Indent` a|
+- zero-ambient
+- zero-crud
+- zero-ke image:i-config.svg[0,22]
+- zero-vie | image:i-java.svg[0,16] zero-ambient | Zero扩展框架中的系统编号生成器，可定义不同编号规则（排序、时间、随机、长度等）生成唯一系统编号。
+|`i.h.s.web.Seeker` a|
+- zero-crud
+- zero-vie | image:i-java.svg[0,16] zero-rbac | 视图资源影响范围搜索器，用于搜索当前视图变更会产生的针对资源的影响范围信息，当安全视图执行更新操作时同时更新影响资源的缓存和底层数据，保证视图变更之后的数据和运行中资源数据同步。
+|`io.vertx.up.secure.LeeExtension` | vertx-up image:i-config.png[0,22]| image:i-java.svg[0,16] zero-rbac | 认证方式切换器，可使用 OAuth、Digest、Basic单一认证或多种认证模式，具体方式取决于 @Wall 的定义。
+|`io.vertx.up.secure.LeeBuiltIn` a| 
+- vertx-up image:i-config.png[0,22]
+- zero-rbac | image:i-java.svg[0,16] zero-ifx-auth | 认证方式内外桥接器，Zero内部一旦启用插件包含了可用认证方式，若要对外扩展则启用认证方式切换器，此桥接器负责认证方式内联和扩展的切换流程，保证外部扩展认证方式可位于系统调用的第一优先级。
+|`i.h.s.feature.Modulat` | zero-ambient | image:i-java.svg[0,16] zero-battery | 模块化配置提取，读取应用信息时提取和应用相关的所有模块化配置专用接口。
+|`i.h.s.feature.Linkage` | zero-wf | image:i-java.svg[0,16] zero-ambient | 访问 `X_LINKAGE` 表读取全局关联信息，包括不同实体的关联数据读取（工单、资产、员工、合同、项目、客户等）。
+|`i.h.s.feature.Attachment` a|
+- zero-wf 
+- zero-crud | image:i-java.svg[0,16] zero-ambient | 根据本地和集成配置处理附件的增删改等相关问题，而配置了集成目录，则按集成目录协议（FTP、SSH）处理附件上传，若未配置集成目录，默认使用本地存储。
+|`i.h.s.component.Dictionary` a|
+- zero-crud
+- zero-wf
+- zero-vie | image:i-java.svg[0,16] zero-ambient | 字典管理器，用于管理 *分类字典*、*列表字典*、*辅助字典* 三种不同字典类型，从系统中提取字典生成字典相关辅助工具做映射和翻译。
+|`i.h.s.business.ExActivity` | zero-wf | image:i-java.svg[0,16] zero-ambient | 操作记录、变更历史生成器，用于在工作流引擎中生成流程节点对应操作历史，包括审批、变更、转单等，操作生成会基于自定义规则表（ `X_ACTIVITY_RULE` ）触发或关闭。
+|`i.h.s.web.Orbit` | zero-ke image:i-config.svg[0,22] | image:i-java.svg[0,16] zero-crud | 标准化路径解析器，用于解析带 `:actor` 的抽象路径以匹配提取执行模块化分类，提供给安全管理器解析生成访问路径执行权限控制。例如：顶层抽象路径为 `xxx/:actor/xxx`，而授权时针对 `xxx/role/xxx` 和 `xxx/user/xxx` 区别对待，该解析是从抽象到具象层的一种二级演进组件。
+|`i.h.s.business.ExIo` | zero-ambient | image:i-java.svg[0,16] zero-is | 隔离协议的路径解析接口（默认为本地存储），封装底层集成协议（FTP、SSH、GIT）实现路径处理的抽象行为，包括目录查看、添加、删除、文件删除、上传、下载以及回收等所有操作行为。
+|`io.vertx.mod.plugin.database.DS` a|
+- vertx-up image:i-config.png[0,22]
+- zero-atom | image:i-java.svg[0,16] zero-jet | 动态数据源切换接口，用于针对不同使用了动态建模的应用提供动态数据源切换专用接口（ `X_SOURCE` 中配置 ），程序可在不同数据库中执行切换以保证通道访问不同数据库实现多应用模式。
+|`i.h.s.web.Routine` | zero-rbac | image:i-java.svg[0,16] zero-jet | 动态路由中元数据定义信息提取专用接口，提取之后和静态路由合并存储在URI运行时仓库中做反向分析专用。
+|`i.h.s.feature.Atom` | zero-wf | image:i-java.svg[0,16] zero-atom | 动态模型CRUD专用接口，外部模块调用动态建模时可直接针对模型进行标准化操作。
+|`i.h.s.typed.VsExtension` | vertx-co image:i-config.png[0,22] | image:i-java.svg[0,16] zero-atom | 动态模型属性比对插件接口，可针对动态模型属性值提供 `Adjuster` 插件，在类型、格式等范围内提供除开系统标准化比对生成变更历史以外的扩展比对接口，如弱类型比对、格式比对等。
+|`i.h.s.cloud.HED` | infix-hed | image:i-java.svg[0,16] zero-ke | Zero内部专用HED生成器配置的HED模块，除开此处调用外，其他地方也会调用，此接口比较特殊，详情参考： link:#__CONFIG_APP_HED[HED模块,window="_blank"]。
+|`i.h.s.business.ExUser` a| 
+- zero-ke image:i-config.svg[0,22]
+- zero-erp
+- zero-wf
+- zero-ambient
+- zero-crud | image:i-java.svg[0,16] zero-rbac | 账号数据操作、字典映射、责任处理模块（`Auditor`）专用，系统内部通常用来做账号 `key` 到账号数据之间的转换。
+|`i.h.s.business.ExCompany` | 无 | image:i-java.svg[0,16] zero-erp | 读取登录用户公司信息专用。
+|`i.h.s.web.Credential` | zero-rbac | image:i-java.svg[0,16] zero-jet | 动态路由中认证授权专用标准化凭证数据接口，由于要使用 `i.h.s.environment.Ambient` 全局环境对象，故放到 `zero-jet` 项目中。
+|`i.h.s.environment.UnitApp`  | zero-ke | image:i-java.svg[0,16] zero-ambient | 应用基础配置初始化，启动扩展模块时优先从数据库中提取 `X_APP` 配置并执行核心应用配置的初始化，结合元数据初始化器、数据初始化器和云端连接器完成整体的配置初始化动作。
+|====
+
+[CAUTION]
+====
+上表中枚举的是单机结构中常用的SPI部分，这部分内容在此处需特殊说明：
+
+- 被调用类就是实现类所在项目名，即你的Service Loader实现类需要放在该项目中。
+- `Ex` 开头的接口和实现类更多场景下表示：*业务功能*，即Zero内置的业务模块专用接口和实现功能。
+- 若调用者中出现了核心框架 `vertx-co / vertx-up` image:i-config.png[0,22] 则表示该接口在核心框架中定义，通用性更强，并非扩展接口。
+- 若调用者中出现了扩展框架底座 `zero-ke` image:i-config.svg[0,22] 则表示该接口在扩展模块中共享，谁都可以直接调用。
+
+====
+
+下边表格中呈现的是 Aeon Cloud 云原生新平台的SPI部分，云平台的SPI和单机平台的SPI实现功能上有区别。
+
+[options="header",cols="5,3,3,6"]
+|====
+|接口/实现|调用模块|被调用模块|说明
+|`i.h.s.cloud.HET` / 
+`i.h.s.cloud.AmbientHighway` | vertx-up image:i-config.png[0,22] | image:i-java.svg[0,16] zero-ambient | 云环境配置存储源切换器，可将存储源切换到数据库存储（默认）实现开发中心对接。
+|`i.h.s.cloud.HET` / 
+`i.h.s.cloud.AeonHighway` | vertx-up image:i-config.png[0,22] | image:i-java.svg[0,16] aeon-ambient | 云环境配置存储源切换器，可将存储源切换到代码托管平台实现云端开发中心对接。
+|====
+
+云平台会启用Aeon云端连接器，该连接器会优先检查 `META-INF/services/aeon/` 目录下的实现类（上述表格中的 `io.horizon.spi.cloud.AeonHighway`），若找不到该实现类才会退而求其次查找标准 Service Loader 配置中的实现类（上述表格中的 `io.horizon.spi.cloud.AmbientHighway`）。
+
+[WARNING]
+====
+Zero现阶段版本中不支持一个接口多个实现的 Service Loader功能，内部有组件搜寻算法确保整个环境中只有一个唯一的实现类，若出现了多个实现类，会有一定检索规则保证其优先级运算，最终自定义部分优先级会高于内置部分，上述表格中的所有SPI结构都是内置方式。不仅仅是 Service Loader功能，Zero Extension框架在使用时所有插件架构都以 *默认值* 的方式完成，一旦您的应用中定义了新的实现类，则默认值将会被替换，最终只会有优先级最高的实现类被选中放置到环境中。云原生平台打造之后（Aeon System），Zero中开始逐步支持一个接口多个实现的情况，但内部会提供优先级规则，最终目的是保证：
+
+_一个完整的环境中只有一个 *唯一* 组件会被选中成为合法内置SPI组件，不允许出现多个导致框架内部的二义性。_
+
+- 早期Zero版本不成熟才引入了自定义的Infix架构，后期版本中可直接使用SPI代替，两种架构的目的都是为了模块化扩展，以实现动态化解耦的核心目标。
+- 最新版本中的Infix架构底层已发生变化替换成了 `HStation / HSetting / HConfig` 的新架构，统一管理配置，并和源代码仓库对接实现版本管理。
+====

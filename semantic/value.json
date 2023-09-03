@@ -1,0 +1,18 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/semantic/value.json",
+    "$defs": {
+        "search": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "description": "单条件"
+                },
+                {
+                    "type": "object",
+                    "description": "多条件"
+                }
+            ]
+        }
+    }
+}

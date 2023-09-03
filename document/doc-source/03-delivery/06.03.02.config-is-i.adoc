@@ -1,0 +1,84 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 集成配置
+
+==== 核心表结构
+
+集成配置的核心配置数据存储于 `I_INTEGRATION` 表中。
+
+[options="header"]
+|====
+|属性|列|含义
+|name| `NAME`|当前集成配置的名称。
+|type| `TYPE`|集成的类型说明，类型维度可划定核心集成分类。
+|ipV4| `IP_V4`|IP v4集成地址。
+|ipV6| `IP_V6`|IP v6集成地址。
+|hostname| `HOSTNAME`|主机地址，可以用IP或者可以使用域名。
+|port| `PORT`|集成专用端口号。
+|protocol| `PROTOCOL`|集成协议类型：HTTP, HTTPS, FTP。
+|securePort| `SECURE_PORT`|传输层安全接口。
+|secureProtocol| `SECURE_PROTOCOL`|传输层协议设置，TLS / SSL，安全邮件或集成所需。
+|endpoint| `ENDPOINT`|集成端地址。
+|path| `PATH` |集成专用 Context 根路径。
+|osKey| `OS_KEY` |开源集成专用键：Key。
+|osSecret| `OS_SECRET` |开源集成专用客户发放的：Secret。
+|osAuthorize| `OS_AUTHORIZE` |开源集成专用的OAuth临时授权码接口。
+|osToken| `OS_TOKEN` |开源集成专用的OAuth令牌接口。
+|username| `USERNAME` |集成专用账号信息。
+|password| `PASSWORD` |集成专用账号对应口令信息。
+|publicKey| `PUBLIC_KEY` |集成专用公钥信息，可使用路径也可使用内容。
+|options| `OPTIONS` |集成专用附加配置信息，JSON格式，可设置各种选项。
+|====
+
+==== 设计理念
+
+Zero Extension 在 **文档管理** 存储文档以及 **附件上传** 中存储文档时，设计了两层来处理文件存储的目录管理，不论是 `I_DIRECTORY` 还是前端配置中，都不会触碰到运行服务器中的 **根地址**（方便迁移），假设您有一个场景将一个存储整体移动到另外一台服务器上，这种模式下，您可以不用关心服务器迁移过程中的存储目录 **根地址**。整套机制依赖两个扩展模块：
+
+[options="header",cols="2,8"]
+|====
+|模块|含义
+|`zero-ambient`|应用路径配置：`storePath` 会指定当前应用专用的配置路径，多应用模式下可以直接在 `X_APP` 表的配置节点切换处理。
+|`zero-is`|系统路径配置：`storeRoot` 会指定当前存储的根地址，迁移时很方便转存（参考前文异构目录规划）。
+|====
+
+也就是说，您最终存放某个应用文档的目录位于运行服务器上的 `storeRoot + storePath` 之下，这两个值会控制您的 **绝对路径**，如此设计的优势在于：
+
+1. 由于根路径是统一配置，Zero 可以帮助您计算您的文件的真实上传地址而实现存储隔离，这种真实存储地址不依赖文件系统，可以是 FTP、SSH 等文件协议，您使用什么样的协议来存储文档取决于您的集成配置，此配置的粒度到 **目录级**（ `I_DIRECTORY` 中某条记录），简单说您应用中看到的目录结构下的所有目录可以同时存储不同的目录源中。
+2. 隔离绝对路径：这样设计之后，您所有看到的所有 **上传组件**、**文档解析**、**网盘**、**协同文档** 的配置数据都位于 **根路径** 之下，采用相对地址来存储文件，如此您不用担心 **迁移** 问题，最少迁移过程中您无需更改配置信息。
+3. 您可以查看在 `I_DIRECTORY` 目录中存储的目录截图：
++
+--
+image:exp-app-dir.png[]
+
+从截图中可以知道，`storeRoot` 没有配置在目录路径中，而 `storePath` 却追加成前缀存储于 `I_DIRECTORY` 中了，原因在于：`/apps/nm/document` 是应用配置，应用配置追加到目录的存储路径中，那么您的单个数据库可以同时支持多个应用配置，后期 `storePath` 的数据源来自于两种不同形态：
+
+- **单应用**：直接以 `plugin/ambient/configuration.json` 配置中的 `storePath` 为主。
+- **多应用**：在 `X_APP` 表结构中创建优先级更高的 `storePath` 分发给不同的应用使用，而这些应用很有可能存储在同一个库中（后期开发，已提供扩展点）。
+--
+4. 自动化规划：虽然您配置了如此复杂的 **目录规划**，但配置数据提供之后，您的程序在执行时候目录规划是自动完成的（增量式）：
++
+--
+- 系统自动计算配置的变更，将数据导入到 `I_DIRECTORY` 中完成真实目录和存储的配置之间的同步（包括路径、协议、权限）。
+- 容器启动时自动连接 **集成服务** 完成目录的规划初始化、同步两个核心流程。
+
+此部分内容的配置如 `vertx-dock.yml` 中内容：
+
+[source,yaml]
+----
+init:
+  configure:
+    # 应用配置所需
+    - component: io.vertx.mod.ambient.init.AtPin
+    # 系统配置所需
+    - component: io.vertx.mod.is.init.IsPin
+----
+--
+
+====
+目前的 **集成** 服务的本地版本已经反复在多个系统中验证，和 `Vert.x` 原生的上传目录 `/file-uploads/` 不同点在于此处的文件对应的文件名、MIME、文件的元数据都会以人阅读的方式存储到对应地址，且后期可随意扩展任意文件协议（ **异构文件目录** ），您可以不用考虑文件丢失问题，若 **容器崩溃** 您依旧可以很快在存储的目录中找到自己所需的文档。
+====
+
+
+
+

@@ -1,0 +1,67 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/database/S_PATH/UI_SURFACE.json",
+    "$comment": "用于权限配置过程中对界面的定义",
+    "title": "界面配置",
+    "type": "object",
+    "properties": {
+        "webComponent": {
+            "type": "string",
+            "description": "主组件配置，webComponent 为管理界面选择的主要前端组件"
+        },
+        "webBind":{
+            "oneOf": [
+                {
+                    "type": "string",
+                    "description": "「单资源」资源 code，单个资源绑定时使用"
+                },
+                {
+                    "type": "object",
+                    "description": "「多资源」资源 code 表，多个资源绑定时使用"
+                }
+            ]
+        },
+        "webTree":{
+            "$ref": "http://www.vertx-cloud.cn/see/web-tree.json#/$defs/config"
+        },
+        "webChildren": {
+            "type": "array",
+            "description": "子组件",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "component": {
+                        "type": "string"
+                    },
+                    "key": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "key", "component"
+                ]
+            }
+        },
+        "webData": {
+            "type": "object",
+            "description": "提交器：处理输入和输出",
+            "properties": {
+                "empty": {
+                    "type": "boolean"
+                },
+                "initializer": {
+                    "type": "string"
+                },
+                "requester": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "initializer", "requester"
+            ]
+        }
+    },
+    "required": [
+        "webComponent", "webBind"
+    ]
+}

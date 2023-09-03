@@ -1,0 +1,24 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/semantic/dao.json",
+    "title": "通用Dao配置",
+    "$defs": {
+        "static": {
+            "type": "object",
+            "properties": {
+                "dao": {
+                    "type": "string",
+                    "description": "Ux.Jooq.on参数，可直接转换成 VertxDao 执行数据层访问"
+                },
+                "config": {
+                    "type": "object",
+                    "description": "直接被 VertxDao 消费的基础配置"
+                }
+            },
+            "required": [
+                "dao"
+            ],
+            "additionalProperties":false
+        }
+    }
+}

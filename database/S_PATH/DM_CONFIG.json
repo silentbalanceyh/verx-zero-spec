@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/database/S_PATH/DM_CONFIG.json",
+    "$comment": "用于权限设置过程中对维度的定义",
+    "title": "维度配置",
+    "type": "object",
+    "properties": {
+        "items": {
+            "$ref": "http://www.vertx-cloud.cn/sage/web-item.json#/$defs/secure-dm"
+        },
+        "webAdmit": {
+            "oneOf": [
+                {
+                    "type": "array",
+                    "description": "「固定模式」是否启用 S_ROLE 中的 power 属性，提供高级权限配置数据限制，只有拥有高级权限的角色可对权限进行管理",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                {
+                    "type": "object",
+                    "description": "「配置模式」配置模式下，该属性存储了执行权限检查的相关配置。"
+                }
+            ]
+        },
+        "webAction": {
+            "$ref": "http://www.vertx-cloud.cn/sage/web-button.json#/$defs/common"
+        },
+        "webView": {
+            "$ref": "http://www.vertx-cloud.cn/send/in-view.json#/$defs/by-name"
+        }
+    }
+}

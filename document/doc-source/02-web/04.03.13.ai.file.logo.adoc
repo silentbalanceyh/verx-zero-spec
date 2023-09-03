@@ -1,0 +1,47 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiFileLogo`
+
+上传图标专用组件，此组件执行过封装，底层使用了 `AntD` 中的 `<Upload/>` 组件，但通过限定属性让此组件只拥有 **图片上传/预览** 的功能。配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "logo,应用Logo,16,,aiFileLogo,listType=picture-card,text=上传",
+        "optionJsx.config.filekey": "key",
+        "optionJsx.config.limit": 10240,
+        "optionJsx.ajax.uri": "/api/file/upload/:identifier?category=:category",
+        "optionJsx.ajax.download": "/api/file/download/:key",
+        "optionJsx.ajax.params": {
+            "identifier": "FIX:x.application",
+            "category": "FIX:logo"
+        }
+    }
+]
+----
+
+===== 特殊属性
+
+====
+一般自定义组件都会包含部分定制过的 **特殊属性**，毕竟 Zero UI 中的所有自定义组件都需要支持纯描述的 **配置模式**。
+====
+
+配置属性表：
+
+[options="header",cols="3,7"]
+|====
+|属性路径|含义
+|`optionJsx.config.fileKey`|此处的 `fileKey` 会将后台生成的唯一的标识写入到 `key` 参数中，这个参数和 `optionJsx.ajax.download` 中配置下载参数一致（ `:key` 参数）；`fileKey` 在后端是唯一文件标识，您可以使用此属性从后台下载到上传过后的文件。
+|`optionJsx.config.limit`|上传文件的限制，单位为 `KB`，如上边示例中上传文件限制为 `10M`。
+|`optionJsx.ajax.uri`|上传专用路径信息，可包含类似 `:identifier` 和 `:category` 参数，这些参数会从参数节点提取。
+|`optionJsx.ajax.download`|可根据上传文件生成对应文件的下载链接，下载链接是一个唯一的 `URI` 地址。
+|`optionJsx.ajax.params`|参数配置，此参数主要针对 **上传** 行为执行定制，而且会影响上传的最终存储 **集成目录**。
+|====
+
+图片上传组件如下：
+
+image:exp-input-filelogo.png[0]
+

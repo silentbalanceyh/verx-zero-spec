@@ -1,0 +1,177 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 附件上传
+
+附件上传本来属于 `zero-ambient` 模块独有的功能，而由于后期开了 `zero-is` 模块（ Integration Service ）让文件存储变得多样化，而又无法直接将附件模块从基础配置中拿掉，所以至今为止，附件的基本信息依旧存储在 `X_ATTACHMENT` 这张表中，但是这也不违背基本使用的设计法则：
+
+- 若您只是想要基础附件上传功能，不考虑扩展存储（如 FTP、GIT、SSH或其他分布式文件系统，可以不用引入 `zero-is` 模块），附件上传功能依旧生效。
+- 若您想要做附件功能的存储扩展，则需引入 `zero-is` 模块处理扩展存储问题。
+
+[CAUTION]
+====
+现阶段版本的扩展存储 `zero-is` 只设计了接口，依旧是走的服务器配置的本地存储，如果要实现 `FTP` 等相关存储，只需针对 `FTP` 协议书写接口 `io.vertx.mod.is.uca.command.Fs` 的实现类即可（ `zero-is` 中）。
+====
+
+==== 附件表结构
+
+附件表 `X_ATTACHMENT` 的完整表结构说明如下：
+
+[options="header",cols="15,15,70"]
+|====
+|属性|字段|含义
+|name| `NAME` |前端上传文件名，文件名 + 扩展名。
+|extension| `EXTENSION` |上传文件的扩展名。
+|type| `TYPE` |文件类型，在后端使用字典 `zero.file.tree` 执行关联。
+|mime| `MIME` |文件的MIME类型，下载触发时并非单纯按照扩展名提供给用户下载，而是先分析 MIME，该值在上传时候前端可提供。
+|size| `SIZE` |文件尺寸（大小）。
+|status| `STATUS` |该文件状态，PROGRESS / SUCCESS，配合 FileUpload 组件提供中间上传状态。
+|directoryId| `DIRECTORY_ID` |文件存储所需目录，如果启用了 `zero-is` 扩展模块，此属性就是必须得，文件本身需挂载到集成服务的目录管理下。
+|storeWay| `STORE_WAY` |存储方式，目前支持三种：BLOB / FILE / REMOTE。
+|storePath| `STORE_PATH` |远程存储文件根地址，该地址最终会和全局路径、目录路径最终运算一个具体文件所在地址。
+|storeUri| `STORE_URI` |远程存储文件的URI地址，当您下载文件时，真实下载请求会转发到该地址中，该属性记录了文件的实际存储地址，若是FTP模式，则前缀中带有协议部分：`ftp://` 这种。
+|modelId| `MODEL_ID` |当前附件关联的模型统一标识符，描述附件隶属于哪一类模型。
+|modelKey| `MODEL_KEY` |当前附件关联的模型数据记录主键，描述附件属于模型中哪一条数据。
+|modelCategory| `MODEL_CATEGORY` |如果一个模型记录中包含了多种附件，则需设置模型的相关属性，等价于 `field` 配置。
+|fileName| `FILE_NAME` |原始文件名（不带扩展名）。
+|fileKey| `FILE_KEY` |当前文件唯一的文件加密字符串，用户可通过该值下载到文件，若启用了 `zero-tpl` 模块，则该值的计算会受到文件模板的影响。
+|fileUrl| `FILE_URL` |文件下载链接，全局唯一，该地址会在前端生成下载链接。
+|filePath| `FILE_PATH` |文件存储地址，Vert.x规范对接，协助上传组件处理三个模块的协同：`zero-tpl, zero-ambient, zero-is` 配合 Vert.x 处理文件。
+|====
+
+==== 接口逻辑
+
+附件上传接口位于 `zero-ambient` 中，此处对 *上传/下载* 两个接口详细讲解内部逻辑。
+
+===== 上传接口
+
+Zero Extension中的上传接口如：
+
+- URI地址：`/api/file/upload/:identifier?category=xxx&directory=xxx`
+- HTTP方法：POST
+
+在讲接口内容时窥探一下输入部分——前端上传组件配置。Zero UI中的上传使用下边三种组件实现：
+
+[options="header"]
+|====
+|组件名|表单引擎渲染API|含义
+|image:i-react.png[0,22] FileLogo| image:i-fn.png[0,22] aiFileLogo |图片上传，Logo上传专用组件。
+|image:i-react.png[0,22] FileUpload| image:i-fn.png[0,22] aiFileUpload |单文件上传。
+|image:i-react.png[0,22] FileBatch| image:i-fn.png[0,22] aiFileBatch |多文件上传。
+|====
+
+工作流引擎的工单部分上传属性使用的是 `linkageAttachment`，在前端它的配置片段如：
+
+[source,json]
+----
+{
+    "metadata": "linkageAttachment,文件上传,18,,aiFileBatch,text=上传",
+    "optionJsx.accept": "*/*",
+    "optionJsx.config.filekey": "key",
+    "optionJsx.config.limit": 10240,
+    "optionJsx.config.reduce": true,
+    "optionJsx.ajax.uri": "/api/file/upload/:identifier?category=:category&directory=:directory",
+    "optionJsx.ajax.download": "/api/file/download/:key",
+    "optionJsx.ajax.params": {
+        "identifier": "FIX:w.ticket",
+        "category": "PROP:workflow.code",
+        "directory": "/流程文档",
+        "formula": "/${catalogPath}/${serial}"
+    }
+}
+----
+
+本章节不讲解前端自定义组件细节，只是让您对上传逻辑有更深入理解，注意上边批量上传的参数：`optionJsx.ajax.params`——它的格式是构造上传接口的关键：
+
+[options="header",cols="15,15,70"]
+|====
+|参数|来源|含义
+|identifier| 固定值 `w.ticket` | 此处直接使用表达式 `FIX` 将参数 `identifier` 设置成固定值 `w.ticket`，该值最终会替换掉路径上的 `:identifier` 部分。
+|category | 属性值 | 此处使用表达式 `PROP` 提取属性参数 `workflow.code`，它会从前端组件的属性中提取信息：`$workflow` 对象中的 `code` 属性——注意，此处变量名没有写错，Zero UI中所有的自定义变量除 `data` 和 `config` 以外，都是以 `$` 符号为前缀，但是该符号不出现在配置中，所以最终此处得到的 `category` 就是 *流程名称*，并且会替换掉接口中的 `:category` 部分。
+|directory | 常量值 | 此处设置的根目录名称为 `/流程文档`，即最终文件会上传到该目录下，至于文件存储使用什么协议不属于该组件的职责范畴，最终该参数会替换 `:directory` 部分。
+|formula | 表达式 | 该参数提供：*按规则生成目录* 的特殊逻辑，工作流工单中的附件上传和文档管理中的附件上传存储既可以合并也可以分离，但是工单中的附件上传为了可读性更强，后端提供插件做表达式解析，最终会按照一定规则进行分类，照顾系统的管理性、以及文件夹本身的人工查找性（可以越过系统直接从目录中查找到上传的文档）。
+|====
+
+===== 关于目录结构[[__CONFIG_APP_DIR]]
+
+目录结构是附件中的一个重点，由于新版追加了 *文档管理* 和 集成服务（ `zero-is` ），所以目录结构有了新的基本规划，其设计理念在于：
+
+- 独立模式：只开启 `zero-ambient` 模块的基础模式，这种模式下，文件存储直接基于 `Vert.x` 框架执行，最终存储在运行容器的服务器上，如开发环境位于：
+
++
+image:zapp-file.png[0,800]
+
+- 集成模式：开启 `zero-is` 模块之后的存储转换，开启之后存储位置依赖集成定义，最终存储目录按下边步骤进行：
+
++
+--
+- 系统配置（ `zero-ambient` ）中配置 `storePath`，修改 `plugin/ambient/configuration.json` 中的 `storePath` 属性。
+- 集成配置（ `zero-is` ）中配置 `storeRoot`，修改 `plugin/is/configuration.json` 中的 `storeRoot` 属性。
+- 此处有一个基础优先级规则，环境变量 `Z_SIS_STORE` 定义的路径会覆盖 `storeRoot` 的值，此处 `SIS` 表示 System Integration Service。
+--
+
+[CAUTION]
+====
+对小型应用而言，上传下载流程不牵涉 *云存储*、*存储迁移* 的场景，这种模式下不开启集成服务（ `zero-is` ）也是够用的（传统程序上传下载保护），但这种模式有几个缺点：
+
+- 上传文件不具有可读性，参考上述示例截图中 `file-uploads` 文件，人工无法直接阅览上传的附件信息。
+- 单点故障：由于这些文件没有任何备份还原机制，一旦服务器出现故障这些文件有可能会丢失而无法恢复。
+====
+
+所以 Zero 中才开启了隔离存储的 `zero-is` 集成服务提供附件存储的第二形态，有了集成服务之后，整体目录规划拓扑图如下：
+
+image:zapp-file-store.png[0,960]
+
+1. 顶级目录由 `zero-is` 集成服务提供。
+2. 应用级目录由 `zero-ambient` 模块服务提供。
+3. 模块级服务由配置过程中的 `directory` 参数提供。
+4. 最终模块以下的业务文件会分成两种模式：
++
+--
+- 带 `formula` 表达式的模式，这种模式程序最终在业务级会自动初始化目录，然后将文件拷贝到目录中。
+- 不带 `formula` 表达式，这种模式直接将文件存储在最终的地址上。
+--
+
+举个例子：
+
+[source,bash]
+----
+# 环境变量中设置（该环境变量会直接覆盖 zero-is 中配置）
+Z_SIS_STORE=/Users/lang/zero-cloud/runtime/store
+
+# zero-is 中配置
+{
+    "storeRoot": "/Users/lang/runtime/zero-store"
+}
+
+# zero-ambient 中配置
+{
+    "storePath": "/apps/xc/document"
+}
+
+# 上传配置如：
+{
+    "optionJsx.ajax.params": {
+        "identifier": "FIX:w.ticket",
+        "category": "PROP:workflow.code",
+        "directory": "/流程文档",
+        "formula": "/${catalogPath}/${serial}"
+    }
+}
+----
+
+上述配置中，最终会将文件上传到目录：
+
+[source,bash]
+----
+/Users/lang/zero-cloud/runtime/store/apps/xc/document/流程文档
+----
+
+参考最终的存储规划截图：
+
+image:zapp-file-final.png[0,800]
+
+[WARNING]
+====
+有了这样的基础存储规划后，解决了第一种模式的两个核心问题，但是生产环境中部署时要多加一个步骤：设置 `Z_SIS_STORE` 环境变量，不仅如此，您还需保证生产环境中存储目录下的权限是足够的，否则程序将会无法写入文件导致上传文件失败。
+====

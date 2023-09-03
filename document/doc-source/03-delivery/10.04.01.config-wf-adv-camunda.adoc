@@ -1,0 +1,63 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+===== Camunda表单设计
+
+[TIP]
+====
+Camunda中容易遗忘的两个细节：
+
+1. 流程命名：打开 `workflow.bpmn` 文件，不选中任何节点，右上角需设置流程名称以及 `definitionKey`（和 `W_FLOW` 中对应）：
++
+image:zwf-config-flow.png[0,960]
+
+2. 表单命名：打开某个 `*.form` 文件，不选中任何属性，右侧设置表单ID，`<node>.form` 格式：
++
+image:zwf-config-form.png[0,960]
+
+====
+
+使用 Camunda Modeler 设计表单时，一般我们只设计和 *流程驱动* 相关的属性，这些属性会在配置和请求过程给值。比如上述 `trip.start.form` 的定义如下：
+
+image:zwf-config-form-start.png[0,1024]
+
+特殊说明：
+
+1. 表单中设置了一个选择属性，属性名为 `draft`（后续配置中会使用）。
+2. 该选择项分两个（`true - 存草稿 / false - 直接申请`），即：当您请求中出现了 `draft` 参数时会根据请求中的参数值走不同流程，该值一般来自前端。
+3. 最下边还有一个设置：`Required`，它表示若要执行该流程，此处的 `draft` 属性是必填项，一旦缺失流程会执行失败。
+
+===== Camunda转移线
+
+打开出差申请的流程设计图，由于开始表单下一个节点是分支节点，此处分支节点之后需要设置值：
+
+image:zwf-form-t.png[0,960]
+
+前边表单设计中的 `trip.start.form` 就是在 *开始* 节点绑定的表单，而此处转移线需设置如下属性（只针对流程图中蓝色框线部分，实际此处还有另外一条分支的转移线）：
+
+[options="header"]
+|====
+|属性|值
+|Type|Expression
+|Condition Expression| `#{draft==false}`
+|====
+
+[TIP]
+====
+此处使用了表达式，表达式中的 `draft` 属性就是您在表单设计中设置的属性信息，属性值对应到截图中选择的 *直接提交* 选项。
+====
+
+最终设置的所有细节如下：
+
+[options="header"]
+|====
+|节点/线ID|类型|说明
+|`e.start` | Start Event | 开始节点，需和表单 `trip.start.form` 绑定（表单中包含了 `draft` 属性），并给后续分支节点提供值。
+|`t.start-draft` | 转移线 | 暂存，`Expression, #{draft==true}` 设置。
+|`t.start-approve` | 转移线 | 直接申请，`Expression, #{draft==false}` 设置。
+|====
+
+[WARNING]
+====
+按照上述流程就把 Camunda 中每一个流程节点都设置完成了，如果您的设置不正确，Camunda 流程引擎在发布时会抛出错，如上述表单中若设置了 `draft` 有三个选项，而转移线只有两条，那么流程发布就会失败，所以您的流程设计必须保证是一个：*正确的 Camunda 流程配置*。
+====

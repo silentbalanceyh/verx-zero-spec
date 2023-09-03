@@ -1,0 +1,289 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 样式规范
+
+
+Ant Design 5.0采用了CSSinJS的方式处理样式信息，所以Zero UI最新版前端结构使用模块化的SASS/SCSS和它配合实现样式的整体定义，摒弃掉前一个版本的LESS技术，主要解决现阶段的一个核心问题：*CSS全局污染问题*——这个问题目前充斥着整个框架底层，由于最初的LESS规划不足，且LESS又不可能做到局部封闭，所以最终选择CSS Module技术（基于SASS/SCSS，采用Dart Sass引擎替换原始的node-sass）重新规划产品样式。
+
+==== 环境变量
+
+样式相关的环境变量在前端中主要包含：
+
+[source,properties]
+----
+Z_CSS_SKIN_MODULE=HM                # 使用的皮肤模块名
+Z_CSS_SKIN_NAME=NormLight           # 深色风格 / 浅色风格
+Z_CSS_SKIN_TOOL=true                # 支持动态样式调整（带有样式工具栏）
+Z_CSS_SHADOW=false                  # 窗口是否带阴影效果
+Z_CSS_COLOR=#36648b                 # 系统默认主色调
+Z_CSS_FONT=14                       # 字号大小
+Z_CSS_RADIUS=4                      # Ant中默认是6，修正成4，基础组件的圆角设置
+----
+
+最终 WebPack 中产生的环境变量数据代码片段如下：
+
+[source,js]
+----
+    /*
+     * $uni_font    - 默认字体大小
+     * $uni_color   - 默认关键色
+     * $uni_radius  - 默认圆角尺寸（2 / 4 / 6 / 8）
+     * $uni_shadow  - 默认是否开启阴影（true / false）
+     */
+    preOptions.additionalData = `
+        $uni_font: ${process.env.Z_CSS_FONT}px;
+        $uni_color: ${process.env.Z_CSS_COLOR};
+        $uni_radius: ${process.env.Z_CSS_RADIUS}px;
+        $uni_shadow: ${process.env.Z_CSS_SHADOW};
+    `
+----
+
+
+[IMPORTANT]
+====
+不论是在生产环境还是开发环境，上述三个核心环境变量（ *Z_CSS_FONT、Z_CSS_RADIUS、Z_CSS_COLOR* ）是必须的，否则会导致SCSS注入失败引起启动问题。
+====
+
+WebPack中关于样式的路径和模块定义、使用流程如下：
+
+[source,js]
+----
+    // config/modules.js 中定义
+    skin: path.resolve(__dirname, "../src", "skin"),       // 皮肤管理器（最底层，由于zone存在控件定义）
+    style: path.resolve(__dirname, "../src", "style"),     // 风格（SCSS导入用）
+    
+    // 使用代码
+    import Sk from "skin";                                 // 风格API调用
+    import __ from "./Cab.module.scss";                    // 动态导入：导入之后无法直接使用className类名引用
+    import "./Cab.norm.scss";                              // 静态导入：导入之后可直接使用
+----
+
+==== 全局风格（style）
+
+[NOTE]
+====
+全局风格文件位于style目录中，本章节描述全局风格文件的目录职责，不同职责目录入口文件都是 index.scss，相关说明在 style/index.scss 注释中。
+====
+
+[options="header",cols="2,4,4"]
+|====
+|类型|路径|说明
+|image:i-folder.png[,20] 目录|style/connect|第三方样式表连接专用目录。
+|image:i-css.svg[,20] 文件|style/connect/mod.animate.css|动画效果专用CSS文件。
+|image:i-folder.png[,20] / image:i-sass.svg[,20] 目录|style/function|通用样式函数。
+|image:i-folder.png[,20] / image:i-sass.svg[,20] 目录|style/macrocosm|全局样式变量定义。
+|image:i-sass.svg[,20] 文件|style/macrocosm/mod.color.scss|全局色彩变量。
+|image:i-sass.svg[,20] 文件|style/macrocosm/mod.screen.scss|全局屏幕自适应变量。
+|image:i-folder.png[,20] / image:i-sass.svg[,20] 目录|style/micrososm|局部可重用样式定义。
+|image:i-folder.png[,20] / image:i-sass.svg[,20] 目录|style/module|模块样式定义。
+|image:i-folder.png[,20] / image:i-sass.svg[,20] 目录|style/uca|组件样式定义。
+|image:i-folder.png[,20] / image:i-sass.svg[,20] 目录|style/unstable|（自适应，screen前缀样式）。
+|image:i-folder.png[,20] / image:i-sass.svg[,20] 目录|style/ux@legacy|旧样式替换目录（替换原始的 ux- 和 ex-）。
+|====
+
+==== 组件风格
+
+前端页面和容器位于 components/container 目录中，这种类型的样式名会使用样式包 *skin* 中的API直接提取（CSS Module）。标准化组件类型的根样式则全部采用固定样式名，可直接在代码中用className引用，以 [source,js]`import "./Cab.norm.scss"` 方式导入生效。
+
+[TIP]
+====
+标准组件位于目录 */economy* 中，所有扩展组件位于目录 */extension/ecosystem* 中。
+====
+
+[options="header",cols="1,2,7"]
+|====
+|前缀|类型|说明
+|upg_|全局组件|（特殊）原 /extension/components 文件夹下所有扩展页面样式信息。
+|uni_|全局组件|可标准化的组件可直接使用该样式 uni_ 前缀，任何新项目都不用处理。
+|urd_|全局组件|开发中心专用样式表。
+|ux_|全局组件|整合原始 web- 和 ux- 构造的新规划的全局样式。
+|uca_|标准组件|标准自定义组件专用前缀名。
+|uex_|扩展组件|*Ex* 前缀型组件（Extension）
+|utx_|扩展组件|*Tx* 前缀型工作流专用组件（Task Of Workflow）。
+|umy_|扩展组件|*My* 前缀型个人设置专用组件（My Setting）。
+|uf_ |扩展组件|*F* 前缀型财务专用组件（Finance Module）。
+|ug2_|扩展组件|*G2* 前缀型图表组件（G2）。
+|uix_|扩展组件|*Ix* （不对外）前缀型内置组件（Internal Component）。
+|uqx_|扩展组件|*Qx* 前缀型查询引擎组件（Query Engine Qr）。
+|uhx_|扩展组件|*Hx* 前缀型高阶配置组件（High Order of Configuration）。
+|uox_|扩展组件|*Ox* 前缀型配置组件，可使用动态建模（Origin Execute）。
+|====
+
+[CAUTION]
+====
+样式特殊说明，上述样式中，除 *upg_* 样式不可以使用类名的方式引用，其他样式都可以直接使用并且被重写。
+====
+
+==== 样式详情
+
+[TIP]
+====
+函数部分参考源代码查看 *参数* 相关信息，此处就不一一列举，新版由于在变量中会调用，所以将原始的中划线 [source,bash]`-` 统一修改成下划线实现变量调用；*组件部分* 带有 [underline]`下划线` 的为引用全局样式的类名。
+====
+
+===== 全局函数
+
+[options="header",cols="3,1,6"]
+|====
+|名称|类型|说明
+|attr_gradient_l|函数|水平渐变从左往右。
+|attr_gradient_r|函数|水平渐变从右往左。
+|attr_height_title|函数|标题高度设置（表单内可用）。
+|attr_shadow_box|函数|阴影处理。
+|unit_ant_btn_primary_100|函数|.ant-btn-primary的Ant样式修订，构造100%宽度的圆角大按钮。
+|unit_ant_button|函数|专用色彩按钮样式处理。
+|unit_ant_empty|函数|修订<Empty/>组件样式。
+|unit_date_picker|函数|针对时间日期选择器的背景色消除（去掉灰色）。
+|unit_selector_bg|函数|Selector选择器背景色消除（去掉灰色）。
+|unit_selector_input|函数|Selector内部背景色消除。
+|unit_tree_selected|函数|树型菜单选项选中之后样式（深色）。
+|uca_card_page|函数|Card组件专用，缩小边距的卡片样式设置。
+|uca_dash_app|函数|MyMenu中调用，专用于App入口样式设置。
+|uca_collapse|函数|Collapse组件专用风格。
+|uca_dialog|函数|Dialog组件专用（内置Modal），主要设置弹窗风格和区域。
+|uca_drawer|函数|Drawer组件专用，原版窗口变种，主要设置抽屉风格和区域。
+|uca_popover|函数|Popover组件专用样式。
+|uca_popover_content|函数|Popover组件内容专用样式。
+|uca_form_error|函数|Zero UI特定的表单错误信息样式（浮游动画错误提示）。
+|uca_form_login|函数|登录表单专用样式。
+|uca_form_main|函数|主表单专用样式。
+|uca_form_readonly|函数|Form表单中字段只读样式。
+|uca_table_head|函数|列表头部专用函数，设置深色和浅色风格。
+|uca_bpmn_node|函数|流程图节点专用样式函数，前景色和背景色。
+|screen_uca_dialog|函数|带有自适应布局的Dialog组件专用样式。
+|screen_uca_popover|函数|带有自适应布局的Popover组件专用样式。
+|screen_uca_popover_content|函数|带有自适应布局的Popover内容组件专用样式。
+|====
+
+
+===== 全局类
+
+[TIP]
+====
+
+* uc前缀全称：Utility Color，主要负责色彩类className的独立定义。
+* ud前缀全称：Utility Dynamic，主要负责可变化类（带后缀）的相关定义。
+* ux前缀全称：Utility X（对应Zero中的Utility X部分），综合旧版本中的 ux-，ex-，ox-等相关className执行重构。
+
+====
+
+[options="header",cols="3,1,6"]
+|====
+|名称|类型|说明
+|uc_green|类名|色彩按钮：绿色。
+|uc_green_big|类名|（大号）色彩按钮：绿色。
+|uc_red|类名|色彩按钮：红色。
+|uc_pink|类名|色彩按钮：粉色。
+|uc_peach|类名|色彩按钮：桃红色。
+|uc_brown|类名|色彩按钮：棕色。
+|ud_column_cn${x}|类名|此处x为1 ~ 10，分别为x个中文字单元格宽度设置。
+|ux_addon_after|类名|输入框附加按钮专用样式。
+|ux_addon_disabled|类名|输入框禁用按钮专用样式。
+|ux_error|类名|错误信息样式。
+|ux_error_purge|类名|错误清除样式。
+|ux_error_input|类名|组件错误样式。
+|ux_qr_search|类名|全局Qr搜索框，对应 QrInput 组件。
+|ux_qr_range|类名|全局Qr范围选择框，对应 QrRange 组件。
+|ux_op_search|类名|全局搜索框专用样式。
+|ux_op_ul|类名|全局横向链接菜单专用样式。
+|ux_op_transfer|类名|针对Transfer穿梭框的专用样式（拉满整行）。
+|ux_op_dbclick|类名|双击样式，对应原 ex-row-double。
+|ux_block|类名|左右侧页签标题专用样式，对应旧版 ex-blocks。
+|ux_hidden|类名|全局隐藏（display:none）专用样式，对应旧版 ux-hidden。
+|ux_disabled|类名|全局禁用专用样式。
+|ux_readonly|类名|全局只读专用样式，对应旧版 ux-readonly。
+|ux_readonly_select|类名|Selector可编辑（选择框只读）专用样式，消除背景用。
+|ux_readonly_unselect|类名|Selector只读专用样式。
+|ux_extra|类名|右上角附加操作区域专用样式，对应旧版 web-extra，多用于页签部分。
+|ux_title|类名|对应旧版 ux-title ux-title-pure 的组合样式。
+|ux_icon|类名|带文字的专用图标样式。
+|ux_view_my|类名|我的视图样式。
+|ux_card|类名|对应旧版 web-card。
+|ux_card_form|类名|对应旧版 web-card-form。
+|ux_form|类名|对应旧版 web-form。
+|ux_toolbar|类名|列表头部工具栏的主体样式信息。
+|ux_tab|类名|对应旧版 ex-tabs / web-tab。
+|ux_tab_block|类名|对应旧版 ex-tabs-tab-block。
+|ux_tab_container|类名|对应旧版 web-tab-container。
+|ux_tab_title|类名|对应旧版 web-tab-title。
+|ux_date_picker|类名|对应原版的 ux-select-readonly。
+|ux_select|类名|对应原版的 ux-select。
+|ux_table|类名|列表中表格专用样式，对应旧版 web-table。
+|ux_table_editor|类名|表格编辑器专用样式，对应旧版 web-table-editor。
+|ux_table_editor_small|类名|表格编辑器专用样式（小款），对应旧版 web-table-editor-small。
+|ux_table_tree|类名|表格中带字母树型结构专用样式。
+|ux_table_doc|类名|文档管理器中的表格专用样式。
+|ux_bag|类名|对应原版模块化专用处理。
+|ux_bpmn_end|类名|流程图完成节点。
+|ux_bpmn_error|类名|流程图异常节点。
+|ux_bpmn_active|类名|流程图激活节点。
+|ux_bpmn_hover|类名|（管理）鼠标移动到流程图节点。
+|ux_bpmn_selected|类名|（管理）流程图选中节点。
+|ux_popover_body|虚拟类名|（连接）父子优先级调整专用样式，针对内容。
+|ux_popover_footer|虚拟类名|（连接）父子优先级调整专用样式，针对页脚。
+|====
+
+===== 样式设计原则
+
+基本设计原则如下：
+
+1. 前缀标识可直接针对不同类型的组件进行分类。
+2. 标准模式中只有 [source,bash]`upg_` 是 *动态模式*，即不可以使用 className 直接引用。
+3. 如果是开发应用，需要使用自己的应用前缀如： [source,bash]`xc_, hm_, ox_` 等。
+
+参考下边代码对比 *静态模式* 和 *动态模式* 的区别：
+
+*模式一*：动态模式：标准样式中只有 upg_ 样式是这种类型，这种类型不可以直接引用。
+
+[source,scss]
+----
+// extension/components/integration/document/Cab.module.scss
+.upg {
+  &_integration_document {
+  }
+}
+----
+
+[source,js]
+----
+// 使用如：
+import Sk from 'skin';
+import __ from './Cab.module.scss';
+....
+    const attrs = Sk.mix(__.upg_integration_document);
+    // 此处 attrs 已经包含了 className 和 style 属性，且是一个Object
+    // 不可以在 jsx 中使用 className="upg_integration_document"
+    return (
+        <div {...attrs}/>
+    )
+----
+
+*模式二*：静态模式：标准组件样式全使用此种模式。
+
+[source,scss]
+----
+// zion/variant/LoadingContent/Cab.norm.scss
+.uca {
+  &_LoadingContent {
+    width: 100%;
+    text-align: center;
+  }
+}
+----
+
+[source,js]
+----
+// 使用如：
+import './Cab.norm.scss'
+import Sk from 'skin';
+....
+    const attrs = Sk.mixUca("LoadingContent");
+    // 此处 attrs 已经包含了 className 和 style 属性，且是一个Object
+    // 且上述 className 为：uca_LoadingContent
+    // 其他地方可以直接使用 className="uca_LoadingContent" 样式
+        <div {...attrs}/>
+----
+
+自定义应用：components 和 container 必须使用第一种模式（被Hash的模式）以防止样式污染，标准化组件除开OOB页面以外，其他所有内容都使用模式二统一管理。
+

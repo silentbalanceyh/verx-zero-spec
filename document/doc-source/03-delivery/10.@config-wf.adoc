@@ -1,0 +1,52 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 工作流（zero-wf）
+
+Zero中的工作流引擎基于Camunda工作流引擎执行扩展和定制，您可以在地址：<https://camunda.com/download/modeler/> 下载流程设计工具，本章将针对Zero Extension中的 *出差申请* 流程进行详细讲解，解释Zero Extension中的工作流相关配置。现阶段Zero Extension（zero-wf）中的工作流引擎依旧处于比较基础的阶段，并非是深度集成和应用，但已经可满足大量人工流程的基础需求，后续开发过程会逐步完善流程引擎的复杂功能。目前支持的最核心的功能如下：
+
+- 节点状态机：根据工单状态机实现每个状态下的行为扩展，并且可新增自定义状态，通过配置文件编连到状态机中。
+- 网格派工：支持各种复杂的工单派工模式（这些模式和转单、驳回、召回可协同）。
+- 基于 `bpmn.js` 的动态流程监控图（隐式Listener追加）。
+- 插件组合机制：可根据自己的需求在不同生命周期的流程插件上做扩展，除开标准化插件以外，您可以开发自定义生命周期插件控制流程细节。
+- 动态操作日志：基于 JEXL 实现基于规则的操作日志生成。
+- 触发式行为插件：可在任意节点实现不同行为的触发式扩展插件执行行为定制。
+- 多模型支持：支持动态模型、静态模型、混合模型三种。
+- ACL控制：针对流程QBE、每个节点的行为和视图执行权限管理，参考 link:#__SPEC_CONFIG_ACL_CHILD[权限管理端,window="_blank"]。
+
+若要启用Zero Extension中的流程引擎，可在您的Maven中追加如下依赖：
+
+[source,xml]
+----
+    <!-- 流程引擎模块专用 -->
+    <dependency>
+        <groupId>cn.vertxup</groupId>
+        <artifactId>zero-wf</artifactId>
+        <version>ZERO_VERSION</version> <!-- 版本跟随Zero版本 -->
+    </dependency>
+----
+
+[NOTE]
+====
+Camunda工作流引擎是一个开源的、基于Java的平台，支持BPMN 2.0、CMMN 1.1和DMN 1.3标准，可以用于设计、执行和监控业务流程。它有以下优点和缺点：
+
+优点：
+
+- 提供了一个轻量级的、灵活的、定制性强的流程编辑器，基于bpmn.io的bpmn.js,cmmn.js,dmn.js开发，并且开源了自己的组件库，让用户可以方便地创建和修改流程模型。
+- 支持嵌入式部署，可以与Spring Boot等框架集成，方便在微服务架构、云原生架构中使用。
+- 提供了一个Web控制台，可以查看和管理流程实例、任务、决策表等，用户可以通过控制台监控流程运行状态、执行任务、查看历史数据等。
+- 提供了一个REST接口，可以通过HTTP请求与引擎交互。
+
+缺点：
+
+- 仍然使用PVM（Process Virtual Machine）作为流程推动引擎，性能较差，不适合高并发场景。
+- 不支持历史数据异步归档、事务子流程、多实例加签减签等功能，这些功能在Flowable中有实现。
+- 不支持云原生部署，如果需要在云环境中使用，需要使用另一个产品Zeebe。
+
+上述 *缺点* 部分就是现阶段Zero做浅度集成的主要原因，而且核心功能大部分都是自研发功能，并非Camunda的功能，而真正在集成过程中Zero只是使用了Camunda流程引擎的 *流程驱动* 部分，不过从目前的使用看起来这个流程引擎瑕不掩瑜。
+====
+
+include::10.01.config-wf-start.adoc[]
+include::10.02.config-wf-setup.adoc[]
+include::10.03.config-wf-model.adoc[]
+include::10.04.@config-wf-adv.adoc[]

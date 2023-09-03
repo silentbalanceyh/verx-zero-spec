@@ -1,0 +1,28 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiDatePicker` (A)
+
+对应到 `AntD` 中的 `<DatePicker/>` 组件，可直接进行日期选择，配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "signedAt,签订时间,,,aiDatePicker,placeholder=选择签订时间",
+        "optionJsx.format": "YYYY-MM-DD HH:mm",
+        "optionJsx.showTime": true,
+        "moment": true
+    }
+]
+----
+
+日期选择器如下：
+
+image:exp-input-picker.png[0, 600]
+
+===== 特殊配置
+
+Zero UI中的日期选择器唯一的特殊配置是指定属性 `moment=true`，早期的 `AntD` 中的时间格式使用的是 `moment.js` 的库，这个库和新版的 `Dayjs` 库一样，对 `undefined` 是会报错的，而单纯从数据层面无法根据格式或其他值来判断当前属性是否 **日期/时间**，所以只能在表单这一级直接定义当前属性是一个 `moment=true` 的日期格式数据。再者日期格式除了此处的 `<DatePicker/>` 以外，还会有独立时间 `<TimePicker/>` 选择器，所以系统无法根据 `moment.js` 执行反算；其实真计算是可以的，但由于组件本身是逐渐开发出来的，`<DatePicker/>` 在 `<TimePicker/>` 之前，所以就懒得在原始组件上修改了，最终在组件上保留了 `moment` 这个属性来鉴别 **时间/日期** 类型的控件。
+

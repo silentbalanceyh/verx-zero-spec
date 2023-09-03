@@ -1,0 +1,641 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 扩展配置
+
+==== 属性初始值
+
+初始值计算主要补充数据导入时的填充规则，如一个表有10个字段，而Excel导入时像部分：`createdAt、sigma、appId` 等（假设3个）属性在真正导入过程中是可以经过系统自动计算的，而这3个属性在系统内部是必须的，那么这样的场景中导入就必须依赖初始值规则保证数据完整性。当然这些初始值是不能 *硬编码* 的方式直接写在框架内部，依旧要根据配置来实现，其实这个做法类似前边提到的 `environment.json` 以及路由规划表中的菜单运算，结合 `environment.json` 中的导入，属性初始值在导入过程中有两种模式：
+
+- 全局模式（配置租户信息），该部分参考 link:#__SPEC_LOADDATA_GLOBAL[导入默认值,window="_blank"]，若您想要修改全局文件名，配置片段如下：
++
+[source,yaml]
+----
+# zero-ifx-excel 插件提供，在 vertx-excel.yml 中配置
+excel:
+    tenant: "init/environment.json"
+----
+
++
+--
+假设您的全局配置文件中包含如下信息：
+--
+
++
+[source,json]
+----
+{
+    "global": {
+        "sigma": "xxx",
+        "appId": "xxx",
+        "appKey": "xxx",
+        "language": "cn",
+        "active": true,
+        "createdBy": "zero-environment",
+        "hotelId": "xxx"
+    }
+}
+----
+
++
+--
+若您的模型中只有 `sigma, language, active`，而不包含的属性会直接忽略，假设有 `name, code` 两列 Excel 模板导入，最终的记录中值来源如下：
+
+[options="header"]
+|====
+|属性|模型属性|来源：Excel|来源 `global`
+|name|o |o |
+|code|o |o |
+|sigma|o |  | o
+|language|o | | o
+|active|o | |o
+|====
+
+[TIP]
+====
+全局配置文件中 Excel 模板文件优先级大于 `environment.json` 文件中的优先级，即上述来源 `global` 必须是在 Excel 数据模板中属性缺失时才生效，若Excel中已经包含了该属性，则优先选择Excel中的属性值做默认值补充导入到环境中。
+====
+--
+
+- 接口模式，您可以在模型定义文件中配置如下代码段：
+
++
+[source,json]
+----
+{
+    "transform": {
+        "initial": {
+            "type": "`${module}`",
+            "identifier": "`${module}`"
+        }
+    }
+}
+----
+
++
+--
+此处定义了 `transform` 节点，即当前模型在导入时会执行转换节点定义的各种转换规则，默认值规则 `initial` 则表示数据导入过程中必须遵循此规则，它是一个 `Object` 类型，描述了属性和来源，如上边片段中，左值 `type, identifier` 表示当前模型中这两个属性需要在转换规则中执行默认值规则（左值是模型中存在的属性名），右值的每项可以是固定值，也可以是上边这种 `JEXL3` 表达式，现阶段此处的表达式入参参考下表：
+
+[options="header"]
+|====
+|参数|含义
+|module|当前模型定义的模块名，默认是 identifier，用于鉴类。
+|sigma|（略）
+|appId|（略）
+|appKey|（略）
+|language|（略）
+|*type|参数中包含的类型信息。
+|*status|参数中包含的状态信息。
+|*view|参数中包含的视图名称，view参数。
+|*position|参数中包含的视图位置，position参数。
+|====
+
+_带 * 号的参数目前未在全场景中测试过，有待进一步验证和补充_。
+--
+
+[CAUTION]
+====
+此处需说明的参数是 `module`，前边章节枚举标准化接口您也看到了表头为：*多表连接*，即这个参数主要在做JOIN时处理，当出现了父节点Join子节点的场景时，`Active/StandBy` 对应的 `module` 参数会不相同。
+====
+
+属性初始值的最终执行流程如下：
+
+image:zcrud-t-init.png[0,720]
+
+==== 树计算
+
+树模型计算同样是在 *导入/导出* 场景中计算，假设系统中有如下表结构：
+
+[options="header"]
+|====
+|key|name|parentId
+|key1|父菜单|NULL
+|key2|子菜单1|key1
+|key3|子菜单3|key1
+|key4|孙菜单|key2
+|====
+
+最终数据结构如下：
+
+image:zcrud-t-tree.png[0,800]
+
+考虑这样一个场景，真正在准备的Excel数据模板中，对这种存在 *代理主键* 的数据结构我们往往不会将主键（UUID）的数据放在数据模板中，所以之中的关联关系若要导入，则需系统根据名称做自动计算，假设导入数据如下（Excel中呈现）：
+
+[options="header"]
+|====
+|name|parentId
+|父菜单1|
+|子菜单4|父菜单1
+|子菜单5|父菜单
+|子菜单6|子菜单2
+|====
+
+[CAUTION]
+====
+分析一下上述数据文件：
+
+- 所有记录没有 *主键列*，即主键是在导入过程中系统自动生成的。
+- 所有记录中的 `parentId` 列的值是菜单的名称，而不是菜单的主键，这种名称格式在数据库中存储的话是不合法的。
+- 上述新增数据表中：`父菜单、子菜单2` 是数据库已经存在的数据表。
+- 而 `父菜单1` 则是新导入的表结构，并未存在于数据库，而是存在于数据文件中。
+====
+
+最终导入到数据库中的结构 *期望* 如下：
+
+[options="header"]
+|====
+|key|name|parentId
+|key1|父菜单|NULL
+|key2|子菜单1|key1
+|key3|子菜单3|key1
+|key4|孙菜单|key2
+|key5|父菜单1|NULL
+|key6|子菜单4|key5
+|key7|子菜单5|key1
+|key8|子菜单6|key2
+|====
+
+而最终存储在数据库中的新树应该如下：
+
+image:zcrud-t-treenew.png[0,960]
+
+那么实现上述方案在 Zero Extension（ zero-crud ）中应该如何配置呢？参考下边配置片段：
+
+[source,json]
+----
+{
+    "transform": {
+        "tree": {
+            "in": "name",
+            "out": "key",
+            "field": "parentId
+        }
+    }
+}
+----
+
+- `in` ：该属性表示Excel中输入属性名，此处配置的 `name`，则表示这一列就是：显示值到主键的转换，您也可以配置其他列。
+- `out` ：该属性表示数据库中存储的建立树的属性名，如 `key`，Zero中默认使用 `key`。
+- `field` ：该属性是树型父子级关联专用树型，如示例中的 `parentId`，它表示构造树的分支属性名。
+
+[CAUTION]
+====
+只要你按照上述配置处理了，那么本章讲解的树导入就自动完成了，您不再需要额外的配置。Zero中有一套通用配置就是此处的 `in` 和 `out`，它的语义如下：
+
+- in：通常代表外部系统，即用户请求中的数据，通常是JSON中的右值（流程引擎中也如此）。
+- out：通常代表内部系统，即存储在数据库中的数据，通常是JSON中的左值。
+====
+
+==== 常量映射
+
+常量映射转换规则在前端形态比较清晰，处理 *固定选项* 下拉、单选模式，很多系统设计在处理下拉、单选时，通常会使用双列表：值列表、显示列表，值列表对应到系统中存储的系统值，而显示列表就是人工阅读便携的列表，原理近似于上边提到的树中的 `name` 和 `key`，一般用户导入时只提供 `name` 属性值，而系统中存储的是另外一套值（值列表）。参考下图：
+
+image:zcrud-t-mapping.png[0,800]
+
+若要在导入过程中实现上述效果，您需要设置如下配置段：
+
+[source,json]
+----
+{
+    "transform": {
+        "mapping": {
+            "payType": {
+                "WeChat": "微信支付",
+                "AliPay": "支付宝",
+                "ApplePay": "苹果支付",
+                "UnionPay": "银联支付"
+            }
+        }
+    }
+}
+----
+
+- `mapping` 节点用于定义 *固定映射* 集。
+- `payType` 表示模型中拥有的属性值。
+- JsonObject 中描述了转换过程中的基本规则，键值对映射。
+
+[WARNING]
+====
+配置过程中，保证值不要重复，因为值重复了会让导出数据时出现二义性而引起导出失败。
+====
+
+==== 字典映射
+
+字典映射是常量映射的一种扩展模式，常量映射中值是不可管理的，比如上述结构中只有四种支付方式，若要拓展成五种就不可以，而字典映射会关联另外的表结构信息实现可动态扩展的模式，这种模式下：值列表和显式列表同时来源于某个固定的数据源，这个数据源是可配置的。先看示例：
+
+[source,json]
+----
+{
+    "transform":{
+        "fabric": {
+            "source": [
+                {
+                    "source": "TABULAR",
+                    "types": [
+                        "pay.term.type"
+                    ]
+                }
+            ],
+            "epsilon": {
+                "termType": {
+                    "source": "pay.term.type",
+                    "in": "name",
+                    "out": "key"
+                }
+            }
+        }        
+    }
+}
+----
+
+- 字典配置使用 `fabric` 属性进行定义。
+- 字典配置中主要包含数据源端 `source` 和消费端 `epsilon`。
+- 数据源端主要包含三种类型：
++
+--
+- TABULAR：固定从列表字典 `X_TABULAR` 中提取数据。
+- CATEGORY：固定从分类字典（带继承的树型结构） `X_CATEGORY` 中提取数据。
+- ASSIST：自由格式，从任意第三张表结构中提取字典数据源。
+--
+
+- 消费端的 `in` 和 `out` 的含义和前文提到的Zero标准化映射保持一致。
+
+参考下边的完整示例了解一下字典映射（翻译）操作做了什么：
+
+image:zcrud-t-datum.png[0,960]
+
+上述结构中对应的配置如下（图中包含固定映射和两个字典映射）：
+
+[source,json]
+----
+{
+    "transform":{
+        "fabric": {
+            "source": [
+                {
+                    "source": "TABULAR",
+                    "types": [
+                        "zero.employee",
+                        "pay.type"
+                    ]
+                },
+                {
+                    "source": "ASSIST",
+                    "key": "resource.departments",
+                    "component": "io.horizon.spi.dict.DepartmentDict"
+                },
+                {
+                    "source": "ASSIST",
+                    "key": "resource.teams",
+                    "component": "io.horizon.spi.dict.TeamDict"
+                }
+            ],
+            "epsilon": {
+                "payType": {
+                    "source": "pay.type",
+                    "in": "name",
+                    "out": "code"
+                },
+                "employeCode":{
+                    "source": "zero.employee",
+                    "in": "name",
+                    "out": "key"
+                },
+                "deptId": {
+                    "source": "resource.departments",
+                    "in": "name",
+                    "out": "key"
+                },
+                "teamId": {
+                    "source": "resource.teams",
+                    "in": "name",
+                    "out": "key"
+                }
+            }
+        }        
+    }
+}
+----
+
+==== 多表操作
+
+从新版开始，模型定义文件除了对应单表实体，还可支持父子表结构，二者之间使用 JOIN 关键字来实现双表操作。此处的多表通常是：*抽象表 JOIN 具象表* 的模式，假设如下场景：
+
+image:zcrud-join.png[0,800]
+
+这种场景在单个项目中通常出现概率很小，但在平台级项目中就会遇到很多，简单说上述结构描述了一个场景：整个系统中有不同的用户群体，每个用户群体的属性是不相同的（员工、会员、客户），而整个系统中只能拥有一套账号表，保证三种不同用户群体可管理，可登录系统，于是最终形成了如下设计结构：
+
+[options="header"]
+|====
+|模型名|标识|关联字段|计算字段
+|用户表|sec.user||userType
+|员工表|res.employee|userId|
+|会员表|res.member|userId|
+|客户表|res.customer|userId|
+|====
+
+按照上述设计结构最终形成如下账号用户体系：
+
+image:zcrud-join-2.png[0,800]
+
+[CAUTION]
+====
+这种模式下，用户表通过左连接（LEFT JOIN）的方式拉取了不同用户的宽表信息，既然可以左外连接为什么还需要 `userType` ？主要目的是右值维度固定，比如我们可以从账号表中按 `userType` 查询不同类型用户群体的账号信息。
+====
+
+若要完成上述功能，您只需要在配置中追加如下：
+
+[source,json]
+----
+{
+    "connect": {
+        "targetIndent": "userType",
+        "target": {
+            "res.employee": {
+                "keyJoin": "userId"
+            },
+            "res.member": {
+                "keyJoin": "userId"
+            },
+            "res.customer": {
+                "keyJoin": "userId"
+            }
+        },
+        "source": {
+            "keyJoin": "key"
+        }
+    }    
+}
+----
+
+上述配置最终会在底层形成如下逻辑结构：
+
+image:zcrud-join-3.png[0,800]
+
+_上述配置结构中的 `source` 和 `target` 是可以完全展开的，`source` 表示主实体（JOIN左），`target` 是被连接实体（JOIN右），所以此处 `target` 可以存在多个，而每个 `source` 和 `target` 数据结构一致。_
+
+[source,json]
+----
+{
+    "identifier": "xxx",
+    "crud": "xxx",
+    "classDao": "xxx",
+    "classDefine": "xxx",
+    "keyJoin": "xxx",
+    "synonym": {
+        "field1": "xxx",
+        "field2": "xxx"
+    }
+}
+----
+
+这些属性含义如下：
+
+[options="header"]
+|====
+|属性|含义
+|identifier|当前实体的 `identifier` 名称（也可以是模型的 `identifier`，非动态模式下二者相同）。
+|crud| `zero-crud` 模块专用，对应到配置文件名，防止重复配置，此属性会引用另外一个配置好的 crud 模块。
+|classDao| Dao 模式专用，配置读取数据库的数据访问器类全名。
+|classDefine| （保留）自定义模式下，单独提供扩展组件扩展此处的连接模式。
+|keyJoin| 默认是 `key`，即两张表做JOIN时各自提供的属性名。
+|synonym| 同义语义，这种语法可以解决连接之后双表属性重名或列重名的问题。
+|====
+
+===== 双表重名冲突
+
+两张表在JOIN过程中，若出现了同名字段，如何解决？
+
+image:zcrud-join-dup.png[0,960]
+
+如上图，主表中定义了 `userNo` 属性，被连接的表中也定义了 `userNo`，这两个属性重名了，由于值不相同，那么系统如何决定返回的值是什么？如截图中 `userNo` 的值应该是 `00156` 还是 `10447` 呢？所以此处您可以定义 *同义* 语义：
+
+[source,json]
+----
+{
+    "connect": {
+        "targetIndent": "userType",
+        "target": {
+            "res.employee": {
+                "keyJoin": "userId",
+                "synonym":{
+                    "userNo": "employeeNo"
+                }
+            }
+        },
+        "source": {
+            "keyJoin": "key"
+        }
+    }    
+}
+----
+
+如此定义之后，被连接表中的 `userNo` 就会被重命名为 `employeeNo`，最终生成的数据记录如下：
+
+[source,json]
+----
+{
+    "key": "key1",
+    "userType": "employee",
+    "userNo": 00156,
+    "userId": "key1",
+    "employeeNo": 10447
+}
+----
+
+[WARNING]
+====
+按照上述配置解决了连接过程中的双表重名问题，但是真正在项目开发过程中，推荐您还是不要定义太多JOIN结构，这个结构不论怎么讲都可能拖慢系统的增删改性能。但是不推荐使用不等于不用，在特定场景下，还是根据需求设定对应的功能用法是最佳选择。
+====
+
+==== AOP组件
+
+除了上述提到的转换规则和多表连接等各种功能外，`zero-crud` 的导入导出还支持AOP（切面）功能，即您可以在导入和导出的前后位置（ `Around` 模式）分别追加插件对数据本身进行修改或修订，最常见的用法就是导入员工时创建账号、角色，它在目前系统中的配置如下：
+
+===== 原始配置
+
+[source,json]
+----
+{
+    "aop": {
+        "plugin.component.after": [
+            "io.vertx.mod.rbac.aop.AfterUserSync"
+        ],
+        "plugin.config": {
+            "io.vertx.mod.rbac.aop.AfterUserSync": {
+                "mapping": {
+                    "viceName": "realname",
+                    "viceMobile": "mobile",
+                    "viceEmail": "email"
+                },
+                "initialize": {
+                    "modelId": "employee"
+                }
+            }
+        }
+    }
+}
+----
+
+- 上述配置片段配置了一个后置插件 `AfterUserSync` （前后置主要检查您实现的什么接口）。
+- 在导入员工数据之后，这个插件会被触发，为一个员工创建账号信息（ `E_EMPLOYEE` 的数据生成 `S_ACCOUNT` 账号记录），并为该账号赋予角色值。
+
+上述插件的完整代码如下：
+
+[source,java]
+----
+package io.vertx.mod.rbac.aop;
+
+import io.horizon.eon.em.typed.ChangeFlag;
+import io.horizon.uca.aop.After;
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
+import io.vertx.mod.ke.refine.Ke;
+import io.vertx.mod.rbac.acl.relation.IdcStub;
+import io.vertx.up.eon.KName;
+import io.vertx.up.unity.Ux;
+import io.vertx.up.util.Ut;
+
+import java.util.HashSet;
+import java.util.Set;
+
+public class AfterUserSync implements After {
+    @Override
+    public Set<ChangeFlag> types() {
+        return new HashSet<>() {
+            {
+                this.add(ChangeFlag.ADD);
+                this.add(ChangeFlag.UPDATE);
+            }
+        };
+    }
+
+    @Override
+    public Future<JsonArray> afterAsync(final JsonArray data, final JsonObject config) {
+        final JsonArray users = new JsonArray();
+        // JsonObject Extract from config;
+        final JsonObject mapping = Ut.valueJObject(config, KName.MAPPING);
+        final JsonObject initialize = Ut.valueJObject(config, KName.INITIALIZE);
+        Ut.itJArray(data).forEach(employee -> {
+            final JsonObject inputJ = Ut.valueJObject(employee, KName.__.INPUT);
+            if (inputJ.containsKey(KName.USERNAME)) {
+                // Put initialize into created users
+                final JsonObject userJ = initialize.copy();
+                // 8 Normalized Fields
+                Ke.umCreated(userJ, employee);
+                // Mapping processing
+                Ut.<String>itJObject(mapping, (to, from) -> userJ.put(to, employee.getValue(from)));
+                // Input Extracting
+                userJ.put(KName.USERNAME, inputJ.getValue(KName.USERNAME));
+                final String roles = inputJ.getString("roles", null);
+                if (Ut.isNotNil(roles)) {
+                    userJ.put("roles", roles);
+                }
+                userJ.put(KName.MODEL_KEY, employee.getValue(KName.KEY));
+                users.add(userJ);
+            }
+        });
+        if (Ut.isNil(users)) {
+            return Ux.future(data);
+        } else {
+            final String sigma = Ut.valueString(data, KName.SIGMA);
+            final String by = Ut.valueString(data, KName.UPDATED_BY);
+            final IdcStub idcStub = IdcStub.create(sigma);
+            return idcStub.saveAsync(users, by).compose(created -> Ux.future(data));
+        }
+    }
+}
+----
+
+上述代码最终的Excel属性模板如下：
+
+[options="header"]
+|====
+|workNumber|username|roles
+|00100|test01|管理员,项目经理
+|00200|test02|项目经理
+|====
+
+[CAUTION]
+====
+最终在导入上述表格中第一行数据时，系统做了几件事：
+
+- 创建了一个员工信息，工号 `00100`。
+- 检查系统中是否存在 `test01` 账号，若不存在该账号，则为员工 `00100` 创建该账号，并和员工对接。
+- 将角色：管理员、项目经理的权限授权给 `test01` 账号。
+
+当然您也可以根据自身情况开发自定义的AOP插件执行附加操作，最后需要注意上述实现类中，您可以看到如下代码：
+
+[source,java]
+----
+    @Override
+    public Set<ChangeFlag> types() {
+        return new HashSet<>() {
+            {
+                this.add(ChangeFlag.ADD);
+                this.add(ChangeFlag.UPDATE);
+            }
+        };
+    }
+----
+
+它表示该插件只在添加和更新时触发，删除账号时这个插件不会执行。
+====
+
+===== 分流器配置
+
+[TIP]
+====
+分流器配置主要设计于 `X_TABULAR` / `X_CATEGORY` 专用，处理主表和子表之前的分离的不同子表的分流器流程
+====
+
+[source,json]
+----
+{
+    "aop": {
+        "plugin.fork": {
+            "type": "FIELD",
+            "robin": "",
+            "config": {
+                "by": "identifier"
+            },
+            "value1": {
+                "plugin.component.before": [],
+                "plugin.component.after": [],
+            },
+            "value2": {
+                "plugin.component.before": [],
+                "plugin.component.after": [],
+            }
+        },
+        "plugin.config": {
+            "xxx.Component": {
+                "mapping": {
+                    "viceName": "realname",
+                    "viceMobile": "mobile",
+                    "viceEmail": "email"
+                },
+                "initialize": {
+                    "modelId": "employee"
+                }
+            }
+        }
+    }
+}
+----
+
+上述代码中，在触发AOP之前遵循了基本规则：
+
+1. 分流器类型包括三种:
+
++
+--
+- NONE：不配置分流器
+- FIELD：按字段执行分流
+- COMPONENT：按组件执行分流
+--
+
+2. 组件分流时，`robin` 是必须配置的，且必须实现 `HRobin` 接口。
+3. 字段分流配置对应上述内容中的 `config`（默认配置）。
+4. 分流器配置开了之后，分流出来的不同 `value` 可以对应不同的 AOP 流程，如此执行后，即使针对 *单表* 也可实现区域性AOP模式。

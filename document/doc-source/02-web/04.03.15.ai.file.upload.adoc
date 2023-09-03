@@ -1,0 +1,68 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiFileUpload`
+
+批量上传组件，底层使用了 `AntD` 中的 `<Upload/>` 组件，配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "record@file,文件下载,16,,aiFileUpload,text=上传",
+        "optionJsx.accept": "*/*",
+        "optionJsx.config.filekey": "key",
+        "optionJsx.config.limit": 10240,
+        "optionJsx.ajax.uri": "/api/file/upload/:category",
+        "optionJsx.ajax.download": "/api/file/download/:key",
+        "optionJsx.ajax.params": {
+            "category": "FIX:FILE.REQUEST"
+        },
+        "optionJsx.config": {
+            "linker": {
+                "key": "record@key",
+                "fileKey": "record@fileKey",
+                "name": "record@name",
+                "type": "record@type",
+                "size": "record@size",
+                "sizeUi": "record@sizeUi",
+                "extension": "record@extension"
+            }
+        },
+        "optionConfig.rules": [
+            "required,上传文件不可为空，请上传您要审批的文件！"
+        ]
+    }
+]
+----
+
+上述配置是 **文件流程** 中的特殊配置，前文中已经针对 **特殊配置** 有所说明了，此处先不讲 `linker`（放到后续专用组件中讲解）。
+
+===== 子字段 `@`
+
+此处需要讲解一个特殊的 Zero UI 中的表单语法，通常模式下一个表单字段是类似 `name` 这种格式，但随着集成服务 `zero-is` 开启之后，Zero UI做了一次升级，本次升级中，让表单 `<Form/>` 的属性支持嵌套型，但由于 `.` 已经被 **属性解析器** 使用了，所以这种模式下使用 `@` 做分隔符来区分主记录和子记录，如本示例中的 `record@key`，实际这些属性最终会执行转换。
+
+[source,json]
+----
+{
+    "record@key": "key1",
+    "record@name": "name1",
+    "record@size": 96
+}
+----
+
+上述格式最终会转换成：
+
+[source,json]
+----
+{
+    "record": {
+        "key": "key1",
+        "name": "name1",
+        "size": 96
+    }
+}
+----
+
+上述转换流程会在表单提交过程中自动转换，且和表单绑定时也会自动执行，您无需做任何操作就可以实现这种级别的数据转换行为。

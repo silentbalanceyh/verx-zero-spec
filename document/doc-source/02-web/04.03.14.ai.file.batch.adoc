@@ -1,0 +1,41 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiFileBatch`
+
+批量上传组件，底层使用了 `AntD` 中的 `<Upload/>` 组件，配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "files,文件上传,18,,aiFileBatch,text=上传",
+        "optionJsx.accept": "*/*",
+        "optionJsx.config.filekey": "key",
+        "optionJsx.config.limit": 10240,
+        "optionJsx.config.reduce": true,
+        "optionJsx.ajax.uri": "/api/file/upload/:identifier?directory=:directory",
+        "optionJsx.ajax.download": "/api/file/download/:key",
+        "optionJsx.ajax.params": {
+            "identifier": "FIX:x.notice",
+            "directory": "/系统文档/公告文档",
+            "formula": "/${name}"
+        }
+    }
+]
+----
+
+===== 特殊属性
+
+（此组件特殊属性和前文 `aiFileLogo` 保持一致）。
+
+[NOTE]
+====
+此处要特别说明的是 `directory` 参数，此参数会开启上传文件过程中的 **集成存储** 功能，它配置了文件最终存储地址，若一个文件挂载了某个目录（带有 `directory` 参数），那么这个目录将会映射到后台作为 `I_DIRECTORY` 中的配置指向存储，若此目录开启了集成功能，那么后台存储此文件的有可能是 **FTP地址、SSH文件系统、NFS地址** 等，且示例中还包含了 `formula` 参数，该参数可支持 **动态目录** 功能，在某个 `directory` 之下您可以根据输入的数据创建内部嵌套目录（流程附件依靠的就是此参数的动态设置）。
+====
+
+批量上传组件如下：
+
+image:exp-input-filebatch.png[0]
+

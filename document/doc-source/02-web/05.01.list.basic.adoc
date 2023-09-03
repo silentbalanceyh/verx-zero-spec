@@ -1,0 +1,389 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 列表开发
+
+一般在一个完整的系统开发中，最高频的两种中后台管理页面就是：**表单页和列表页**，前文已讲解了表单页中的基本配置和组件用法，本章节开始带开发人员看看 Zero Extension 中提供的列表组件。
+
+- `ExListFast`：快速列表
+- `ExListComplex`：标准列表
+
+可以说 `ExListComplex` 组件几乎是为后端的 `zero-crud` 量身打造的全功能模块，此列表支持 link:#__CONFIG_CRUD_API[15 个标准接口]，Zero Extension 中的支持的接口并非传统的 **增、删、查、改** 四个维度，追加了实战过程中常用的扩展维度（包括视图、高级搜索），从实践经验可以知道这种 **复杂列表** 在企业应用中才可支撑大量产品化、快速交付项目的基本需求，特别针对中后台管理页达到不错的管理效果。
+
+====
+本篇先不结合截图讲解列表页选项（此部分直接在 **实战模块** 中加以详细说明），先简单讲解一下 Zero Extension 中列表的基础知识，截图由零点科技有限公司（使用Zero的友人）提供。
+====
+
+==== 功能表
+
+Zero Extension 中列表的功能支持如下：
+
+- 访问 `/api/xxx/search` 查询分析引擎接口，实现列表页的基本呈现，包括：**分页、排序、列过滤、跳页、查询**。
+- ExListComplex 组件的页面流如下：
++
+--
+image:exp-list-flow.png[0,960]
+--
+- 
+
+[CAUTION]
+====
+待完善的部分：
+
+- `ExListComplex` 目前的入口视图是固定的，`view = DEFAULT`，后期需要打造个人设置将某个模块的个人入口设置到单独的视图上实现个性化入口定制。
+- 批量编辑现阶段只提供了 **配置模式** 的简易编辑和 **开发模式** 的复杂表单编辑功能，后期需提供 **开发模式** 的表单编辑功能实现增强批量处理。
+- 部分细节现阶段支持的组件数量有限，后期待补齐，包括
++
+--
+- 列过滤种类
+- 查询条件种类
+- 列渲染种类
+--
+- 目前的附加功能局限于：**导入、导出、列筛选、视图管理**，后续此处的行为需进一步添加。
+- ExListComplex现阶段是不支持 **查看页** 的，从图上可以知道，`mode` 只支持 `ADD / EDIT` 两种，后续需补齐查看页做标准化管理。
+====
+
+==== 工作区域
+
+image:exp-list-range.png[0,960]
+
+截图中区域说明（区域标识以截图中蓝色文字为主）：
+
+[options="header",cols="2,8"]
+|====
+|区域标识|含义
+|`open`|添加操作区域，默认只带有 **添加** 按钮可直接打开 `mode=ADD` 的页签。
+|`batch`|批量更新、批量删除区域，此处可扩展更多带有 **选择模式** 的批量行为，可直接扩展 `op.extension` 选项实现。
+|`search`|搜索统一区域：**设置查询条件、高级搜索表单、清空查询条件** 等。
+|`extra`|右上附加区域，**导入、导出、列筛选、试图管理** 等。
+|`column`|列表头部区域，**列过滤、排序** 等。
+|`pagination`|分页器，支持 **分页、页尺寸设置、跳页** 等常用分页功能。
+|====
+
+==== 配置概览
+
+本文主要解析传入 `ExListComplex` 中的 `config` 属性的核心数据结构，让开发人员可以根据自己实际需要对列表进行扩展和定制。
+
+`UI.json` 的基本结构如下：
+
+[source,json]
+----
+{
+    "_page": {
+    
+    },
+    "_assist": {
+    
+    },
+    "_grid": {
+        "query": {},
+        "options": {},
+        "component": {},
+        "table": {}
+    }
+}
+----
+
+上述结构是开发 **列表页** 的专用配置结构，配置项内容如下：
+
+[options="header", cols="15,15,70"]
+|====
+|根节点|子节点|含义
+|`_page`||此节点一般用于绑定 `<PageCard/>` 实现标题和外层容器的开发。
+|`_assist`||辅助数据开发，等价于表单内页的 `assist` 部分，辅助数据会提前在您操作之前从远程直接拉取 **辅助数据**（字典数据、外联数据、自定义数据、分类数据）等。
+|`_grid`| `query` | 当前列表组件默认查询条件，第一次查询依赖此 **查询条件** 读取远程列表数据。
+||`options` |选项数据，您可以更改此配置对 **列表组件** 进行各种设置。
+||`component` |常用扩展组件：**批量编辑表单、导入表单、导出表单、视图管理、列筛选表单** 等几个组件的相关配置都可以直接在此处设置。
+||`table` a|表格组件，主要包含了 **列渲染器**，此处有一点需说明：
+
+- 若您的列表使用的是 **静态列配置**，那么您可以直接在 `table.columns` 中执行完整定义。
+- 若您的列表使用的是 **动态配置**（ `dynamic.column = true` ），此时列相关信息依赖后端的列读取，`table.columns` 中只提供操作符列相关定义即可。
+|====
+
+==== 标准开发
+
+标准方法开发中，你可以在页面这一级直接读取完整结构的列表配置，并将配置以 `config` 的属性传入 `ExListComplex` 组件中。参考如下代码：
+
+[source,js]
+----
+import React from 'react';
+import Ux from 'ux';
+import FormAdd from './form/UI.Add';
+import FormEdit from './form/UI.Edit';
+import FormFilter from './form/UI.Filter';
+import Ex from "ex";
+import {ExListComplex} from "ei";
+import Op from "./form/Op";
+import {PageCard} from "web";
+
+@Ux.zero(Ux.rxEtat(require("./Cab"))
+    .cab("UI")
+    .to()
+)
+class Component extends React.PureComponent {
+    state = {
+        $ready: false
+    };
+
+    componentDidMount() {
+        Ex.yiStandard(this).then(Ux.pipe(this));
+    }
+
+    render() {
+        return Ex.yoRender(this, () => {
+
+            const config = Ux.fromHoc(this, "grid");
+            /* 专用组件信息 */
+            const form = {
+                FormAdd,    // 添加表单
+                FormEdit,   // 更新表单
+                FormFilter  // 搜索表单
+            };
+            return (
+                <PageCard reference={this}>
+                    <ExListComplex {...Ex.yoAmbient(this)}
+                                   rxPostDelete={Op.rxPostDelete(this)}
+                                   rxAssist={Op.rxAssist(this)}
+                                   config={config} $form={form}/>
+                </PageCard>
+            )
+        }, Ex.parserOfColor("PxRBACGroup").page());
+    }
+}
+
+export default Component
+----
+
+上述代码是 Zero Extension 中用户组的管理入口页，如果使用这种方式开发列表入口页，注意如下几点：
+
+- 外层组件可以直接使用 `<div/>` 标签组件，你也可以按照示例中直接使用 `<PageCard/>` 组件（带有头、标题、按钮和右上 Extra部分的基础页面容器）。
+- `componentDidMount` 中的 `Ex.yiStandard` 方法调用是 **可选的**，它取决于您的列表页中是否带有初始化数据部分 `_assist` 辅助数据，这些辅助数据可直接作用于 **列表、表单** 作为辅助字典数据来处理。
+- 绑定资源文件之后，配置部分从 `UI.json` 中的 `_grid` 中提取全列表配置。
+- 此处依赖三个表单文件，且表单键值是固定的：
++
+--
+[options="header",cols="3,7"]
+|====
+|表单键|含义
+|`FormAdd`|添加表单，`mode=ADD` 的表单组件。
+|`FormEdit`|更新表单，`mode=EDIT` 的表单组件。
+|`FormFilter`|高级搜索表单，直接提供高级搜索专用表单定制功能，您可定制不同的查询条件。
+|`FormBatch`|（保留）后期拓展批量编辑中的自定义部分设置批量编辑专用表单。
+|====
+--
+- 示例代码中的 `rxPostDelete / rxAssist` 不属于标准部分的代码，它属于定制部分，所以标准部分代码只需要实现如下功能即可：
++
+--
+[options="header",cols="3,7"]
+|====
+|属性|含义
+|`Ex.yoAmbient(this)` a| Zero 扩展框架中的核心继承方法，可以帮助您针对上下文属性实现向下继承的功能，其中包括：
+
+- 常用的辅助数据（ `$a_` ）和字典数据（ `$t_` ）。
+- 常用的上层函数，函数前缀（ `rx / fn / ix` ）。
+- 全局数据：应用 `$app`、登录账号 `$user`、路由 `$router` 等。
+|`config`|读取到的 `ExListComplex` 的完整配置数据，从 `UI.json` 的 `_grid` 节点提取。
+|`form`|传入 `ExListComplex` 表单完整数据。
+|====
+--
+
+[CAUTION]
+====
+这种开发模式比 **快速开发** 模式多开发完整的 **表单** 页（三个表单页），不仅如此表单页所有行为函数都需开发人员提供（ `Op.js` ），所以这种开发模式可定义为 **开发型**；标准开发
+====
+
+=== 快速开发
+
+快速开发依赖新库 `ui` 中提供的智能化开发模块。
+
+==== `Ui.smartList`
+
+`smartList` 的骨架代码如下：
+
+[source,js]
+----
+import Ui from "ui";
+import Ex from 'ex';
+import Ux from 'ux';
+
+export default Ui.smartList({
+    ns: require("./Cab.json"),
+    name: "Integration.SMS",
+    logger: "toolkit",
+    Options: {
+        rm: [
+            "form.filter",      // 关闭高级搜索表单
+            "op.extra.export",  // 按钮：导出
+            "op.extra.import",  // 按钮：导入
+            "op.batch.delete",  // 按钮：批量删除
+            "op.batch.edit",    // 按钮：批量编辑
+        ]
+    },
+    Form: {
+        name: "FormSms",
+        yoOp: {
+            A: "/api/i-integration",
+            S: "/api/i-integration/:key",
+            D: "/api/i-integration/:key"
+        }
+    },
+    componentInit: (reference) => {
+        Ex.yiAssist(reference, {})
+            .then(Ux.ready).then(Ux.pipe(reference))
+    }
+})
+----
+
+快速开发模式主要调用 `Ui.smartList` 的API完成页面的综合性定制，此处针对 `Ui.smartList` 做个简易的说明，这个函数只有一个参数：
+
+[source,js]
+----
+const smartList = (configuration = {}) => {
+    // ...
+}
+----
+
+`configuration` 的配置项数据结构如下：
+
+[options="header",cols="2,8",title="基础配置"]
+|====
+|配置项|含义
+|`ns` |关联名空间连接文件，此处必须调用 `require` 方法连接名空间。
+|`name` |这个是页面名称，您可以随意设置页面名称，在开发过程中此名称会出现在浏览器的开发工具 `console` 中，您可以精确定位日志是从什么地方出来的。
+|`logger` |可使用的日志器，日志器必须是合法日志器，参考 **日志器** 章节。
+|`Cab` |（驼峰命名），若不指定此选项，那么当前页面会直接绑定到 **名空间** 下 `UI.json` 文件中，若您要指定就必须指定 Cab 对象中 `page` 属性（不带 `.json` 后缀）。
+|`Options` |（驼峰命名），您可以设置 `rm` 属性关闭列表页中不使用的选项，选项参考下一章节单独说明。
+|`Form` a|（驼峰命名），此处的 `Form` 属性对应 `Ui.smartForm` 中的配置信息，常用四个属性如：
+
+- `name`：表单的名称
+- `yoOp`：当前操作中的常用 RESTful 地址
++
+--
+- A：添加接口（POST方法）
+- S：保存接口（PUT方法）
+- D：删除接口（DELETE方法）
+--
+|====
+
+[options="header",cols="2,8",title="生命周期函数"]
+|====
+|配置项|含义
+|`componentInit`|对应 React 中的 `componentDidMount` 生命周期。
+|`componentUp`|对应 React 中的 `componentDidUpdate` 生命周期。
+|`componentYo`|对应 React 中的 `render` 生命周期。
+|====
+
+[options="header",cols="2,8",title="Extension扩展"]
+|====
+|配置项|含义
+|`yoOp`|扩展属性 `$op`，对操作按钮执行变更实现按钮扩展。
+|`yoExecutor`|扩展属性 `$executor`，主要针对横行中的操作，如 **编辑、删除、权限设置** 等，列表行操作必须。
+|`yoPlugins`|扩展属性 `$plugins`，针对 Zero Extension 组件渲染支持的插件进行定义。
+|`yoRenders`|扩展属性 `$renders`，自定义 **表单渲染器**，对应 `<ExForm/>` 中的 `$renders` 实现表单交互式组件的自定义。
+|`yoRx`|扩展属性 `rx` 前缀类型的函数继承。
+|`renderAddOn`|列表之下的 **附加渲染器**，可渲染额外区域的相关组件。
+|====
+
+
+==== `Ui.smartForm`
+
+`smartForm` 实际是快速绑定表单专用资源文件实现表单级的快速开发模式，这种场景下不需要您提供额外的表单代码文件，外层若调用 `smartList`，那么此处的 `Form` 配置中的每一种表单配置都会触发一次 `smartForm` 实现标准模式下三种表单的快速配置流程。
+
+此函数签名如：
+
+[source,js]
+----
+const smartForm = (configurationForm = {}, mode) => {
+    // ....
+}
+----
+
+[options="header",cols="2,8",title="基础配置"]
+|====
+|`ns` |关联名空间连接文件，此处必须调用 `require` 方法连接名空间。
+|`name` |这个是表单名称，您可以随意设置表单名称，在开发过程中此名称会出现在浏览器的开发工具 `console` 中。
+|`Cab` |（驼峰命名），默认会使用标准化代码针对 `FormAdd, FormEdit, FormFilter` 三种表单绑定不同的资源文件，默认绑定 `UI.Add.json、UI.Edit.json，UI.Filter.json`。
+|====
+
+[options="header",cols="2,8",title="生命周期函数"]
+|====
+|配置项|含义
+|`componentInit`|对应 React 中的 `componentDidMount` 生命周期。
+|`componentUp`|对应 React 中的 `componentDidUpdate` 生命周期。
+|`componentYo`|对应 React 中的 `render` 生命周期。
+|`componentValue`|表单特殊的生命周期执行，在 `render` 中再次执行初始化值的相关计算流程。
+|====
+
+[options="header",cols="2,8",title="Extension扩展"]
+|====
+|配置项|含义
+|`yoOp` |扩展属性 `$op`，表单提交专用函数（直接和 `aiAction` 绑定的按钮函数，一般是二阶函数）。
+|`yoJsx` |扩展属性 `$renders`，表单自定义渲染器，若表单中的组件依赖 **用户自定义组件**，可直接使用此属性扩展。
+|`yoAcl` |扩展属性 `$edition`，针对表单执行 ACL 的权限控制 **自定义**。
+|`yoPlugins` |扩展属性 `$plugins`，针对表单部分插件配置，可挂载外置插件。
+|====
+
+[CAUTION]
+====
+上述提供的所有 `yo` 类型的扩展属性都包含两种形态：
+
+- `Funcation` 形态，直接执行过后产生所需的配置项 `{}`。
+- `Object` 形态，直接将此配置项作为 **扩展点** 返回。
+====
+
+==== 快速配置
+
+若您使用了 `Ui.smartXxx` 的方式做 **列表** 和 **表单** 的快速开发，那么配置文件也会大大简化（达到了快速开发的目的）。参考配置如：
+
+[source,json]
+----
+{
+    "_assist": {
+        "zero.integration": {
+            "uri": "/api/type/tabulars/:type",
+            "magic": {
+                "type": "FIX:zero.integration"
+            }
+        }
+    },
+    "_grid": {
+        "module": {
+            "NAME": "邮件配置",
+            "MODULE": "i-integration",
+            "IDENTIFIER": "i.integration"
+        },
+        "query": {
+            "criteria": {
+                "sigma": "PROP:app.sigma",
+                "type": "email",
+                "": "OPERATOR:AND"
+            }
+        },
+        "options": {
+            "tabs.title": "Email服务器配置",
+            "tabs.container": true,
+            "search.advanced": false
+        }
+    }
+}
+----
+
+上述配置文件需说明：
+
+- `_assist` 部分依旧，用于提取辅助数据，不仅如此，若要加载辅助数据您还需在 `componentInit` 中手工书写代码（类似 `componentDidMount` 函数）。
+- `module` 参数，此参数用于模块鉴别，参数含义如下：
+
++
+--
+[options="header", cols="2,8"]
+|====
+|参数名|含义
+|`NAME` |呈现当前模块的显示主体模型文字。
+|`MODULE` |对应 `crud` 模型中的 `name`，构造标准化模块时 `:actor` 部分专用。
+|`IDENTIFIER` |当前管理模块的模型标识符。
+|====
+--
+
+- `query.criteria` 参数，直接书写当前页面的 `Qr` 查询参数。
+- `options` 参数，若您不想使用默认值，则可以直接在此处更改 `options` 配置参数对列表进行修订。

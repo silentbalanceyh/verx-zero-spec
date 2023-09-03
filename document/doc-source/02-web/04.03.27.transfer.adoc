@@ -1,0 +1,38 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiTransfer`
+
+内部封装了 `AntD` 中的 `<Transfer/>` 组件，但实际是自定义组件，用于设置左右穿梭框交互式操作，配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "roles,用户角色,24,,aiTransfer",
+        "optionJsx.config.datum": "source=ajax.roles,value=key,label=name",
+        "optionJsx.config.valueKey": "key",
+        "optionJsx.config.titles": [
+            "待选择",
+            "已选择"
+        ]
+    }
+]
+----
+
+左右穿梭框如下：
+
+image:exp-input-transfer.png[0,800]
+
+===== 特殊属性
+
+配置属性表：
+
+[options="header",cols="3,7"]
+|====
+|属性路径|含义
+|`optionJsx.config.valueKey`|当某些记录选中之后，使用记录中哪个属性的值作为最终的选中值：`[v1, v2，...]`。
+|`optionJsx.config,titles`|当前穿梭框的左右侧的标题设置。
+|====
+

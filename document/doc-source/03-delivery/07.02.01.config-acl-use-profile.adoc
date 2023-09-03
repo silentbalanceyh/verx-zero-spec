@@ -1,0 +1,140 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+==== 多态身份（Profile）
+
+Zero中由于复杂的多对多结构，最终会形成不同的多态身份（Profile），`S_RESOURCE` 表中有如下字段对资源访问资格执行定义：
+
+[options="header"]
+|====
+|字段名|含义|取值
+|MODE_ROLE|按角色查找资源的模式|UNION、EAGER、LAZY、INTERSECT
+|MODE_GROUP|按用户组查找资源的模式|HORIZON、CRITICAL、OVERLOOK
+|MODE_TREE|用户组继承和非继承树模式查找|EXTEND、PARENT、CHILD、INHERIT
+|====
+
+上述取值是资源对多态身份的定义，最终形成的多态身份 `Profile` 的值列表如下（举例定义角色和组的优先级）：
+
+[TIP]
+====
+- 多态身份只有在多角色、关联用户组、多用户组模式下生效，如果只包含一个角色，多态身份会演变成最简单的 `USER_UNION` 模式。
+- 用户/角色、用户组/角色在计算时都支持 `UNION, EAGER, LAZY, INTERSECT` 四种模式。
+- 使用用户组模式时，只要计算出选择使用什么用户组，就可以执行用户组对应的角色关联权限集的计算。
+====
+
+===== 不含组模式
+
+假设用户包含如下信息，这种模式（高频使用模式）下 `MODE_GROUP / MODE_TREE` 都设置成 `NULL`：
+
+[source,bash]
+----
+R1（H）：P1、P2、P3，高优先级角色，包含三条权限记录。
+R2（L）：P2、P4，低优先级角色，包含两条权限记录。
+----
+
+image:zero-p-user.png[,200]
+
+[options="header"]
+|====
+|值|含义
+|USER_UNION|image:zero-p-user-union.png[,160] 并集模式，最终权限集为 `P1, P2, P3, P4`。
+|USER_EAGER|image:zero-p-user-eager.png[,160] 高优先级模式，使用最高优先级角色的权限集，此处：`P1, P2, P3`。
+|USER_LAZY|image:zero-p-user-lazy.png[,160] 低优先级模式，使用最低优先级角色的权限集，此处：`P2, P4`。
+|USER_INTERSECT|image:zero-p-user-intersect.png[,160] 交集模式，最终权限集为 `P2`。
+|====
+
+===== 用户组模式
+
+假设用户包含如下信息：
+
+
+[source,bash]
+----
+用户组结构如下（此处不列举组所对应的权限集）：
+         G10
+        /   \
+      G20   G21
+     /   \    \
+    G30  G31  G32
+而登录用户只包含如下三个用户组：
+G20（H）：高优先级用户组
+G31（M）：中优先级用户组
+G32（L）：低优先级用户组
+全量优先级：
+G10 > G20 > G21 > G30 > G31 > G32
+----
+
+image:zero-p-group.png[,300]
+
+[options="header"]
+|====
+|值|组计算|角色计算|计算流程
+|HORIZON_UNION|image:zero-p-group-u.png[,200]|image:zero-p-user-union.png[,160]|UNION模式计算单个用户组关联角色权限集，再将三个组的权限集合并。
+|HORIZON_EAGER|image:zero-p-group-u.png[,200]|image:zero-p-user-eager.png[,160]|EAGER模式计算单个用户组关联角色权限集，再将三个组的权限集合并。
+|HORIZON_LAZY|image:zero-p-group-u.png[,200]|image:zero-p-user-lazy.png[,160]|LAZY模式计算单个用户组关联角色权限集，再将三个组的权限集合并。
+|HORIZON_INTERSECT|image:zero-p-group-u.png[,200]|image:zero-p-user-intersect.png[,160]|INTERSECT模式计算单个用户组关联角色权限集，再将三个组的权限集合并。
+|CRITICAL_UNION|image:zero-p-group-h.png[,200]|image:zero-p-user-union.png[,160]|UNION模式计算高优先级组的权限集。
+|CRITICAL_EAGER|image:zero-p-group-h.png[,200]|image:zero-p-user-eager.png[,160]|EAGER模式计算高优先级组的权限集。
+|CRITICAL_LAZY|image:zero-p-group-h.png[,200]|image:zero-p-user-lazy.png[,160]|LAZY模式计算高优先级组的权限集。
+|CRITICAL_INTERSECT|image:zero-p-group-h.png[,200]|image:zero-p-user-intersect.png[,160]|INTERSECT模式计算高优先级的权限集。
+|OVERLOOK_UNION|image:zero-p-group-l.png[,200]|image:zero-p-user-union.png[,160]|UNION模式计算低优先级组的权限集。
+|OVERLOOK_EAGER|image:zero-p-group-l.png[,200]|image:zero-p-user-eager.png[,160]|EAGER模式计算低优先级组的权限集。
+|OVERLOOK_LAZY|image:zero-p-group-l.png[,200]|image:zero-p-user-lazy.png[,160]|LAZY模式计算低优先级组的权限集。
+|OVERLOOK_INTERSECT|image:zero-p-group-l.png[,200]|image:zero-p-user-intersect.png[,160]|INTERSECT模式计算低优先级组的权限集。
+|PARENT_HORIZON_UNION|image:zero-p-parent-gu.png[,200]|image:zero-p-user-union.png[,160]|先查找三个组的父组，再按UNION模式计算权限集。
+|PARENT_HORIZON_EAGER|image:zero-p-parent-gu.png[,200]|image:zero-p-user-eager.png[,160]|先查找三个组的父组，再按EAGER模式计算权限集。
+|PARENT_HORIZON_LAZY|image:zero-p-parent-gu.png[,200]|image:zero-p-user-lazy.png[,160]|先查找三个组的父组，再按LAZY模式计算权限集。
+|PARENT_HORIZON_INTERSECT|image:zero-p-parent-gu.png[,200]|image:zero-p-user-intersect.png[,160]|先查找三个组的父组，再按INTERSECT模式计算权限集。
+|PARENT_CRITICAL_UNION|image:zero-p-parent-gh.png[,200]|image:zero-p-user-union.png[,160]|先查找优先级最高组的父组，再按UNION模式计算权限集。
+|PARENT_CRITICAL_EAGER|image:zero-p-parent-gh.png[,200]|image:zero-p-user-eager.png[,160]|先查找优先级最高组的父组，再按EAGER模式计算权限集。
+|PARENT_CRITICAL_LAZY|image:zero-p-parent-gh.png[,200]|image:zero-p-user-lazy.png[,160]|先查找优先级最高组的父组，再按LAZY模式计算权限集。
+|PARENT_CRITICAL_INTERSECT|image:zero-p-parent-gh.png[,200]|image:zero-p-user-intersect.png[,160]|先查找优先级最高组的父组，再按INTERSECT模式计算权限集。
+|PARENT_OVERLOOK_UNION|image:zero-p-parent-gl.png[,200]|image:zero-p-user-union.png[,160]|先查找优先级最低组的父组，再按UNION模式计算权限集。
+|PARENT_OVERLOOK_EAGER|image:zero-p-parent-gl.png[,200]|image:zero-p-user-eager.png[,160]|先查找优先级最低组的父组，再按EAGER模式计算权限集。
+|PARENT_OVERLOOK_LAZY|image:zero-p-parent-gl.png[,200]|image:zero-p-user-lazy.png[,160]|先查找优先级最低组的父组，再按LAZY模式计算权限集。
+|PARENT_OVERLOOK_INTERSECT|image:zero-p-parent-gl.png[,200]|image:zero-p-user-intersect.png[,160]|先查找优先级最低组的父组，再按INTERSECT模式计算权限集。
+|CHILD_HORIZON_UNION|image:zero-p-child-gu.png[,200]|image:zero-p-user-union.png[,160]|先查找所有组的子组，再按UNION模式计算权限集。
+|CHILD_HORIZON_EAGER|image:zero-p-child-gu.png[,200]|image:zero-p-user-eager.png[,160]|先查找所有组的子组，再按EAGER模式计算权限集。
+|CHILD_HORIZON_LAZY|image:zero-p-child-gu.png[,200]|image:zero-p-user-lazy.png[,160]|先查找所有组的子组，再按LAZY模式计算权限集。
+|CHILD_HORIZON_INTERSECT|image:zero-p-child-gu.png[,200]|image:zero-p-user-intersect.png[,160]|先查找所有组的子组，再按INTERSECT模式计算权限集。
+|CHILD_CRITICAL_UNION|image:zero-p-child-gu.png[,200]|image:zero-p-user-union.png[,160]|先查找优先级最高组的子组，再按UNION模式计算权限集。
+|CHILD_CRITICAL_EAGER|image:zero-p-child-gu.png[,200]|image:zero-p-user-eager.png[,160]|先查找优先级最高组的子组，再按EAGER模式计算权限集。
+|CHILD_CRITICAL_LAZY|image:zero-p-child-gu.png[,200]|image:zero-p-user-lazy.png[,160]|先查找优先级最高组的子组，再按LAZY模式计算权限集。
+|CHILD_CRITICAL_INTERSECT|image:zero-p-child-gu.png[,200]|image:zero-p-user-intersect.png[,160]|先查找优先级最高组的子组，再按INTERSECT模式计算权限集。
+|CHILD_OVERLOOK_UNION|image:zero-p-child-gl.png[,200]|image:zero-p-user-union.png[,160]|（无权限）先查找优先级最低组的子组，再按UNION模式计算权限集。
+|CHILD_OVERLOOK_EAGER|image:zero-p-child-gl.png[,200]|image:zero-p-user-eager.png[,160]|（无权限）先查找优先级最低组的子组，再按EAGER模式计算权限集。
+|CHILD_OVERLOOK_LAZY|image:zero-p-child-gl.png[,200]|image:zero-p-user-lazy.png[,160]|（无权限）先查找优先级最低组的子组，再按LAZY模式计算权限集。
+|CHILD_OVERLOOK_INTERSECT|image:zero-p-child-gl.png[,200]|image:zero-p-user-intersect.png[,160]|（无权限）先查找优先级最低组的子组，再按INTERSECT模式计算权限集。
+|INHERIT_HORIZON_UNION|image:zero-p-inherit-gu.png[,200]|image:zero-p-user-union.png[,160]|先查找所有组父组包含本组，再按UNION模式计算权限集。
+|INHERIT_HORIZON_EAGER|image:zero-p-inherit-gu.png[,200]|image:zero-p-user-eager.png[,160]|先查找所有组父组包含本组，再按EAGER模式计算权限集。
+|INHERIT_HORIZON_LAZY|image:zero-p-inherit-gu.png[,200]|image:zero-p-user-lazy.png[,160]|先查找所有组父组包含本组，再按LAZY模式计算权限集。
+|INHERIT_HORIZON_INTERSECT|image:zero-p-inherit-gu.png[,200]|image:zero-p-user-intersect.png[,160]|先查找所有组父组包含本组，再按INTERSECT模式计算权限集。
+|INHERIT_CRITICAL_UNION|image:zero-p-inherit-gh.png[,200]|image:zero-p-user-union.png[,160]|先查找优先级高组的父组包含本组，再按UNION模式计算权限集。
+|INHERIT_CRITICAL_EAGER|image:zero-p-inherit-gh.png[,200]|image:zero-p-user-eager.png[,160]|先查找优先级高组的父组包含本组，再按EAGER模式计算权限集。
+|INHERIT_CRITICAL_LAZY|image:zero-p-inherit-gh.png[,200]|image:zero-p-user-lazy.png[,160]|先查找优先级高组的父组包含本组，再按LAZY模式计算权限集。
+|INHERIT_CRITICAL_INTERSECT|image:zero-p-inherit-gh.png[,200]|image:zero-p-user-intersect.png[,160]|先查找优先级高组的父组包含本组，再按INTERSECT模式计算权限集。
+|INHERIT_OVERLOOK_UNION|image:zero-p-inherit-gl.png[,200]|image:zero-p-user-union.png[,160]|先查找优先级低组的父组包含本组，再按UNION模式计算权限集。
+|INHERIT_OVERLOOK_EAGER|image:zero-p-inherit-gl.png[,200]|image:zero-p-user-eager.png[,160]|先查找优先级低组的父组包含本组，再按EAGER模式计算权限集。
+|INHERIT_OVERLOOK_LAZY|image:zero-p-inherit-gl.png[,200]|image:zero-p-user-lazy.png[,160]|先查找优先级低组的父组包含本组，再按LAZY模式计算权限集。
+|INHERIT_OVERLOOK_INTERSECT|image:zero-p-inherit-gl.png[,200]|image:zero-p-user-intersect.png[,160]|先查找优先级低组的父组包含本组，再按INTERSECT模式计算权限集。
+|EXTEND_HORIZON_UNION|image:zero-p-extend-gu.png[,200]|image:zero-p-user-union.png[,160]|先查找所有组子组包含本组，再按UNION模式计算权限集。
+|EXTEND_HORIZON_EAGER|image:zero-p-extend-gu.png[,200]|image:zero-p-user-eager.png[,160]|先查找所有组子组包含本组，再按EAGER模式计算权限集。
+|EXTEND_HORIZON_LAZY|image:zero-p-extend-gu.png[,200]|image:zero-p-user-lazy.png[,160]|先查找所有组子组包含本组，再按LAZY模式计算权限集。
+|EXTEND_HORIZON_INTERSECT|image:zero-p-extend-gu.png[,200]|image:zero-p-user-intersect.png[,160]|先查找所有组子组包含本组，再按INTERSECT模式计算权限集。
+|EXTEND_CRITICAL_UNION|image:zero-p-extend-gh.png[,200]|image:zero-p-user-union.png[,160]|先查找优先级高组的子组包含本组，再按UNION模式计算权限集。
+|EXTEND_CRITICAL_EAGER|image:zero-p-extend-gh.png[,200]|image:zero-p-user-eager.png[,160]|先查找优先级高组的子组包含本组，再按EAGER模式计算权限集。
+|EXTEND_CRITICAL_LAZY|image:zero-p-extend-gh.png[,200]|image:zero-p-user-lazy.png[,160]|先查找优先级高组的子组包含本组，再按LAZY模式计算权限集。
+|EXTEND_CRITICAL_INTERSECT|image:zero-p-extend-gh.png[,200]|image:zero-p-user-intersect.png[,160]|先查找优先级高组的子组包含本组，再按INTERSECT模式计算权限集。
+|EXTEND_OVERLOOK_UNION|image:zero-p-extend-gl.png[,200]|image:zero-p-user-union.png[,160]|先查找优先级低组的子组包含本组，再按UNION模式计算权限集。
+|EXTEND_OVERLOOK_EAGER|image:zero-p-extend-gl.png[,200]|image:zero-p-user-eager.png[,160]|先查找优先级低组的子组包含本组，再按EAGER模式计算权限集。
+|EXTEND_OVERLOOK_LAZY|image:zero-p-extend-gl.png[,200]|image:zero-p-user-lazy.png[,160]|先查找优先级低组的子组包含本组，再按LAZY模式计算权限集。
+|EXTEND_OVERLOOK_INTERSECT|image:zero-p-extend-gl.png[,200]|image:zero-p-user-intersect.png[,160]|先查找优先级低组的子组包含本组，再按INTERSECT模式计算权限集。
+|====
+
+
+[CAUTION]
+====
+多态身份Profile是整个 Zero权限框架中的一个 *过度设计* 的典范，从实际场景看起来真正使用到这部分的内容仅局限于 `USER_X` 四种计算模式。但根据设计时的调研和考察，有这部分功能之后，对于复杂组织架构之间的权限控制可以达到非常细粒度的级别，并且在变化过程中，可实现更多变化模式下的权限控制。
+
+对用户而言，一旦登录之后，自己的 Profile 就已经固定，而资源需求要求的Profile则不一定固定，属于变量，最终计算结果近似于查找最短路径，达到用户组这个级别的额外变化模式（包括继承、派生、限制、组合等），最终 Zero权限框架中合计支持64种Profile配置，如此就解决了资源 *能不能* 访问的问题。
+====

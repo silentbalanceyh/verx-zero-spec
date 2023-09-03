@@ -1,0 +1,277 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 开发流程
+
+==== 流程图
+
+开发流程走开源社区普遍的Fork流程，整体流程图如下：
+
+image::workflow-fork.png[Fork,1280]
+
+整个环境中包括两种PR
+
+* Dev PR / develop分支：从开发人员Fork分支中直接提交PR到 *develop* 分支的PR，*develop* 分支可配置到测试环境中直接提供给测试人员测试。
+* Release PR / master分支：从 *develop* 分支提交同库PR到 *master* 分支中。
+
+[WARNING]
+*develop* 分支和 *master* 分支追加保护功能，锁定之后不允许任何形式的 push 动作直接修改分支中的内容，仅走PR流程可更改两个分支中的代码。
+
+==== 操作步骤
+
+操作流程参考如下步骤：
+
+1. 在远程环境创建Fork（手工操作），Fork之后拿到自己的分支代码路径（如：https://gitee.com/account/xc.git）
+
+2. 使用git命令从远程个人账号中下载代码
+
++
+--
+[source,bash]
+----
+$ git clone https://gitee.com/account/xc.git
+----
+--
+
+3. 在本机项目中运行命令添加远程引用（引用名推荐：upstream）:
+
++
+--
+[source,bash]
+----
+$ git remote add upstream https://gitee.com/silentbalanceyh/xc.git
+----
+--
+
+4. （上述三步执行完成后就搭建好了本地代码整体环境）提交代码流程：
+
++
+--
+[source,bash]
+----
+$ git add .
+$ git commit -m "您的备注信息"
+# 该步骤会提交代码到您自己的Fork分支：https://gitee.com/account/xc.git
+$ git push      
+----
+--
+
+5. 代码提交之后可在线提交PR到 *develop* 分支中，Code Review之后执行合并。
+6. 更新代码流程：
+
++
+--
+[source,bash]
+----
+# 注意更新代码是从upstream中更新（develop分支）：https://gitee.com/silentbalanceyh/xc.git
+$ git pull upstream develop
+
+# 此步骤的目的是保持最新代码推送到自己Fork分支中
+$ git push 
+----
+--
+
+=== 部署流程
+
+==== 流程图
+
+部署流程参考下图：
+
+image::workflow-deploy.png[Fork,1280]
+
+
+==== 关于IaC
+
+[NOTE]
+====
+IaC，全称为Infrastructure As Code（*基础设施即代码*），该术语在基础设施自动化时经常听到，它优势如下：
+
+1. 使用IaC，只需单击一下即可重新创建任何复杂的基础结构。
+2. 可以以IaC的形式对基础结构状态执行 *版本控制*。
+3. 以开发人员为中心的基础架构管理工作流程，和开发的应用程序一样，IaaC代码的标准做法是遵循所有标准编码实践（测试、审查等）。
+
+整个工作流中同时使用ansible和terraform是不冲突的，前者负责 *配置管理*（应用配置管理），后者负责 *基础设施*（服务器、网络、虚拟机、数据库等），协同工作，再借用Jenkins工具做好DevOps的流水线工作，实现最终开发、测试、生产环境的自动化开发测试运维部署。
+====
+
+=== 发布管理
+发布流程参考如下步骤：
+
+==== 初始化数据库
+
+[TIP]
+====
+如果新版本没有数据表结构的变化或者不需要清除数据，则不用进行 *初始化数据库* 的操作。
+====
+
+1. 拉取最新代码到本地，运行 *run-ansible.sh* 文件执行本地数据库初始化。
+2. 将初始化完成的本地数据库导出（SQL格式，包含表和数据）。
+3. 将导出的数据库SQL文件复制到 *ho-app/app@runtime/@backup* 文件夹内。
+4. 修改 *ho-app/run-env.sh* 文件的 *DB_ENV、DB_PASSWORD、DB_HOST* 为发布的相关配置，参考如下：
++
+--
+[source,bash]
+----
+export DB_PASSWORD=*****
+export DB_ENV=PROD
+export DB_HOST=116.***.***.41
+----
+--
+5. 修改 *init.database.sh、run-ansible.sh* 文件中关于连接数据库的相关信息为服务器数据库的相关配置，如 *数据库用户名、端口号* 等等。
+6. 修改 *init.playbook.yml* ，将 *DB_HOST* 的值由 _ox.engine.cn_ 改为 _116.xxx.xxx.41_ (此为服务器IP地址或域名)。
+7. 最后运行 *run-ansible.sh* 文件执行远程数据库初始化。
+
+[TIP]
+====
+初始化成功的标志为远程数据库的表结构和数据与本地数据库保持一致。
+====
+
+==== 前端发布
+1. 修改 *env.production* 文件：Z_ENDPOINT=http://116.xxx.xxx.41:7085。
+2. 运行如下命令打包：
++
+--
+[source,bash]
+----
+yarn build
+----
+--
+3. 复制 *build* 文件夹到服务器的如下两个目录（如有 *build* 文件请删除后再复制进去）：
+* /usr/local/nginx/html
+* /usr/local/share/nginx/html
+
+[NOTE]
+====
+如果没有可视化的工具复制 *build* 文件夹，可参考下面的命令。
+====
+--
+[source,bash]
+----
+# 先删除已经存在的build文件
+cd /usr/local/nginx/html
+sudo rm -rf build/
+cd /usr/local/share/nginx/html
+sudo rm -rf build/
+# 复制build文件到指定路径（本机运行以下命令）
+# 语法：scp [文件路径] [用户名]@[主机名]：[Linux目标路径]
+scp -r /Users/dengchunmei/Desktop/XXX/hotel-ui/build root@116.xxx.xxx.41:/usr/local/nginx/html
+scp -r /Users/dengchunmei/Desktop/XXX/hotel-ui/build root@116.xxx.xxx.41:/usr/local/share/nginx/html
+----
+--
+
+==== 后端发布
+1. 粘贴复制以下代码到 *ho-app目录的pom文件* 。
++
+--
+[source,xml]
+----
+   <!--                 docker打包部署插件       -->
+            <plugin>
+                <groupId>com.google.cloud.tools</groupId>
+                <artifactId>jib-maven-plugin</artifactId>
+                <version>3.3.1</version>
+                <configuration>
+                    <from>
+                        <image>openjdk:17</image>
+                    </from>
+                    <to>
+                        <image>registry.cn-hangzhou.aliyuncs.com/hotel-docker/hotel_docker</image>
+                        <tags>
+                            <tag>11.0</tag>
+                        </tags>
+                    </to>
+                    <container>
+                        <workingDirectory>/usr/local</workingDirectory>
+                        <ports>
+                            <port>7085</port>
+                        </ports>
+                        <mainClass>cn.vertxup.ZoAgent</mainClass>
+                        <!--配置jvm虚拟机参数-->
+                        <jvmFlags>
+                            <jvmFlag>-Xms512m</jvmFlag>
+                        </jvmFlags>
+                        <environment>
+                            <Z_HED_ENABLED>true</Z_HED_ENABLED>
+                            <AEON_CLOUD>/Users/lang/zero-cloud/vertx-zero-cloud/</AEON_CLOUD>
+                            <AEON_APP>/Users/lang/zero-cloud/cloud-hotel/</AEON_APP>
+                            <Z_APP>app.micro.hotel</Z_APP>
+                            <Z_API_HOST>0.0.0.0</Z_API_HOST>
+                            <Z_CORS_DOMAIN>http://116.205.172.41:7005</Z_CORS_DOMAIN>
+                            <Z_API_PORT>7085</Z_API_PORT>
+                            <Z_HED_ENABLED>true</Z_HED_ENABLED>
+                            <Z_DBS_HOST>116.205.172.41</Z_DBS_HOST>
+                            <Z_DBW_HOST>116.205.172.41</Z_DBW_HOST>
+                            <Z_DBH_HOST>116.205.172.41</Z_DBH_HOST>
+                        </environment>
+                    </container>
+                    <allowInsecureRegistries>true</allowInsecureRegistries>
+                </configuration>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>build </goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+----
+--
+
+2. 修改 *vertx-detect.yml* 文件里面数据库的配置为服务器数据库的相关配置，包含 *端口号* 和 *IP地址* 。
+3. 进入 *hotel（项目根目录）* ，运行以下命令验证阿里云镜像仓库（第一次发布时需要）。
++
+--
+[source,bash]
+----
+# 运行下述命令之后需要输入密码
+docker login --username=aliyun9950000555 registry.cn-hangzhou.aliyuncs.com
+----
+--
+4. 进入 *ho-app* ，运行以下命令打包。
++
+--
+[source,bash]
+----
+mvn clean compile jib:build
+----
+--
+5. 进入服务器，执行以下命令将原有容器和镜像删除：
++
+--
+[source,bash]
+----
+docker stop hotel # 停止运行hotel容器
+docker rm hotel # 删除hotel容器
+docker images # 查询镜像
+docker rmi <hotel镜像ID> # 删除hotel镜像
+----
+--
+6. 执行以下命令发布后端。
++
+--
+[source,bash]
+----
+docker run -d -p 7085:7085 --name hotel registry.cn-hangzhou.aliyuncs.com/hotel-docker/hotel_docker:11.0
+----
+--
+
+[TIP]
+====
+* 如果在执行上面最后一条命令的时候出现了不能找到镜像的错误，则需要按照第3步验证阿里云镜像仓库，之后再执行上述命令即可。
+* 最后一条命令的 *11.0* 需与第1步 *pom文件* 中的 *<tag>* 设置保持一致。
+* 运行起来之后可通过以下命令查看运行是否报错。
+[source,bash]
+----
+docker logs hotel
+----
+====
+
+
+
+
+
+
+
+
+

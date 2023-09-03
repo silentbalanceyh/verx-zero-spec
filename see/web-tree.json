@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/see/web-tree.json",
+    "$defs": {
+        "config": {
+            "type": "object",
+            "properties": {
+                "parent": {
+                    "type": "string",
+                    "default": "parent",
+                    "description": "树模型中使用的构造树的属性名"
+                },
+                "title": {
+                    "type": "string",
+                    "description": "树模型中呈现的树节点标题对应属性名"
+                },
+                "text": {
+                    "type": "string",
+                    "description": "树模型中呈现的树节点标题（备选）"
+                },
+                "value":{
+                    "type": "string",
+                    "description": "该树节点绑定的值对应属性名"
+                },
+                "sort": {
+                    "type": "string",
+                    "description": "该数节点排序用属性名"
+                }
+            },
+            "additionalProperties":false
+        }
+    }
+}

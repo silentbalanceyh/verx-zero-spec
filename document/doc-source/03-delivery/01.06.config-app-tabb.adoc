@@ -1,0 +1,160 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 日志规则引擎
+
+全局配置中，系统提供了基于规则引擎的日志记录生成器，该规则引擎用于帮助开发人员生成操作日志，现阶段版本主要在工作流引擎中使用。
+
+==== 规则定义表
+
+规则定义存储在系统的 `ACTIVITY_RULE` 表中，先看规则定义表的核心表结构。
+
+[options="header",cols="15,15,70"]
+|====
+|属性|列|含义
+|definitionKey| `DEFINITION_KEY`|流程名称，对应Camunda中流程的 definitionKey 属性，用于查询所属流程规则用。
+|taskKey| `TASK_KEY`|流程中的任务定义名，针对某个流程节点的定义（该节点一定是触发操作的节点，而不是下一个节点）。
+|type| `TYPE`|规则类型（现阶段版本支持三种类型）
+|ruleName| `RULE_NAME`|规则名称，系统默认设置或人工定义。
+|ruleOrder| `RULE_ORDER`|规则触发顺序，根据触发顺序修正日志生成的时间戳，生成的序号统一，新生成的规则会排序在上。
+|ruleNs| `RULE_NS`|规则所属模型的名空间（和动态配置组合，名空间是必需的）。
+|ruleIdentifier| `RULE_IDENTIFIER`|主模型统一标识符（如果是针对模型生成操作日志时必须），这种一般是变更日志。
+|ruleField| `RULE_FIELD`|模型字段名，生成变更历史时针对模型、属性的变更生成日志时专用配置，比如：工单保存（不驱动流程）。
+|ruleExpression| `RULE_EXPRESSION`|规则触发表达式，JsonArray接口，可以是多条记录，用于描述当前触发规则。
+|ruleTpl| `RULE_TPL`|配置参数模板专用，使用参数模板链接表达式执行参数注入。
+|ruleConfig| `RULE_CONFIG`|规则表达式对应的额外配置，和参数无关的特殊配置。
+|ruleMessage| `RULE_MESSAGE`|消息模板，执行最终的日志信息输出格式化。
+|hookComponent| `HOOK_COMPONENT`|回调组件（钩子模式）。
+|hookConfig| `HOOK_CONFIG`|回调组件配置。
+|logging| `LOGGING`|是否记录日志的开关控制。
+|====
+
+==== 规则触发
+
+上述规则表的基本用法在于规则触发，规则触发条件根据配置而有所不同，现阶段支持三种查询模式（根据 `type` 字段）。
+
+===== 规则定义查询
+
+- type = PHASE（使用 `definitionKey, taskKey` 作查询条件）：
++
+--
+*流程类日志*——此规则为局部规则，只有流程出现转移（转移线触发时）会触发此规则，其他情况不会触发此种规则，这种规则提取的SQL语句如：
+
+[source,sql]
+----
+TYPE = 'PHASE' AND DEFINITION_KEY = ? AND TASK_KEY = ?
+----
+--
+
+- type = NOTIFICATION：
++
+--
+*提醒类日志*——此规则为局部规则，不论字段是否发生改变，只要条件满足检查为 true 就直接触发此种规则，这种触发通常会执行消息提醒。
+[source,sql]
+----
+TYPE = 'NOTIFICATION' AND DEFINITION_KEY = ? AND TASK_KEY = ?
+----
+--
+
+- type = ATOM（使用 `ruleIdentifier, ruleField` 作查询条件）
++
+--
+*模型类日志*——（又称为变更日志）此规则为全局规则，只要某个模型中字段发生该变，则此规则生效，读取规则定义时直接根据属性和类型读取。
+[source,sql]
+----
+-- 流程模式
+TYPE = 'ATOM' AND DEFINITION_KEY = ?
+-- 非流程模式
+TYPE = 'ATOM' AND RULE_IDENTIFIER = ?
+----
+--
+
+[CAUTION]
+====
+规则查询过程中的注意事项：
+
+1. 查询模型类时，先根据 `definitionKey` 查询所有规则集，类型可能跨越多种（ `type` = ? ）。
+2. 查询的核心条件有二：
++
+--
+- 直接查询全部规则：`DEFINITION_KEY = ? AND TASK_KEY = null` 。
+- 直接查询当前节点局部规则：`DEFINITION_KEY = ? AND TASK_KEY = ?`。
+--
+====
+
+===== 规则定义类型
+
+查询和类型（`type`）具有二义性：查询定义和业务消费定义，业务消费定义如下：
+
+[options="header",cols="20,80"]
+|====
+|type值|含义
+|PHASE|判断条件中会自带 `phase` 变化检查，且只有在工作流转移时会触发。
+|ATOM|保存、转单等纯更新操作时会执行，不会检查 `phase`，但会检查 `ruleField` 属性中指定的属性。
+|EXPRESSION|纯日志生成，直接判断表达式即可，不做其他操作，最原始形态的应用。
+|APPROVAL|意见流专用，生成日志会构造意见流（最早需求审批流，所以值是 APPROVAL）。
+|ATTACHMENT|文件流专用，生成日志会构造文件流（附件详细信息）。
+|====
+
+==== 示例：流程操作日志
+
+参考下边截图设置的Excel配置数据：
+
+image:zapp-rule.png[0,960]
+
+这是触发规则配置中的核心：
+
+- ruleExpression：条件表达式，条件满足时定义的规则才生效。
+- ruleMessage：生成日志的最终内容，内容中的参数可根据提交数据中提取。
+
+可能您比较困惑 `$` 这些表达式的内容，此处对流程操作日志中的变量进行简单说明：
+
+[options="header",cols="1,9"]
+|====
+|核心变量|含义
+| `$zo` | zo 是 Zero Old 的缩写，表示当前执行数据单据的旧数据。
+| `$zn` | zn 是 Zero New 的缩写，表示当前执行数据单据的新数据。
+| `$zw` | zw 是 Zero Workflow 的缩写，表示工作流元数据。
+| `$uo` | uo 是 User Old 的缩写，表示当前工单中牵涉责任人的旧数据信息。
+| `$un` | un 是 User New 的缩写，表示当前工单中牵涉责任人的新数据信息。
+| `$lo` | lo 是 Logged Onwer 的缩写，表示当前登录的操作者信息。
+|====
+
+所以参考截图中相关信息，解释一下：
+
+[options="header"]
+|====
+|表达式|含义
+| `$zn.flowEnd == true and $zn.status == "CANCELED"` a| 
+
+- 新数据中 `flowEnd` 值为 true，表示流程结束。
+- 新数据中状态为 `CANCELED`，表示当前单据触发“撤销”动作。
+
+_所以该规则会在工单触发“撤销”按钮时执行。_
+| `“${lo.realname}”拒绝了任务单：${zn.taskSerial}，审批未通过。` a|
+
+- 此处的 `lo.realname` 会显示当前登录人员真实姓名，`zn.taskSerial` 会显示当前任务单号。
+- 最终输出消息为
++
+--
+`“USER”拒绝了任务单：TXXXXXXX，审批未通过。`
+--
+|====
+
+[CAUTION]
+====
+此处的 `$un/$uo` 是人员信息，建模过程中出现在 `auditor` 配置中的字段都会转换成人员信息，这个在流程引擎中提到过，通常意义上下边两组变量数据结构一致：
+
+- `$un/$uo` 数据结构是一致的，都表示人员信息（执行前和执行后）。
+- `$zn/$zo` 数据结构是一致的，都表示工单信息（执行前和执行后），带 `task` 前缀的是任务单信息。
+====
+
+
+
+
+
+
+
+
+
+

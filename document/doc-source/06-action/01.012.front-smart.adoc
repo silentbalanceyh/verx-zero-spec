@@ -1,0 +1,119 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 「A/2」Smart开发
+
+后续接口调试之前，我们先把前端开发准备好，如此就省掉了使用Postman工具去测试后端接口的流程。
+
+==== 代码文件
+
+[options="header",cols="2,8"]
+|====
+|文件|说明
+|`src/cab/cn/components/law/manage/UI.json` |主资源文件
+|`src/components/law/manage/Cab.json` | 名空间连接文件
+|`src/components/law/manage/UI.js` | JS核心界面入口脚本
+|====
+
+_资源文件：UI.json_
+
+[source,json]
+----
+{
+    "_grid": {
+        "module": {
+            "NAME": "法规",
+            "MODULE": "nm-law",
+            "IDENTIFIER": "nm.law"
+        },
+        "query": {
+            "criteria": {
+                "sigma": "PROP:app.sigma"
+            }
+        },
+        "options": {
+            "search.advanced": false
+        }
+    }
+}
+----
+
+_名空间连接：Cab.json_
+
+[source,json]
+----
+{
+    "ns": "components/law/manage"
+}
+----
+
+注意名空间连接文件默认会链接 `cab/<Z_LANGUAGE>` 目录下的基础路径，此处的 `Z_LANGUAGE` 为环境变量中设置的语言信息。
+
+_脚本文件：UI.js_（不包含 `componentDidMount` 部分）
+
+[source,js]
+----
+import Ui from "ui";
+
+export default Ui.smartList({
+    ns: require("./Cab.json"),
+    name: "Doc.Law",
+    logger: "page",
+    Options: {
+        rm: [
+            "form.filter",      // 关闭高级搜索表单
+            "op.extra.export",  // 按钮：导出
+            "op.extra.import",  // 按钮：导入
+            "op.batch.delete",  // 按钮：批量删除
+            "op.batch.edit",    // 按钮：批量编辑
+        ]
+    },
+    Form: {
+        name: "FormLaw"
+        /*
+            旧版本中必须提供 A / S / D 这三个值才能驱动发送远程请求
+            A - Add - POST方法
+            S - Save - PUT方法
+            D - Delete - DELETE方法
+            新版本可以配在 `$button` 中实现
+        yoOp: {
+            A: "/api/mn-law",
+            S: "/api/mn-law/:key",
+            D: "/api/mn-law/:key"
+        }
+        */
+    }
+});
+----
+
+==== 详细解析
+
+上述代码中有几点需要简单说明：
+
+1. 关于 `Cab.json / UI.json / UI.js` 如何关联到一起属于 Zero UI 部分的基础内容，您可以参考前端开发章节。
+2. 此处的 `logger` 必须是合法值，参考前端快速开发部分，此处用了 `page` 类型日志器。
+3. 实力中的前端主入口配置如：
++
+--
+[options="header",cols="2,2,8"]
+|====
+|项|来源|说明
+|语言设置|环境变量：`Z_LANGUAGE=cn`|当前前端运行的基础语言环境，示例中值为 `cn`，所以此处会直接使用 `cab/cn/` 目录下的资源文件。
+|访问信息|用户输入 a|浏览器中入口输入：`http://ox.server.cn:6005/nm/login/index` 路径：
+
+- 其中 `ox.server.cn` 已经配置在本地 hosts 文件中了，若是生产环境中则直接使用生产环境真实域名或IP地址。
+- 其中 `6005` 属于 Node 服务器的基础配置，环境变量 `PORT=6005` 中定义。
+- 其中 `nm` 在环境变量 `Z_ROUTE=nm` 中定义。
+- 最后登录入口在环境变量 `Z_ENTRY_LOGIN=/login/index` 中定义。
+|====
+--
+
+浏览器中打开主页后想办法跳转到对应的页面：`/nm/law/manage`（菜单规划中已配置完成），然后您可以看到如下界面：
+
+image:exp-app-smart.png[0,960]
+
+[WARNING]
+====
+出现上述界面则表示前端基本环境已搭建完成，但此时由于后端API还未执行 *授权*，所以此时还无法加载出完整界面，您若查看浏览器中异常还可以看到 404 错误。
+====

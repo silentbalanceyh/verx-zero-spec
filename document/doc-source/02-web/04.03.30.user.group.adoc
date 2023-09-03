@@ -1,0 +1,21 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiUserGruop`
+
+用户组专用选择器，**账号管理** 中专用，新版选择器，为用户选择用户组信息的专用组件。配置如：
+
+[source,json]
+----
+[
+    {
+        "metadata": "groups,用户组,24,,aiUserGroup"
+    }
+]
+----
+
+用户组选择器如下：
+
+image:exp-input-usergroup.png[,800]
+

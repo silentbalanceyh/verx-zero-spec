@@ -1,0 +1,13 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 集成规范
+
+[CAUTION]
+====
+由于Zero框架本身是前后端分离结构，所以集成数据规范同样适用于 `Zero Framework` 和 `Zero UI` 前后端交互的场景，这也是为什么将数据规范章节放到 *集成规范* 中而不是 *后端规范* 中的原因。
+====
+
+include::03.01.01.spec-is-data.adoc[]
+
+=== 联调

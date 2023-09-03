@@ -1,0 +1,15 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/kidd/workflow/linkage/meta.json",
+    "$comment": "workflow工作流链接专用结构",
+    "type": "object",
+    "properties": {
+        "connect": {
+            "type": "string",
+            "const": "/workflow/linkage/"
+        },
+        "content": {
+            "$ref": "http://www.vertx-cloud.cn/see/web-linkage.json#/$defs/workflow"
+        }
+    }
+}

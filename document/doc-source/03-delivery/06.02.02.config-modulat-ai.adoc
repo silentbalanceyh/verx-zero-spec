@@ -1,0 +1,45 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 模块化Ai工具
+
+Zero Ai中有一个核心的菜单规划工具命令，先参考下边执行模块化脚本（模块名称为 `z-nd`）：
+
+[source,bash]
+----
+#!/usr/bin/env bash
+export ZERO_ROOT_MENU=script/@configuration/menu
+export ZERO_ROOT_MOD=script/@configuration/modulat
+export ZERO_REST_OOB=src/main/resources
+
+echo "=============== Start"
+echo "z-nd模块化执行"
+# shellcheck disable=SC2115
+mkdir -p src/main/resources/plugin/z-nd/oob/modulat/
+mkdir -p src/main/resources/plugin/z-nd/oob/menu/
+rm -rf src/main/resources/plugin/z-nd/oob/modulat/*
+rm -rf src/main/resources/plugin/z-nd/oob/menu/*
+cp -rf script/@configuration/menu/* src/main/resources/plugin/z-nd/oob/menu/
+cp -rf script/@configuration/modulat/* src/main/resources/plugin/z-nd/oob/modulat/
+echo "z-nd模块/菜单配置 拷贝完成"
+aj mod -p src/main/resources/plugin/z-nd/oob
+echo "z-nd执行完成"
+echo "============== Finished!"
+----
+
+核心命令为：
+
+[source,bash]
+----
+# 旧版为 aj jmod，由于 aj 命令负责全程的 Java 部分，所以移除了j前缀
+aj mod -p <path>
+----
+
+一个完整模块可参考Zero中的 link:#__SPEC_BACK_MODULAT[模块规范,window="_blank"]，该命令主要执行如下操作，参考流程图：
+
+image:zmod-ai.png[0,960]
+
+[CAUTION]
+====
+该命令会帮助用户自动化处理菜单 `X_MENU` 和模块 `B_BLOCK` 配置，将配置文件 `Excel` 拷贝到对应位置，并且自动化重写 `initialize.json` 文件，注意此处的 `script/@configuration` 目录在新版中比重还不小。
+====

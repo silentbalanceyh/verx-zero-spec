@@ -1,0 +1,36 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiCheckJson`
+
+JSON格式的多选组件，和 `aiCheckbox` 的不同点在于输出的数据格式有所区别：
+
+- `aiCheckbox` 中的选中输出值为：`[v1, v2]` 的格式。
+- `aiCheckJson` 中的选中输出值格式为 `Object` 的格式。
+
+使用配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "metadata,基本配置,24,,aiCheckJson",
+        "optionJsx.config.items": [
+            "design,可设计",
+            "deletion,可删除"
+        ]
+    }
+]
+----
+
+上述选择结果中，最终会生成如下数据格式：
+
+[source,json]
+----
+{
+    "design": true,
+    "deletion": false
+}
+----
+

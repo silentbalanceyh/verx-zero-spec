@@ -1,0 +1,41 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiTreeSelect` (A)
+
+对应 `AntD` 中的 `<TreeSelect/>` 组件，树型下拉组件，一般数量不多的时候使用属性下拉比属性选择器合理。配置如：
+
+[source,json]
+----
+[
+    {
+        "metadata": "termId,账单项目,,,aiTreeSelect",
+        "optionJsx.config.datum": "source=term.all,key=key,label=code",
+        "optionJsx.config.expr": ":name（:code）",
+        "optionJsx.config.tree": "text=label,parent=parentId",
+        "optionJsx.config.selection": "mode=LEAF,field=isLeaf",
+        "optionJsx.config.linker": {
+            "key": "termId",
+            "name": "termName"
+        },
+        "optionConfig.rules": [
+            "required,请选择合法的账单项！"
+        ]
+    }
+]
+----
+
+===== 特殊属性
+
+配置属性表：
+
+[options="header",cols="3,7"]
+|====
+|属性路径|含义
+|`optionJsx.config.datum`|当前树型下拉的数据源，从字典中提取。
+|`optionJsx.config.expr`|设置属性下拉的显示文字，支持前端的表达式方式，这种方式可更改下拉项的文字显示内容。
+|`optionJsx.config.tree`|树型下拉的树相关配置，符合 Zero UI中的树基础配置。
+|`optionJsx.config.selection`|Zero UI中的树选择模式设置，此处只能选择叶节点。
+|====
+

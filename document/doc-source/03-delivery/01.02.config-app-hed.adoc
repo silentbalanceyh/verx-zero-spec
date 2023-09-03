@@ -1,0 +1,176 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== HED模块[[__CONFIG_APP_HED]]
+
+==== HED基础
+
+Zero框架从 `0.9` 的版本开始针对不同的应用对配置的 *敏感数据* 执行了加密操作，加密之后您看到的配置文件如下：
+
+[source,properties]
+----
+url=jdbc:mysql://ox.engine.cn:3306/DB_ETERNAL?server...
+driver=com.mysql.cj.jdbc.Driver
+username=root
+password=ShQ2ls8fLqOaDrm/y....
+----
+
+本章节主要讲解HED模块（High level Encrypt Decrypt）的应用，HED是每个应用的 *加密解密* 专用模块，它的主要职责如下：
+
+- 负责将所有后端敏感数据执行加密，保证任何管理员从后端配置中无法读取到明文密钥等数据。
+- 和程序对接，在所有敏感数据提取中提供不同应用的HED专用模块（每个应用的 *公钥/私钥* 不同）。
+- 应用公私钥实现目前采用硬编码方式，后续可放在固定的公私钥文件中统一，从安全性上考虑，硬编码方式更安全。
+
+[TIP]
+====
+Zero中的后端类名目前出现了三种核心类名：
+
+- 不带前缀：Zero核心框架专用类名。
+- K前缀：标准化和接口规范专用类名（数字化专用）。
+- H前缀：云原生高阶模块专用类名（云原生专用）。
+====
+
+==== HED配置
+
+HED模块配置主要分三步：
+
+1. 书写一个实现了 `io.horizon.spi.cloud.HED` 接口的HED类（参考 `io.vertx.mod.ke.secure.HEDExtension`）：
+
++
+[source,java]
+----
+package io.vertx.mod.ke.secure;
+
+import io.aeon.experiment.specification.KPair;
+import io.horizon.spi.cloud.HED;
+
+public class HEDExtension implements HED {
+    private static final String KEY_PUBLIC = "MIGfMA0GCSq...";
+    private static final String KEY_PRIVATE = "MIICdQIBAD...";
+
+    @Override
+    public KPair loadRSA() {
+        return new KPair(KEY_PUBLIC, KEY_PRIVATE);
+    }
+}
+----
+
+2. 将 `HED` 模块配置到 `ServiceLoader` 中，参考如下截图：
+
++
+image:zapp-hed.png[0,600]
+
++
+[CAUTION]
+====
+1. 此处使用的HED模块是应用中自定义的HED模块，并非Zero Extension中的HED。
+2. Zero Extension的HED模块只在开发流程中使用，不推荐在生产环境使用，生产环境使用自定义的HED实现加密。
+====
+
+3. 在环境变量中追加如下环境变量打开HED模块：
+
++
+[source,properties]
+----
+Z_HED_ENABLED=true
+
+# 如果您有自定义 HED 类执行新的加解密方式，您也可以直接在环境变量中指定
+# Z_HED = <Java类名>
+# 检索优先级：
+# 1）先检索环境变量中 Z_HED 是否存在
+# 2）环境变量中不存在时则检索 ServiceLoader 中的配置
+----
+
+==== HED公私钥
+
+（**本章开发专用**）上述代码中 `KEY_PUBLIC` 和 `KEY_PRIVATE` 分别对应当前应用需要使用的公私钥信息，它的生成流程如下（后期可直接使用 Shell 生成，现阶段参考 `zero-vista/infix-hed` 模块）：
+
+1. 直接书写一个简单的Java类并执行：
+
++
+[source,java]
+----
+package cn.originx.uca.hed;
+
+import io.horizon.atom.common.KPair;
+import io.vertx.up.util.Ut;
+
+public class KeyGenerator {
+    public static void main(final String[] args) {
+        final KPair kv = Ut.randomRsa(2048);
+        System.out.println("------------------------ Private Key ------------------------");
+        System.out.println(kv.getPrivateKey());
+
+        System.out.println("------------------------ Public Key ------------------------");
+        System.out.println(kv.getPublicKey());
+    }
+}
+----
+
++
+上述代码执行后，您可以在控制台看到如下信息：
+
++
+image:zapp-key.png[0,800]
+
+2. 将输出的公钥和私钥拷贝到HED模块中，然后编译该模块，按照上述流程配置到环境中。
+3. 书写另外一个类加密文本：
+
++
+[source,java]
+----
+package cn.originx.uca.hed;
+
+import io.vertx.up.util.Ut;
+
+public class KeyEncrypt {
+    public static void main(final String[] args) {
+        final String encrypt = Ut.encryptRSAP("xxxx");
+        System.out.println(encrypt);
+    }
+}
+----
+
++
+如果您的HED模块没有配置，您会在控制台看到如下警告，这是由于你的HED模块没有配置到 `ServiceLoader` 中：
+
++
+[source,bash]
+----
+[ μηδέν ]  [ HED ] Missed `HED` component in service loader: META-INF/services/io.horizon.spi.cloud.HED
+----
+
+4. 若配置成功，您可以收到类似如下信息，这样生成的密钥就可以使用了：
+
++
+[source,bath]
+----
+[ HED ] `HED` component: io.vertx.mod.ke.secure.HEDExtension
+D6IqbF7F3qZlIQ2cQVnh....
+----
+
+5. 最后您可以将您的加密后文字贴到对应的密文区域（如数据库密码、Neo4j密码、ES密码等）。
+
+[CAUTION]
+====
+Zero框架中公私钥加密解密是对应的，所以在使用过程需要注意，参考下边表格调用对应的API才不会出错：
+
+[options="header"]
+|====
+|加解密方式|加密API|解密API
+|公钥加密 / 私钥解密| `Ut.encryptRSAP` | `Ut.decryptRSAV`
+|私钥加密 / 公钥解密| `Ut.encryptRSAV` | `Ut.decryptRSAP`
+|====
+
+当前环境中默认使用第一种方式，还需要注意的是，您在上述执行过程应该看到了如下日志：
+
+[source,bash]
+----
+[ HED ] `HED` component: io.vertx.mod.ke.secure.HEDExtension
+----
+
+加密使用的是哪一个HED模块，解密的时候此处的输出应该一致，*只有同一个HED模块的公私钥才会配对，否则加解密会出错，此处必须对等*。
+====
+
+
+

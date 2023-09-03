@@ -1,0 +1,5 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/database/W_FLOW/UI_LINKAGE.json",
+    "$ref": "http://www.vertx-cloud.cn/see/web-linkage.json#/$defs/workflow"
+}

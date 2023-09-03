@@ -1,0 +1,136 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+==== 模块配置
+
+`zero-rbac` 模块的基本模块配置位于文件 `plugin/rbac/configuration.json` 中，下边是一个完整的范例
+
+[source,json]
+----
+{
+    "condition": {
+        "user": [
+            "sigma"
+        ],
+        "role": [
+            "sigma"
+        ],
+        "group": [
+            "sigma"
+        ],
+        "permission": [
+            "sigma"
+        ],
+        "resource": [
+            "sigma"
+        ],
+        "action": [
+            "sigma"
+        ]
+    },
+    "codeExpired": 30,
+    "codeLength": 6,
+    "tokenExpired": 30,
+    "poolCode": "POOL_CODE",
+    "poolToken": "POOL_TOKEN",
+    "poolPermission": "POOL_PERMISSIONS",
+    "poolResource": "POOL_RESOURCES",
+    "supportMultiApp": true,
+    "supportIntegration": false,
+    "supportGroup": true,
+    "supportSecondary": true,
+    "verifyCode": true,
+    "verifyLimitation": 3,
+    "category": {
+        "employee": {
+            "classDao": "cn.vertxup.erp.domain.tables.daos.EEmployeeDao",
+            "condition": {
+                "workNumber,!n": ""
+            },
+            "mapping": {
+                "modelKey": "employeeId"
+            }
+        }
+    },
+    "initializePassword": "B59C67BF196A4758191E42F76670CEBA",
+    "initialize": {
+        "scope": "zero.app.demo",
+        "grantType": "authorization_code"
+    }
+}
+----
+
+上述配置是一个完整的DEMO，除了初始化密码部分为了脱敏修改过，其他内容都是可参考的：
+
+[options="header"]
+|====
+|属性|含义
+|condition|默认选择对应实体的查询条件，多应用模式下可直接支持。
+|codeExpired|临时授权码的时间长度，默认 30s。
+|codeLength|临时授权码的字符串长度，默认 6位。
+|tokenExpired|令牌过期时间，默认 30分钟（由于目前版本使用了持久化令牌，该功能还未完善）。
+|poolCode|临时授权码的缓存池名称。
+|poolToken|令牌缓存池名称。
+|poolPermission|权限缓存池名称。
+|poolResource|资源缓存池名称。
+|supportMultiApp|是否支持多应用模式。
+|supportIntegration|是否支持和第三方应用的安全集成。
+|supportGroup|是否支持用户组功能。
+|supportSecondary|是否支持权限的二级缓存功能。
+|verifyCode|是否支持验证码。
+|verifyLimitation|设置用户登录限制，密码错误超过该值账户会被默认锁定。
+|initializePassword|新建账号时的初始化密码（一般是导入过程中使用）。
+|initialize|初始化账号时所需的基本账号信息。
+|category|打开异构账号模式。
+|====
+
+[CAUTION]
+====
+现阶段版本中 `token` 默认是8小时时间，即上班时间生效，所以令牌过期增强功能目前不支持，正式上线之前会逐步完善功能，目前是缺失的（令牌过期参数 `tokenExpired` 无效）。
+====
+
+新版本之后您可以只使用如下配置：
+
+[source,json]
+----
+{
+    "supportGroup": true,
+    "supportSecondary": true,
+    "verifyCode": true,
+    "verifyLimitation": 3,
+    "category": {
+        "employee": {
+            "classDao": "cn.vertxup.erp.domain.tables.daos.EEmployeeDao",
+            "condition": {
+                "workNumber,!n": ""
+            },
+            "mapping": {
+                "modelKey": "key"
+            }
+        }
+    },
+    "initializePassword": "B59C67BF196A4758191E42F76670CEBA",
+    "initialize": {
+        "scope": "zero.app.demo",
+        "grantType": "authorization_code"
+    }
+}
+----
+
+===== 关于异构账号模式
+
+Zero权限框架中的 `S_USER` 有两个特殊字段：
+
+[options="header"]
+|====
+|属性|字段|含义
+|modelKey | `MODEL_KEY` | 账号关联模型类型。
+|modelId | `MODEL_ID` | 账号关联上述模型中的主键（ID）。
+|====
+
+从配置 `category` 中可以了解和账号连接的相关配置，示例配置中的值对应：
+
+- modelKey = employee
+- modelId = key（员工表 `E_EMPLOYEE` 中的主键）
+
+image:zbac-account.png[0,800]

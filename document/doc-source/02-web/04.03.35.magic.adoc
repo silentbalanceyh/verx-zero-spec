@@ -1,0 +1,170 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiMagic`
+
+数据呈现器，此组件专用于 **非交互型** 数据呈现，配置如：
+
+[source,json]
+----
+[
+    {
+        "metadata": "method,HTTP方法,4,,aiMagic",
+        "optionJsx.config.items": [
+            "GET,GET:calendar,16:#228B22",
+            "PUT,PUT:calendar,16:#228B22",
+            "POST,POST:calendar,16:#228B22",
+            "DELETE,DELETE:thunderbolt,16:#D02090"
+        ]
+    }
+]
+----
+
+上述配置会捕捉对应数值，并生成 **选项** 呈现。
+
+===== 选项配置
+
+选项配置一般位于 `optionJsx.config.items` 中，你可以设置两种配置：
+
+- 原始配置，不带图标的基础配置：
++
+--
+[source,bash]
+----
+"GET,GET方法"
+----
+--
+
+- 扩展配置，带图标的基础配置：
++
+--
+[source,bash]
+----
+# 由于历史原因，此处的选项配置格式不要写错
+"GET,GET方法:calendar,16:#228B22"
+----
+--
+
+上述配置中几个值含义如：
+
+[options="header",cols="2,8"]
+|====
+|值|含义
+|`GET`|选项的值，对应 `key / value` 属性。
+|`GET方法`|选项的显示文本，对应 `label` 属性。
+|`calendar`|图标类型，对应 `<Icon type="calendar"/>`（旧版本写法，新版有API做兼容，所以 `type` 依旧生效）。
+|`16`|图标的尺寸，对应 `size` 属性。
+|`#228B22`|图标的颜色，对应 `style.color` 属性。
+|====
+
+===== 呈现器种类
+
+1. 列表呈现器，如果 `value` 值是 `Array` 类型则自动触发列表呈现器。
++
+--
+[options="header",cols="3,7"]
+|====
+|配置项|含义
+|`optionJsx.config.vertical`|显示成水平列表还是垂直列表。
+|====
+
+====
+列表中的项支持递归，即内置的 `<li></li>` 的呈现部分依旧可以是嵌套类型的 `aiMagic` 视图。
+====
+--
+
+2. 时间呈现器，如果 `value` 的值是时间格式 `Ux.isMoment` 检查返回 true，则做时间格式呈现。
++
+--
+[options="header",cols="3,7"]
+|====
+|配置项|含义
+|`optionJsx.config.format`|时间格式化专用的模式字符串，如 `YYYY-MM-DD`。
+|====
+
+[source,json]
+----
+{
+    "metadata": "updatedAt,最后更新,,,aiMagic",
+    "optionJsx.config.format": "YYYY年MM月DD日 HH:mm",
+    "moment": true
+}
+----
+--
+
+3. 选项呈现器，若配置中包含了 `items` 的配置，则执行选项呈现器。
++
+--
+[options="header",cols="3,7"]
+|====
+|配置项|含义
+|`optionJsx.config.items`|当前环境可支持的选项数据，参考最早的示例。
+|`optionJsx.config.datum`|如果选项使用的不是 **静态数据** 而是动态字典，则可支持直接从动态字典中提取数据。
+|====
+--
+
+4. 记录呈现器，若配置中包含了 `record` 配置，则执行记录呈现。
++
+--
+记录解析之后会包含多种呈现模式，通常是采用 JSON 的方式直接呈现记录信息，若记录中带有解析的前缀 `prefix`，则可以考虑设置前缀而实现记录的 **标题** 部分。
+
+[source,json]
+----
+{
+    "metadata": "infoReadable,详细内容,19,,aiMagic",
+    "optionJsx.config.record": true
+}
+----
+--
+
+5. 用户呈现器，若配置中包含了 `user` 配置，内置呈现和列渲染 `USER` 一致，所以其配置格式也是一致的。
++
+--
+[source,json]
+----
+{
+    "metadata": "updatedBy,更新人,,,aiMagic",
+    "optionJsx.config.user": {
+        "uri": "/api/user/:key",
+        "field": "realname"
+    },
+    "optionJsx.$empty": "（系统）"
+}
+----
+--
+6. 下载文件呈现器，若配置中包含了 `download` 配置则采用下载链接呈现器。
++
+--
+[source,json]
+----
+{
+    "metadata": "fileUrl,链接地址,24,,aiMagic",
+    "optionJsx.config.download": {
+        "text": "下载文件",
+        "filename": "name"
+    },
+    "optionJsx.config.preview": {
+        "type": "type",
+        "empty": "（该版本暂不提供预览功能）"
+    }
+}
+----
+--
+7. 表格呈现器，若配置中包含了 `table` 配置，内置使用表格呈现器（列表配置）。
+8. 带单位文本
++
+--
+[source,json]
+----
+{
+    "metadata": "amount,退款金额,,,aiMagic",
+    "optionJsx.config.currency": "￥"
+}
+----
+--
+
+[TIP]
+====
+除了上图 **呈现器** 以外，其实呈现器还拥有其他特殊的配置，开发人员可直接参考源代码去了解，文档中的呈现器只是枚举了常用的。
+====

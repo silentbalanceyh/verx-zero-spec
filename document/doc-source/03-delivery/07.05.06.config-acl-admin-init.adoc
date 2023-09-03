@@ -1,0 +1,113 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+==== 详解initializer
+
+从示例配置中可以知道，菜单中的 `initializer` 配置的值为 `IN_H`，此处先列出目前版本拥有的所有 `initializer` 函数：
+
+[options="header"]
+|====
+|函数名|标记|含义
+|IN_H|H-视图|提取视图中的 rows 数据。
+|IN_HV|H-视图，V-访问者|提取视图访问者中的 dmRow 数据。
+|IN_HV_BY|H-视图，V-访问者|带条件提取视图访问者中的 dmRow。
+|====
+
+此处先看看菜单级的 `initializer` 具体做了什么事（解析 `IN_H` ），菜单的元数据结构如下（ `props -> data` ）：
+
+[source,json]
+----
+{
+    "SIDE-MENU": [],
+    "TOP-MENU": [],
+    "NAV-MENU": [],
+    "...": "（略）"
+}
+----
+
+[TIP]
+====
+`initializer` 函数执行流程在几个选择中大同小异，下边以 `IN_H` 函数内部流程讲解一下流程的大概细节，其他流程略微有些差异（但差异不大）。
+====
+
+1. initializer 首先构造数据源（本例中是所有可选中菜单记录），数据源最终返回必须是一个 JsonArray 的数组结构（最少在目前的权限管理中如此），它的计算基础就是属性 props 中的 data 数据节点：
++
+--
+- 如果 data 是 JsonArray 类型，则直接将它返回成可操作的数据源节点。
+- 如果 data 是 JsonObject 类型，在当前版本中只会出现一种情况（如菜单管理），分组数组类型，如示例代码段，此时数据源会执行 `Ux.elementFlap` 动作将所有的 `value` 连接到一起形成一个组合的新数组。
+--
+
+2. 根据标识 `v, q, h` 提取值中定义的 `mapping` 映射信息，参考前文的预处理参数，提取路径为：`webValue -> metadata -> ? -> mapping`，其中 `?` 表示传入的标识，在 `IN_H` 类型函数中，标识当然是 `h`，如果没有在后端配置任何相关的 `mapping` 性质，则会生成下边代码段。
+
++
+[source,json]
+----
+{
+    "key": "key"
+}
+----
+
+3. 根据数据源和映射配置（前两步结果）生成最终的数据集，并执行 `$keySet / $keyDefault` 的标准化流程。
+4. 设置默认选中行为（`paramDefault` 配置），一般默认选中用于解决：*无数据模式* 究竟初始化时没有数据是全部选中还是全部不选。
+
+==== 详解requester
+
+`requester` 在流程图中和 `initializer` 是两个相反的操作，此处列出目前版本所有存在的 `requester` 函数：
+
+[options="header"]
+|====
+|函数名|标记|含义
+|OUT_C|C-子组件|根据子组件配置生成子组件单独的视图数据提交数据信息。
+|OUT_H|H-视图|根据 `$keySet / $keyDefault` 直接计算当前组件的提交数据，ROWS类型。
+|====
+
+`requester` 的代码流程这里就不列举，大部分 `OUT` 类的执行流程都有所差异，不论哪种流程，最终都会构造数据发送到接口：`POST /api/authority/region/:value` 中，它的请求格式通常如下：
+
+[source,json]
+----
+{
+    value: "rule.menu",
+    $body: {
+        "owner": "xxx",
+        "ownerType": "ROLE",
+        "resource": {
+            "res.menu.read": {
+                "criteria": {},
+                "projection": [],
+                "rows: {},
+                "view": "DEFAULT",
+                "projection": "DEFAULT",
+                "uid": "xxx",
+                "visitant": [
+                    {
+                        "identifier": "xxx",
+                        "mode": "xxx",
+                        "phase": "xxx",
+                        "seekKey": "xxx",
+                        "type": "xxx",
+                        "dmRow": {}
+                    }
+                ]
+            }
+        }
+    }
+}
+----
+
+上述请求格式是标准化格式：
+
+- `value`：对应到 `S_PATH` 表中的 `CODE`，管理端区域编码，每次保存数据会直接更新该区域下所有关联资源的视图以及访问者信息。
+- `owner/ownerType`：用于定位单个角色或用户相关信息。
+- `resource`：该节点为核心数据节点，通常格式为 `resourceCode = data` 的结构，此处JsonObject键是资源编码，可标识唯一资源信息。
+- `resource` 对应数据节点：数据节点中第一层是 *单视图* 相关信息，包含了视图相关信息，两个特殊节点如下：
+
++
+--
+- `uid`：该节点为加密专用节点，前后端会对照计算以确定当前权限更新信息是合法的。
+- `visitant`：用于设置当前更新视图相关的访问者信息，访问者信息会同步到后端。
+--
+
+[CAUTION]
+====
+该接口会执行 *添加/保存* 两个核心动作，若视图或访问者不存在，只要数据结构合法，最终都会同步到后端数据库中。目前的权限管理版本还不牵涉一个资源多个视图的更新，从实际使用过程可以知道，一个资源多个视图的更新基本不会存在于权限管理流程，这种场景在现阶段没有需求，所以资源关联数据格式依旧是 JsonObject 格式。
+====

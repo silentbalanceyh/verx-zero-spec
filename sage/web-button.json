@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/sage/web-button.json",
+    "$defs": {
+        "common": {
+            "oneOf": [
+                {
+                    "type": "array",
+                    "description": "「多操作」多个按钮，最少包含一个，内置 &lt;Button/&gt; 定义",
+                    "minLength": 1,
+                    "items": {
+                        "$ref": "http://www.vertx-cloud.cn/see/web-button.json#/$defs/common"
+                    }
+                },
+                {
+                    "$ref": "http://www.vertx-cloud.cn/see/web-button.json#/$defs/common"
+                }
+            ]
+        }
+    }
+}

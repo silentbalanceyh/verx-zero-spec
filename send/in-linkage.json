@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/send/in-linkage.json",
+    "$defs": {
+        "atom-type": {
+            "type": "object",
+            "properties": {
+                "sourceType": {
+                    "type": "string",
+                    "description": "关联源头的模型统一标识符，一般是当前模型 identifier"
+                },
+                "targetType": {
+                    "type": "string",
+                    "description": "关联目标模型统一标识符，对端模型 identifier"
+                }
+            }
+        }
+    }
+}

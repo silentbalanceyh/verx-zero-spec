@@ -1,0 +1,104 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/see/web-linkage.json",
+    "$defs": {
+        "workflow": {
+            "type": "object",
+            "properties": {
+                "config": {
+                    "type": "object",
+                    "properties": {
+                        "query": {
+                            "$ref": "http://www.vertx-cloud.cn/send/in-linkage.json#/$defs/atom-type"
+                        }
+                    }
+                },
+                "message": {
+                    "type": "object",
+                    "properties": {
+                        "add": {
+                            "type": "string",
+                            "description": "添加关系按钮"
+                        },
+                        "window": {
+                            "type": "string",
+                            "description": "添加关系窗口文字"
+                        },
+                        "search": {
+                            "type": "string",
+                            "description": "搜索关系按钮文字"
+                        },
+                        "tip": {
+                            "type": "string",
+                            "description": "顶部提示信息"
+                        },
+                        "success": {
+                            "type": "string",
+                            "description": "添加成功消息回调"
+                        },
+                        "failure": {
+                            "type": "string",
+                            "description": "添加消息选择验证，必须选择某条数据"
+                        }
+                    }
+                },
+                "editor": {
+                    "$ref": "#/$defs/editor",
+                    "description": "关系选择器配置"
+                },
+                "table": {
+                    "$ref": "http://www.vertx-cloud.cn/see/web-table.json#/$defs/simple"
+                }
+            }
+        },
+        "editor": {
+            "type": "object",
+            "properties": {
+                "selection": {
+                    "type": "object",
+                    "description": "关联编辑器选择数据时的条件，根据情况书写，QR语法"
+                },
+                "tree": {
+                    "type": "object",
+                    "properties": {
+                        "source": {
+                            "type": "string",
+                            "description": "字典中的source，树形菜单数据源"
+                        },
+                        "title": {
+                            "type": "string",
+                            "description": "树形菜单顶部文字"
+                        },
+                        "config": {
+                            "$ref": "http://www.vertx-cloud.cn/see/web-tree.json#/$defs/config",
+                            "description": "属性菜单通用配置"
+                        },
+                        "condition": {
+                            "$ref": "http://www.vertx-cloud.cn/semantic/value.json#/$defs/search",
+                            "description": "树形菜单查询条件"
+                        }
+                    }
+                },
+                "initial": {
+                    "type": "object",
+                    "description": "添加关系设置的初始值，可支持属性解析器"
+                },
+                "search": {
+                    "type": "object",
+                    "properties": {
+                        "placeholder": {
+                            "type": "string",
+                            "description": "搜索框上的水印文字"
+                        },
+                        "condition": {
+                            "$ref": "http://www.vertx-cloud.cn/semantic/qr.json#/$defs/search"
+                        }
+                    }
+                },
+                "ajax": {
+                    "$ref": "http://www.vertx-cloud.cn/see/web-data.json#/$defs/ajax"
+                }
+            }
+        }
+    }
+}

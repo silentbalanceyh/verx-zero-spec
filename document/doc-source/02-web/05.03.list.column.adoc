@@ -1,0 +1,733 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 列渲染[[__CONFIG_LIST_COLUMN_RENDER]]
+
+列表类中的配置节点 `table` 基本是和 `AndD` 中的 `<Table/>` 对齐的配置，所以 **列渲染** 中没有那么多需要讲解的；本章主要讲解 `table.columns` 中的列渲染，让开发人员对列的 Zero 中列渲染功能有所了解。
+
+列渲染的 **解析器** 配置如：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`dataIndex`|绑定的记录对应的属性名。
+|1|`title`|当前列的列标题。
+|2|`$render`|列的渲染类型，该类型在列表章节详细解析。
+|3|`sorter`|是否打开列排序，如果打开则列中会启用排序功能。
+|4|`$KV$`|专用键值对处理。
+|====
+
+在列渲染中，大部分列都支持如下两个特殊属性：
+
+- `$empty`：此属性用于描述文本内容为 `null, undefined, ""` 时应该呈现的文字信息。
+- `$expr`：此属性让您呈现的文本可以支持字符串的格式化模式，如：`":value间"` 这种。
+- `style`：此属性描述了当前列的样式，不经过 CSS 控制。
+- `className`：此属性描述了当前列的样式，通过 CSS 控制。
+- `width`：（数值）若您不需要 Zero 自动计算列宽度（有时候会不准），您可以指定当前列的宽度，那么本列就会使用您定义的固定宽度呈现。
+
+==== `ARRAY`
+
+此列渲染用于渲染 `[]` 格式的数据，将内容渲染成列表：
+
+参考配置：
+
+[source,json]
+----
+[
+    "username,在住宾客,ARRAY",
+]
+----
+
+另一种附加配置，在附加配置中您可以设置风格以及CSS相关配置对列表的样式进行调整。
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,ARRAY",
+        "style": {},
+        "className": ""
+    }
+]
+----
+
+==== `CONNECT` (保留)
+
+此列渲染器为保留的行为连接列渲染器，您可以配置多个链接操作，操作本身可以从 `reference` 的状态变量中提取。
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,CONNECT",
+        "$option": [
+            "添加",
+            "删除"
+        ]
+    }
+]
+----
+
+===== 使用场景
+
+当有多个链接时，您可以构造类似 `添加 | 删除` 的链接列表，这种模式下 `reference` 的状态数据结构必须遵循如下
+
+[source,json]
+----
+{
+    "$connect": [
+        {
+            "config": {
+                "pos": "链接到 column.dataIndex"
+            }
+        }
+    ]
+}
+----
+
+==== `CURRENCY`
+
+货币格式的列渲染器。
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,CURRENCY",
+        "$config": {
+            "unit": "￥",
+            "after": "true | false"
+        }
+    }
+]
+----
+
+货币转换时会自动转换成带有 **千分位** 的货币数值格式。
+
+[options="header",cols="3,7"]
+|====
+|配置项|含义
+|`$config.unit`|渲染的货币单位。
+|`$config.after` a|货币单位的位置：
+
+- `true`：`1,200￥`
+- `false`：`￥1,200`
+|====
+
+==== `DATE`
+
+日期格式的列渲染器。
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,DATE",
+        "$format": "YYYY-MM-DD",
+        "$config": {
+            "format": ""
+        }
+    }
+]
+----
+
+此处会根据 `format` 中定义的模式格式化当前日期信息，只是此处有两种配置：
+
+- 旧版：（保留）直接使用 `$format` 配置项来描述日期时间格式。
+- 新版：使用 `$config.format` 配置来描述日期时间格式。
+
+==== `DATUM`
+
+字典（辅助数据）的列渲染器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,DATUM",
+        "$datum": "source=bill.type,value=code,display=name",
+        "$config": {
+            "adorn": {
+                "field": "f1",
+                "items": {
+                    "record[f1]": "icon,size,color",
+                    "record[f2]": "icon,size,color"
+                }
+            }
+        }
+    }
+]
+----
+
+此列渲染器主要负责渲染字典列，它支持的功能如下：
+
+- 直接绑定当前页面的字典信息：
++
+--
+[options="header",cols="2,8"]
+|====
+|配置项|含义
+|`source`|字典名字，在辅助数据章节有所说明。
+|`value`|字典值的字段名（后台存储的就是这部分的值）。
+|`display`|字典显示字段名，这个属性可以支持 `$expr` 的格式。
+|====
+
+====
+表单中的配置和列渲染中的配置有区别，主要是最后部分，表单是 `label=name`，而列渲染是 `display=name`，这是历史原因，这里就不多提了，目前新版的前端 API 针对这种表达式都可执行解析了，但标准配置还是以文档为主，不会出错。
+====
+--
+- 给字典信息追加图标定义，这个功能是修饰功能，此处的 `f1` 一定会是一个维度字段（ 非 **主键** 类型），所有数据记录中包含几种值，不同的值图标定义可以不相同。
+
+==== `DICT`
+
+纯字典类型
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,DICT",
+        "$config": {
+            "field": "xxx"
+        }
+    }
+]
+----
+
+这种字典类型会直接从组件的 `props` 中提取 **特殊字典** `$dict` 变量中的数据对列进行渲染，此处的 `field` 默认会使用 `name`，也可以提取其他属性信息。参考示例如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "valueNew,新值,DICT",
+        "$config": {
+            "field": "fieldName"
+        },
+        "className": "value-column"
+    }
+]
+----
+
+==== `DOWNLOAD`
+
+下载链接渲染列
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,DOWNLOAD",
+        "$config": {
+            "ajax": {
+                "uri": "/api/xxxx/download/:key"
+            }
+        }
+    }
+]
+----
+
+上述配置会渲染一个下载链接，下载链接中包含了 `ajax` 的部分（可自定义），此处存放的就是下载链接地址，点击之后就可以下载相关文件。
+
+==== `EDITOR`
+
+自定义表格列编辑器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,EDITOR",
+        "$config": {
+            "render": "aiSelect",
+            "optionJsx.config.items": [
+                "GET,GET方法",
+                "PUT,PUT方法"
+            ]
+        }
+    }
+]
+----
+
+这种渲染一般用于自定义表格列编辑器，它会渲染行内编辑行为，目前支持的行内编辑组件如下（由于没有全部做过测试，此处只是根据源代码中梳理的组件逻辑，验证过的是目前已经在使用的）：
+
+[options="header",title="支持的渲染器",cols="3,1,6"]
+|====
+|渲染器|验证|含义
+|`aiInput`|Ok|（默认值）文本框
+|`aiInputNumber`|Ok|数值输入器
+|`aiRadio`|Ok|单选框
+|`aiTreeSelect`|Ok|树型下拉框
+|`aiCheckbox`|Ok|多选框
+|`aiTimePicker`|Ok|时间选择器
+|`aiDatePicker`|Ok|日期选择器
+|`aiSelect`|Ok|下拉框
+|`aiProtocol`|Ok|协议输入器
+|`aiCaptcha`|Ok|验证码输入
+|`aiPassword`|Ok|密码输入
+|`aiBraftEditor`||富文本输入框
+|`aiAddressSelector`||地址选择器
+|`aiCheckJson`||JSON 格式多选器
+|`aiTransfer`||穿梭框
+|`aiFileBatch`||批量上传
+|`aiFileLogo`||图片上传
+|`aiFileUpload`||上传组件
+|`aiInputArray`||数组型文本录入
+|`aiJsonEditor`||JSON 编辑器
+|====
+
+====
+注：此处作为表格内编辑器时，配置项直接位于 `$config` 内，除了 `render` 以外，其他配置和表格中配置等价。
+====
+
+==== `EXECUTOR`
+
+操作列专用渲染器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,EXECUTOR",
+        "$option": [
+            {
+                "text": "编辑",
+                "executor": "fnEdit"
+            },
+            "divider",
+            {
+                "text": "删除",
+                "executor": "fnDelete",
+                "confirm": "确认删除选择记录"
+            }
+        ]
+    }
+]
+----
+
+上述配置是常用列表的配置，一般配置 `EXECUTOR` 时必须通过编程的方式从外层填充 `$executor` 变量。
+
+[NOTE]
+====
+`ExListComplex` 组件中的 `$executor` 变量一般专用于行操作，它可以直接配合 `EXECUTOR` 来完成行操作的 **定制** 流程，此变量是一个 `Object`，它的键和 `$option` 选项中的 `executor` 直接对应，内置了 `fnEdit, fnDelete`（标准列表中的函数）。
+
+参考下边的返回数据结构：
+
+[source,js]
+----
+    executeFn: (reference) => ({
+        rxEdit: (key) => {
+            Ux.ajaxGet("/api/night/:key", {key}).then(response => {
+                const state = {};
+                state.$keyWindow = "view";
+                state.$visible = true;
+                state.$inited = response;
+                reference.setState(state);
+            })
+        }
+    })
+----
+
+注意上述结构中实际是使用了 **二阶函数** 在生成 `$executor` 对象，上述代码段可配置的 executor 为 `rxEdit`。
+
+- 默认内置的函数一般使用 `fn` 前缀做函数名，表示 `Internal Function`。
+- 若是用户自己定义的函数一般使用 `rx` 前缀做函数名，表示 `Reactive Execution`。
+
+此处的 `executor` 函数定义如下：
+
+_参数表_
+
+[source,js]
+----
+(key, record, configuration)
+----
+
+[options="header",cols="2,2,6",title="参数含义"]
+|====
+|参数名|子项|含义
+|`key`||当前行记录的键信息，此处 `key` 的值直接对应 `"field,title,EXECUTOR"` 中的 `field`，即配置的 `dataIndex` 的值。
+|`record`||当前行的完整记录信息，此处的行记录为全行记录信息，它包括额外的没有在 `table` 中定义 `columns` 的属性信息。
+|`configuration`|`config`|直接对应当前列的完整配置信息（ Column ）定义中的信息
+|`configuration`|`ajax`|当前 Option 独立的远程通信信息，定义在独立的 Option 内部
+|`configuration`|`parameters`|当前 Option 对应的参数信息，此参数信息目前主要用于处理 `message` 消息部分。
+|`configuration`|`reference`|引用的 React 组件相关信息。
+|====
+
+====
+
+====
+`$executor` 的扩展配置实际是整个开发流程中 **高频** 定制的地方，它让您的 `ExListComplex` 多了很多 **行扩展** 的可能性，您可以直接根据您的需要在一个列表的行中定制各种所需的的操作，唯一不能定制的是此处的操作是链接，此处无法定制其他样式的操作按钮。
+====
+
+==== `FILE_SIZE`
+
+文件尺寸专用渲染器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,FILE_SIZE"
+    }
+]
+----
+
+此列渲染器专用于渲染文件尺寸，它把一个数值直接转换成文件尺寸，并且自动追加单位：`B, KB, MB, GB, TB`。
+
+==== `HYPERLINK`
+
+链接渲染器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "name,名称,HYPERLINK",
+        "$config": {
+            "url": "/person/circle-view?id=:key"
+        }
+    }
+]
+----
+
+其配置项如：
+
+[options="header",cols="2,8"]
+|====
+|配置项|含义
+|`$config.url` a|当前链接制定的路由地址
+
+- 此地址不会使用 `<a href/>` 的方式驱动，而是直接调用 `react-router` 的方式驱动。
+- 此地址可以支持全行数据的表达式做参数，如上述地址中定义的 `:key` 的模式化参数会替换成 `key` 属性的值，参考 `Ux.formatExpr` 函数。
+- 此地址中不用配置 `Z_ROUTE` 前端部分的前缀，仅配置实际路由地址即可，应用层的 `context` 部分会自动追加。
+|====
+
+==== `LAZY`
+
+延迟加载列渲染器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "openBy,制单人,USER",
+        "$config": {
+            "uri": "/api/user/:key",
+            "field": "realname",
+            "icon": "user,#00BF9F"
+        }
+    }
+]
+----
+
+其配置项如：
+
+[options="header",cols="2,8"]
+|====
+|配置项|含义
+|`$config.uri`|此处一般是 `GET` 方法，此属性定义了延迟关联数据的访问接口。
+|`$config.field`|远程读取的数据一般是 `{}` 的结构，而 `field` 定义了呈现在界面上的字段名，如示例中呈现的是读取到的用户数据的 `realname` 属性。
+|`$config.icon`|是否在呈现的属性中追加图标信息，`type,color` 的格式。
+|====
+
+[WARNING]
+====
+此处有一点需说明，这个 **列渲染器** 有两个值：
+
+- `USER`：旧值，由于最早这个列渲染器只是单纯渲染类似创建人、签单人、更新人的信息，所以使用了该值。
+- `LAZY`：新值（推荐之后的系统使用），渲染内容的业务逻辑取决于您定义的 `$config.uri` 接口中提取的数据。
+
+定义的接口的语义：根据当前属性的值填充 `:key` 参数读取单条数据。
+
+而且有一点，`Ux` 中有一个API `ajaxEager`，此 API 存在的目的就是为这个功能量身打造的，它可以让系统在处理此部分内容时实现归并和压缩——如两条数据的 `createdBy` 都是同一个人时，整个系统只会让你发送针对这个人的数据请求，而不是发两次请求，这种设置大大减少了当前列表中辅助数据的远程交互频次。尽管有这样一个机制，依旧不推荐在多个列中同时使用延迟列，毕竟这种设置只能从 **行维度** 去减少交互次数，不会从 **列维度** 去减少交互次数。
+====
+
+==== `LOGICAL`
+
+布尔值渲染器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "income,消费/付款,LOGICAL",
+        "$mapping": {
+            "true": "消费项,pay-circle,16,#268941",
+            "false": "付款项,pay-circle,16,#f6af03"
+        }
+    }
+]
+----
+
+注意此处启用了特殊属性 `$mapping` 而不是 `$config`，这也是为了契合映射语义设计的机制，它表示从 **值** 到 **呈现** 的强语义关系。此处的值的配置启用了 **解析表达式**，对应的语义为：
+
+[options="header",cols="2,2,6"]
+|====
+|索引值|属性名|含义
+|0|`text`|值对应的显示文本
+|1|`icon`|此值定义的图标信息
+|2|`size`|定义图标时图标的大小（推荐使用 `14 / 16`等）
+|3|`color`|定义了图标的色彩
+|====
+
+==== `MAPPING`
+
+多值映射渲染器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "method,HTTP方法,MAPPING",
+        "$mapping": {
+            "GET": "GET,download,,#268941",
+            "PUT": "PUT,edit,,#0a7bed",
+            "POST": "POST,plus,,#f6af03",
+            "DELETE": "DELETE,delete,,#e22015"
+        }
+    }
+]
+----
+
+此渲染器和 `LOGICAL` 使用的配置用法完全一致，只是二者的使用场景不同：
+
+- `LOGICAL` 一般用于后端的属性是 `boolean` 值的情况，字面量只有 `true / false`，它属于 `MAPPING` 的 **子集**。
+- `MAPPING` 不限定类型，适用性更广泛，但弱化了布尔值（开关型）的语义，所以才有会单独的 `LOGICAL` 的渲染器。
+
+==== `PERCENT`
+
+百分比渲染器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,PERCENT"
+    },
+    ...,
+    "field,title,PERCENT"
+]
+----
+
+此渲染器是百分比渲染器，目前不支持任何配置，只是单纯把浮点数如 `0.123` 转换成 `12.3%`，后期可以考虑追加精度来完成百分比的增强渲染（注意此时值必须是一个可以转换成数值的值，不可以是 `NaN`）。
+
+==== `PURE`
+
+纯文本高亮显示器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,PURE",
+        "highlight": true
+    },
+    ...,
+    "field,title,PURE"
+]
+----
+
+支持 **高亮** 语法的渲染器，通常会根据您输入的关键字对文本中内容执行高亮，当系统启用高亮语法时，您需要保证您的 React 组件状态 `state` 拥有如下数据结构：
+
+[source,json]
+----
+{
+    "$keyword": {
+        "field1": "xxxx",
+        "field2": "xxxx"
+    }
+}
+----
+
+此处的 `field1, field2` 若和当前 `dataIndex` 匹配的话，那么对应的 `xxxx` 在文本值中的部分会直接被高亮呈现。
+
+==== `RENDERS`
+
+**编程模式**，自定义扩展型渲染器
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "sourceCode,配置项编号,RENDERS",
+        "config": {
+            "value": "code",
+            "mapping": {
+                "globalId": "sourceGlobalId",
+                "name": "sourceName",
+                "identifier": "sourceIdentifier"
+            }
+        }
+    }
+]
+----
+
+====
+这是一个特殊渲染器，它提取的是 React 组件属性 `props` 中的 `$renders` 变量，此变量结构如下：
+
+[source,js]
+----
+{
+    "field1": (props) => {
+    
+    },
+    "field2": Jsx
+}
+----
+
+您可以从外层直接传入两种不同形态的渲染模型（函数型、组件型），系统会自动按照 Zero 中的继承模式将对应属性传入到渲染器中，这个组件接收到的核心 `props` 中的变量如：
+
+[source,json]
+----
+{
+    "value": "当前属性的值",
+    "config": "当前列的配置",
+    "data": "当前行记录全值"
+}
+----
+====
+
+==== `ROW`
+
+早期以为 `EDITOR` 和 `ROW` 的性质相同，现在发现此两种**列渲染**区别很大：
+
+- `EDITOR`：多用于**自定义**表格中处理，且 `<Form/>` 可以将整个表格的列单独抽取成可编辑的。
+- `ROW`：通常用于行编辑（带索引）
++
+--
+- 若在 `<Form/>` 中，则 `reference.props.value` 的值可以作为表单中渲染的值。
+- 若在外层中，也可以使用 `reference.props.value` 来处理控制列等信息。
+--
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "field,title,ROW",
+        "$config": {
+            "field": "aiTreeSelect",
+            "jsx": {
+                "style": {
+                
+                },
+                "config": {
+                    "datum": "source=term.expense,key=key,label=code",
+                    "__COMMENT": "xxxx"
+                }
+            }
+        }
+    }
+]
+----
+
+常用的配置数据 `$config` 如下：
+
+[TIP]
+====
+正常模式下，`ROW` 和 `EDITOR` 应该具备近似度很高的配置结构，但二者使用场景上的区别，此处最初设计上有很大的失误，现阶段已经无法更改此处的配置结构，暂时保留此处配置的数据结构，加上从 `AntD 3.x -> 4.x -> 5.x` 过程中 `onChange` 函数也发生过不小的该变，所以此处就不再调整了，保留两种使用，开发人员了解使用场景即可。
+====
+
+[options="header",cols="3,7"]
+|====
+|属性|含义
+|`field`| 等价于 `EDITOR` 中的 `render` 属性，用于选择**表单选择器**。
+|`jsx`| 等价于 `EDITOR` 中的 `optionJsx` 属性，用于提供当前表单操作组件的配置信息，在表单中等价于 `optionJsx` 属性。
+|`fieldCond`|默认值（ `key` ），条件属性，在执行索引查找时专用的**条件属性**。
+|`fieldKey`|默认值（ `key` ），取值属性，在执行索引查找时专用的**取值属性**。
+|====
+
+代码中的属性使用
+
+[source,js]
+----
+// value = []
+// fieldCond = `key`
+// record.key = record[fieldKey]
+const foundIndex = __Zn.elementIndex(value, fieldCond, record[fieldKey]);
+----
+
+==== `TAG`
+
+标签渲染器，标签渲染器相对比较简单，根据您的数据值的不同格式执行从 `<img/>` 和 `<Icon/>` 切换：
+
+[options="header",cols="3,7"]
+|====
+|格式|含义
+|`text`|直接将值转换成 `<Icon/>` 中的 type 属性进行渲染。
+|`tag:text`|将 `text` 转换成 `<img/>` 标签中加载的系统默认的图片 `src` 来对待。
+|====
+
+==== `TEXT`
+
+（默认）文本渲染器，此渲染器是唯一一个不需要配置的渲染器，属于 **默认渲染器**，此渲染器到处都是，就不详细拆解了。
+
+==== `TOTAL`
+
+求和渲染器（计算渲染器）
+
+参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "amount,金额,TOTAL",
+        "$config": {
+            "currency": "￥",
+            "op": "M",
+            "field": [
+                "quantity",
+                "price"
+            ]
+        }
+    }
+]
+----
+
+其配置项如：
+
+[options="header",cols="2,8"]
+|====
+|配置项|含义
+|`$config.currency`|货币单位
+|`$config.op` a|计算符号
+
+- `P`：加法
+- `M`：乘法
+|`$config.field` |字段合计，针对哪些字段执行求和操作（一般是同行的属性）
+|====

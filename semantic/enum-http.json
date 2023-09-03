@@ -1,0 +1,19 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/semantic/enum-http.json",
+    "__package__": {
+        "HttpMethod": "io.vertx.core.http"
+    },
+    "$defs": {
+        "HttpMethod": {
+            "type": "string",
+            "description": "Http方法表",
+            "enum": [
+                "GET",
+                "POST",
+                "PUT",
+                "DELETE"
+            ]
+        }
+    }
+}

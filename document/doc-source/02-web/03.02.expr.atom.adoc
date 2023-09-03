@@ -1,0 +1,193 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 原子解析器（`$KV$`）
+
+**表单/列表** 部分解析器属于上层解析器，放到表单和列表章节中去处理，本章先从不同的视角讲讲特殊的几大类解析器。
+
+==== 原子属性表
+
+原子解析器是Zero UI中针对特殊配置节点的 **字符串** 格式的解析器，主要用于书写字符串和 `metadata` 属性值，通常原子解析器格式如：`attributeName=(value)` 的格式。
+
+[WARNING]
+====
+原子属性并没有使用字典序的方式排列，相反是按使用场景排列的：表单、列表、按钮、全局。
+====
+
+[options="header",title="原子属性",cols="1,2,1,6"]
+|====
+|属性名|配置节点|场景|含义
+|`normalize`|`optionConfig.normalize` a|表单|此属性用于设置 **输入限制** 的不同模式，当前框架中支持不同的输入限制，解决的问题背景可以参考如下：
+
+- 多格式的表达式问题：<https://gitee.com/silentbalanceyh/scaffold-zero/issues/I6W2BB>
+|`incribe`|`optionJsx.incribe`|表单 a|当某个字段处于只读状态时（`readOnly=true`），为了让呈现文字不显示成灰色禁用状态，可直接设置 `incribe` 属性显示黑色明显的只读文字。此属性比较特殊，在 HTML 的底层控件中有两种：`<input/>, <select/>`，这两种不同的控件在设置只读时的模式有所区别：
+
+- `<input/>` 可直接设置 `readOnly` 属性完成只读的模式。
+- `<select/>` 则必须设置 `disabled` 属性才能完成只读模式。
+
+不论哪种模式造成的后果就是在只读状态下文字会变成 **灰色**，这样会导致部分只读的 **阅读障碍**，为了解决此问题才开启 `incribe` 属性来做文字呈现。
+|`moment`|（当前）|表单|针对时间控件如 `<DatePicker/>` 必须设置此属性防止 undefined 的时间格式出现，不论是旧库 `moment.js` 还是 `dayJs` 都不支持 undefined 的非法值，若您的表单字段是时间格式的操作控件而您没有设置此属性 `moment=true`，那么时间格式在转换过程中会报错。
+|`addonAfter`|`optionJsx.addonAfter`|表单|后置插件，针对 `addonAfter` 属性进行设置，支持 **图标表达式**。
+|`addonBefore`|`optionJsx.addonBefore`|表单|前置插件，针对 `addonBefore` 属性进行设置，支持 **图标表达式**。
+|`prefix`|`optionJsx.prefix`|表单|前置文字，针对 `prefix` 属性进行设置，支持 **图标表达式**。
+|`suffix`|`optionJsx.suffix`|表单|后置文字，针对 `suffix` 属性进行设置，支持 **图标表达式**。
+|`placeholder`|`optionJsx.placeholder`|表单|输入之前的水印提示文字。
+|`format`|`optionJsx.format`|表单|针对时间、日期控件专用的格式化 `pattern`。
+|`valuePropName`|`optionConfig.valuePropName`|表单|此属性主要针对 `<CheckBox/>` 和 `<Radio/>` 两种组件，新版默认使用了 `checked` 作为值绑定，基本不用配置。
+|`withCredentials`|`optionJsx.withCredentials`|表单|「上传」组件中设置跨域模式必须的属性。
+|`text`|`optionJsx.text`|表单|「上传」组件显示文字自定义。
+|`listType`|`optionJsx.listType`|表单|「上传」设置组件种类，原生 `AntD` 支持的值：`text, picture, picture-card, picture-circle`，在 Zero UI中只实现了 `text, picture-card` 两种。
+|`allowClear`|`optionJsx.allowClear`|表单|除了常用的录入型组件、下拉组件之外，大部分自定义组件也支持此属性，不同点在于开启此属性之后部分自定义组件会多一个 **清空** 按钮。
+|`rows`|`optionJsx.rows`|表单|此属性是多行文本专用属性，主要针对 `<Input.TextArea/>` 标签的属性，可直接设置文本跨越的行信息。
+|`maxLength`|`optionJsx.maxLength`|表单 a|该属性是长度限制的原始属性，一般 Zero UI中使用 normalize 代替，主要原因如下：
+
+- 此属性计算的是字符集，针对中文或双字符文集无法准确计算长度，有可能导致计算不准。
+- 通常在文本做长区域限制的时候会使用此属性代替 `normalize` 属性（长区域一般很少会输入满中文的情况）。
+|`min`|`optionJsx.min`|表单|此属性是 `<InputNumber/>` 组件专用属性，用于设置值下限。
+|`max`|`optionJsx.max`|表单|此属性是 `<InputNumber/>` 组件专用属性，用于设置值上限。
+|`precison`|`optionJsx.precision`|表单|此属性是 `<InputNumber/>` 组件专用属性，设置当前数值的精度（小数点之后的位数）。
+|`step`|`optionJsx.step`|表单|此属性是 `<InputNumber/>` 组件的步进数，设置数值的每次变化的数值。
+|`type`|`optionJsx.type`|表单|此属性用于组件中对组件本身执行 **类型** 识别专用。
+|`showTime`|`optionJsx.showTime`|表单|时间控件中时间格式专用属性，是否显示时间部分信息。
+|`mode`|`optionJsx.mode`|表单 a|控件中的模式：
+
+- 时间控件支持值包括：`time、date、month、year、decade`。
+- `<Select/>` 下拉多选时支持：`multiple、tags`。
+|`maxTagCount`|`optionJsx.maxTagCount`|表单|多选专用属性，当多选时使用 `tags` 模式时表示最多可支持的多选标签数量。
+|`autoFocus`|`optionJsx.autoFocus`|表单|自动聚焦属性，默认会将焦点聚焦到此控件。
+|`showSearch`|`optionJsx.showSearch`|表单|是否显示搜索框，此属性主要针对 `<Input.Search/>` 组件的搜索功能效果呈现。
+|`readOnly`|`optionJsx.readOnly`|表单|（状态）当前组件为 **只读** 时的专用属性。
+|`disabled`|`optionJsx.disabled`|表单|（状态）当前组件为 **禁用** 时的专用属性。
+|`status`|`optionItem.status`|表单|针对表单中的 `<Form.Item/>` 状态专用属性。
+|`itemClass`|`optionItem.className`|表单|此属性用于设置表单中 `<Form.Item/>` 标签的 `className` 属性。
+|`colon`|`optionItem.colon`|表单|此属性用于设置表单中 `<Form.Item/>` 标签的 `colon` 属性，是否显示双引号。
+|`labelSpac`|`optionItem.labelCol`|表单|影响当前组件布局的专用属性，对应 `labelCol`。
+|`wrapperSpan`|`optionItem.wrapperCol`|表单|影响当前组件布局的专用属性，对应 `wrapperCol`。
+|`fixed`|（当前）|列表 |此属性主要针对表格控件中的 `<Column/>` 列进行设置，支持的值为：`left, right`，将列固定到左侧或右侧。
+|`size`|（当前）|按钮 |此属性最早是针对 `<Button/>` 进行设置，实际只要支持 `size` 属性的配置都生效，`AntD` 中支持的值如：`large、middle、small`。
+|`shape`|（当前）|按钮 |此属性最早是针对 `<Button/>` 进行设置，解析按钮中的 `shape` 属性，`AntD` 中支持的值如：`default、circle、round`。
+|`_submit`|（当前）|按钮|「旧版」这个属性属于旧版本提交按钮专用属性，可设置提交按钮的提交相关内容，最终提交属性会触发 Form 相关的提交行为，生成按钮对应的提交行为配置。
+|`closable`|`optionJsx.closable`|按钮|新版用于配置按钮关闭行为的专用属性。
+|`callback`|`optionJsx.callback`|按钮|新版用于配置按钮回调行为的专用属性。
+|`api`|`optionJsx.api`|按钮|**最新版**用于直接配置远程 API 而无需额外的编程配置处理 `A, S, D` 链接。
+|`sorter`|（当前）| -- | Ajax远程查询引擎排序参数 `sorter`，用于指定排序专用属性信息。
+|`group`|（当前）| -- |分组专用属性，只要支持 `group` 属性的组件都可被解析，且在 Zero UI中的提交表单中针对提交按钮开启 `group` 属性，打开 `<Button.Group/>` 功能。
+|`key`|（当前）| -- |主键属性，若某个组件没有 `key` 值，则使用此属性配置来完善 `key` 值，这是 `React` 规范所需的内容。
+|`className`|（当前）| -- |风格专用属性，设置 JSX 中专用属性 `className`（等价于 CSS 中的 `class` 属性）。
+|====
+
+==== 特殊场景
+
+===== 输入限制：normalize
+
+输入限制是比较常用的一个属性，您可以直接使用 `normalize` 设置，现阶段 Zero UI 中支持的输入限制如下：
+
+[options="header",cols="2,3,3,3"]
+|====
+|值|含义|格式|示例
+|decimal|只录入浮点数|`<值>:<长度>:<精度>` | `normalize=decimal:12:2`
+|number|只录入数值|`<值>:<位数>` | `normalize=number:10`
+|id|只录入账号和标识|`<值>:<长度>` | `normalize=id:16`
+|integer|只录入大于`0`的数|`<值>:<位数>`| `normalize=integer:4`
+|length|录入不超过长度的数值。|`<值>:<长度>`| `normalize=length:16`
+|text|录入不超过长度的文本（中文算1的长度）。|`<值>:<长度>`| `normalize=text:512`
+|upper|录入不超过长度的大写。|`<值>:<长度>` | `normalize=upper:32`
+|====
+
+实际场景示例如下：
+
+[source,json]
+----
+{
+    "metadata": "name,银行名称,16,,,placeholder=请输入名称,normalize=text:40",
+    "optionConfig.rules": [
+        "required,请输入名称，名称不可为空！"
+    ]
+}
+----
+
+===== 排序参数：sorter
+
+排序参数一般在Ajax格式中使用（压缩版），用来处理查询引擎专用排序参数，参考如下示例：
+
+[source,json]
+----
+{
+    "ajax": {
+        "metadata": "POST,/api/customer/search,1,10,sorter=name`ASC",
+        "params.criteria": {
+            "sigma": "PROP:app.sigma",
+            "type": "FIX:corporation",
+            "": "OPERATOR:AND"
+        }
+    }
+}
+----
+
+上边配置中的 `metadata` 片段会直接被解析，而专用参数 `sorter` 的格式写法如下：
+
+1. 针对单个字段的排序
++
+--
+[source,bash]
+----
+# 按 name 升序排列
+sorter=name`ASC
+----
+--
+2. 针对多个字段的排序
++
+--
+[source,bash]
+----
+# 先按 name 升序排列、再按 code 降序排列。
+sorter=name`ASC;code`DESC
+----
+--
+3. 上述设置的解析结果（全格式）为：
++
+--
+[source,json]
+----
+[
+    "name,ASC"
+]
+----
+或
+[source,json]
+----
+[
+    "name,ASC",
+    "code,DESC"
+]
+----
+--
+
+===== 输入水印变换
+
+水印相关的属性如下：
+
+- `incribe`
+- `placeholder`
+
+这两个属性主要用于切换 **只读** 效果切换，它们支持一个特殊值 `$CLEAR$`，这个值会清除掉已设置好的水印文字，主要在 **只读/禁用** 两种状态切换时，三态表单中会有如下状态：
+
+- 可编辑：水印文字需要继续显示在交互式组件中。
+- 只读：若不显示水印文字（通常禁用），则需设置 `$CLEAR$` 的效果，但若依旧要显示文字，则可能依赖 `incribe` 启动文字的呈现。
+
+===== 图标表达式
+
+上述表格中还提到了图标表达式，它属于一个比较特殊的值（主要是 `suffix` 和 `prefix`），用于设置属性关联的图标信息（`<Icon/>`专用转换），最终会换成如下：
+
+[source,js]
+----
+/*
+ * 直接将 suffix / prefix 的字符串转换成对象格式，此格式会注入内部实现 `<Icon/>` 的设置
+ * 此处的 type 表示 `<Icon type="xxxx"/>`，而新版会自动解析成所需的图标类型格式。
+ **/
+optionJsx.suffix = {
+    type: value
+}
+----
+

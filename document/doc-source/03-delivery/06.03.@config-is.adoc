@@ -1,0 +1,37 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 集成服务（zero-is）
+
+Zero中的集成服务是追加于 `zero-jet` 的动态扩展服务，主要服务于如下场景：
+
+- 解决云端或大平台下的存储问题，隔离存储实现而对接不同的存储集成服务（现阶段的 *文档管理* 模式）。
+- 解决任意第三方对接服务，您可以使用集成配置访问任意第三方接口实现对接，动态建模模式下可开发独立的集成通道实现。
+- 解决第二库或以上的跨数据库数据访问的问题。
+- 解决数据采集模型定义，您可以直接通过集成服务新开采集服务和采集模型，将数据同步到系统中实现推拉两种集成模式。
+- 和互联网插件如：短信、邮件、QQ、支付宝、微信实现开放式平台对接。
+
+若想要启用Zero Extension中的模块化配置，可在您的Maven中追加如下依赖：
+
+[source,xml]
+----
+    <!-- 集成服务专用 -->
+    <dependency>
+        <groupId>cn.vertxup</groupId>
+        <artifactId>zero-is</artifactId>
+        <version>ZERO_VERSION</version> <!-- 版本跟随Zero版本 -->
+    </dependency>
+----
+
+[NOTE]
+====
+Zero集成服务中主要包含三个主概念：
+
+- 目录配置，存储在 `I_DIRECTORY` 表中，对接存储引擎专用配置。
+- 接口配置，存储在 `I_INTEGRATION` 表中，对接第三方接口专用配置。
+- 公文包，存储在 `I_PORTFOLIO` 表中，对接企业级目录，如LDAP、JNDI复杂目录服务专用，开启目录集、目录组和目录树时需使用的配置。
+====
+
+include::06.03.01.config-is-store.adoc[]
+include::06.03.02.config-is-i.adoc[]
+include::06.03.03.config-is-upload.adoc[]

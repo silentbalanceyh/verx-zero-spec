@@ -1,0 +1,36 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiUserLeader`
+
+经理选择器，专用用户经理选择，目前应用在 **业务流程** 中选择处理组相关信息，配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "runDept,处理组,24,,aiUserLeader",
+        "optionJsx.config": {
+            "items": [
+                "a,A组",
+                "b,B组",
+                "c,C组",
+                "d,D组"
+            ],
+            "title": {
+                "managerName": "组长",
+                "workNumber": "组长工号",
+                "mobile": "组长手机"
+            }
+        }
+    }
+]
+----
+
+[WARNING]
+====
+组处理流程中，用户可以选择此处指定的 `A、B、C、D` 四个组，这四个组可选择多个而开启四个不同的子流程，由于组信息是存在于 `optionJsx.config.items` 配置中，所以您可以追加新的组构成五个组或其他，唯一需要说明的时若开启了多个组那么针对不同的组的流程图需独立绘制，此处的 `UserLeader` 属于一个综合性组件，此组件的应用依赖于 **流程图**。一般只有启用了 `zero-wf` 项目中的工作流引擎后此组件才容易被 **重用**，单独使用不是有效果。
+
+它描述了这样一种场景，一个任务要分配到不同的组去完成，分配时根据实际情况先选择组以及组中的负责人，然后执行分配之后的任务流程。
+====

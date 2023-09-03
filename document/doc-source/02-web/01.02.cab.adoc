@@ -1,0 +1,140 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 开发入门
+
+==== 多语言环境下的Cab
+
+Cab多语言环境的支持是Zero UI中的一个亮点，您可以在Zero UI按自己需求随时扩展不同语言级的模块实现多语言环境，语言处理步骤如下：
+
+1. 在您的环境变量文件： `.env.development` 或 `.env.production` 中配置 `Z_LANGUAGE` 环境变量，如 `cn`。
+2. 从 `cab` 模块中读取对应目录下的内容，如 `cn` 则读取资源文件的根目录走 `cab/cn`。
+3. 解析模块对应的 `Cab.json` 中的名空间（ ns ），名空间决定了资源文件的目录路径。
+4. 根据最终 `@Ux.zero` 绑定的文件名（ cab("xxx") ）来决定读取哪个资源文件。
+
+[TIP]
+====
+在Zero UI中开发时，若您想要实现 *多语言* 模式，则禁止在您的页面代码中出现任何常量显示文本，如下边这种写法：
+
+[source,html]
+----
+<div>你的位置</div>
+----
+
+而是直接使用资源文件绑定来实现，将所有呈现文字放到资源文件中，若您想要切换到另外的语言版本，则可以直接翻译之后替换同名文件包，如将 `cab/cn` 切换到 `cab/en`，最终在 `Z_LANGUAGE` 中设置 `en` 的变量。
+
+====
+
+==== 资源关联拓扑
+
+Zero UI中的资源引用拓扑图如下（同时包含模板页和内容页）：
+
+image:zui-rest.png[0,1024]
+
+从图上可以看到，模板的绑定和页面的绑定是分别执行，而绑定过程中还会受到 `Z_LANGUAGE` 和 `Z_ROUTE` 环境变量的影响：
+
+- `Z_LANGUAGE`：控制当前应用读取的资源包的语言。
+- `Z_ROUTE`：控制当前应用的 *一级路径* （通常表示应用）。
+
+固定入口文件是 `UI.js` ，若您创建了新的页面，需要重新启动容器（执行 `run-zero.sh / run-zero.bat`）才能生效，核心链接文件参考下表：
+
+[options="header"]
+|====
+|链接类型|路径
+|内容页链接| `src/components/index.js`
+|模板页链接| `src/container/index.js`
+|扩展页链接| `src/extension/components/index.js`
+|====
+
+
+[CAUTION]
+====
+- 扩展页链接是OOB专用链接页面，可以被内容页链接重写，如您若创建了 `src/components/rbac/user/UI.js` ，则 `src/extension/components/rbac/user/UI.js` 就会被覆盖，该功能方便您定制扩展框架中的部分不满足需求的内置页，同时可享受后端扩展页面的路由规划表——理论上所有页面都可以被重写。
+- 所有 `index.js` 的核心链接文件都不提交到 GIT 仓库，防止不同的人修改造成版本冲突，运行脚本启动时会自动生成（自动化编程）。
+- 通常开发步骤是直接创建所有页面所需的 `UI.js`，然后一次性生成所有页面，编排到路由表中。
+- Zero UI中的链接文件只支持二级，格式如：`src/components/<module>/<page>/UI.js`，此处包括所属模块和所在页面。
+====
+
+==== 示例：代码演示
+
+
+若要实现上述资源引用部分的代码，您只需要按如下步骤进行：
+
+[NOTE]
+====
+假设环境变量：
+
+- `Z_LANGUAGE` = cn
+- `Z_ROUTE` = nm
+
+假设您想要的页面为订单处理页：
+
+- `<module>` = order
+- `<page>` = process
+====
+
+1. 在 `cab/cn/` 中创建您的资源文件：`components/order/process/UI.json`。
+
++
+--
+[TIP]
+====
+名空间资源绑定文件并没有严格要求一定要按照页面层级关系定义，但是推荐和您的 `components` 下的 `<module>/<page>` 保持一致以防止混乱，方便维护。
+====
+--
+
+2. 在 `src/components` 中创建您的目录以及入口文件：`order/process/UI.js`，创建之后重启容器：`run-zero.bat / run-zero.sh`。
+3. 在您的代码目录中创建 `Cab.json` 的名空间文件，并指向名空间目录：
+
++
+--
+[source,json]
+----
+{
+    "ns": "components/order/process"
+}
+----
+--
+4. 在您的 `UI.js` 中追加如下代码：
+
++
+--
+[source,js]
+----
+import Ux from 'ux';
+// 注解修饰
+@Ux.zero(Ux.rxEtat(require("./Cab"))
+    // 此处的 UI 证明它绑定的文件名为 UI.json
+    .cab("UI")      
+    .to()
+)
+// 类定义
+class Component extends React.PureComponent{
+    // 核心渲染方法
+    render(){
+        // 读取 UI.json 中的信息
+        const info = Ux.inHoc(this, "info");
+        const info1 = Ux.fromHoc(this, "info");
+        return ...
+    }
+}
+// 组件导出
+export default Component
+----
+--
+
+[WARNING]
+====
+上述代码示例中 `inHoc / fromHoc` 是两个一模一样的方法，`inHoc` 是新版，而旧版是 `fromHoc`，您可以直接从资源文件中提取数据，上述内容提取了 `info`，那么资源文件如下：
+
+[source,json]
+----
+{
+    "_info": {
+        
+    }
+}
+----
+
+*重点：此处的资源文件所有根节点都必须带 `_` 前缀，不带此前缀的会被框架自动忽略，而调用API时则不需要使用前缀信息，此处含有配置分区、分块、分类的基础规范*。
+====

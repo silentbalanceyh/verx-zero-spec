@@ -1,0 +1,98 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== 数据转换[[__CONFIG_FORM_IO]]
+
+====
+此部分内容为实验性版本，现阶段除了流程表单中存在 `io` 配置，其他位置的配置并没有出现，还存在待改进以及不稳定的情况存在。但 `io` 这个设计会延续，此设计方便开发人员直接配置 **页面流**，在读写（ `input / output` ）两个生命周期内注入 **规则、插件、函数** 来完成数据转换相关的定制。
+====
+
+Zero 表单配置新版本中中加了特殊配置来执行数据的进出控制，主要处理表单的 **加载和提交** 的生命周期，让您可以针对表单的数据流程执行细粒度控制，先参考下边两段配置：
+
+_io_
+
+[source,json]
+----
+{
+    "io": {
+        "writer": {
+            "record": {
+                "inSource": "linkageAsset",
+                "inPath": "targetData",
+                "outType": "ARRAY"
+            }
+        }
+    }
+}
+----
+
+_transform（将被 `reader` 代替）_
+
+此部分位于代码：`src/utter/channel.__.v.yo.transformer.js` 源码。
+
+[source,json]
+----
+{
+    "transform": {
+        "record@file": {
+            "type": "FILE",
+            "field": "record@fileKey",
+            "fieldName": "record@name"
+        },
+        "record@sizeUi": {
+            "type": "SIZE",
+            "field": "record@size"
+        }
+    }
+}
+----
+
+后期的基本设想是直接使用 `io` 配置完成所有的读写流程，参考 `io` 在表单生命周期中存在的位置：
+
+image:exp-form-io.png[,960]
+
+===== `writer`
+
+`writer` 中记录了每一个字段的基础配置，此处配置的数据结构如下：
+
+[options="header",cols="3,7"]
+|====
+|配置项|含义
+|`inField` a| 固定值和别名:
+
+- 若 `inField` 未配置，那么此处就是 `writer` 配置对象的 `key`。
+- 若 `inField` 已配置，此处配置的值会成为 `key` 的别名来执行处理。
+|`inSource`| 当前配置属性采集的数据源属性，此处由于是提交内操作，所以源头默认为当前表单已提交的数据。
+|`inPre`| 条件检查配置项，它所定义的条件满足的情况下才能触发当前属性的 `io` 操作。
+|`inPath`| 从当前采集数据的数据源中提取路径下的内容，此属性支持 **表达式**，前端会根据 `Ux.formatExpr` 对路径执行格式化处理。
+|`outType` a| 转换之后的数据类型
+
+- ARRAY：输出类型为 `[]`。
+- OBJECT：输出类型为 `{}`。
+- （未设置）：输出原始类型或原始数据。
+|====
+
+此处的 `writer` 的执行流程如：
+
+image:exp-form-io.writer.png[,960]
+
+所以上述 `writer` 的执行流程如：
+
+1. 从表单提交数据中提取 `linkageAsset` 属性，此处属性数据类型是 `[]` 数组类型。
+2. 跳过 `inPre` 步骤检查。
+3. 从提取到的属性中抓取 `targetData` 部分的值
++
+--
+- 如果提取源是 `[]` 类型，那么此处做的是 **投影提取**。
+- 如果提取源是 `{}` 类型，那么直接提取 `key = targetData` 部分的值。
+--
+4. 最终输出是 `ARRAY`，会构造 `[]` 的输出类型。
+
+====
+io 的全称是 `input / output`，意为表单生命周期中 **加载** 和 **提交** 两个生命周期，有了此处的配置，表单本身的行为有了很大的扩展空间。
+====
+
+===== `reader`
+
+（暂时还未使用，教程滞后）。

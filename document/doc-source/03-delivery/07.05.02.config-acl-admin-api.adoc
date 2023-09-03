@@ -1,0 +1,173 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+==== 全区域元数据
+
+===== 初始化区域
+
+Zero权限管理中进入界面之后会首先调用 `GET /api/authority/region/:type` 接口提取所有合法区域信息。
+
+[CAUTION]
+====
+
+注：此处虽然仅提供了参数 `type`，实际构造查询 `S_PATH` 的SQL语句如下：
+
+[source,sql]
+----
+WHERE RUN_TYPE = 'ROLE' AND SIGMA = 'xxx' AND PARENT_ID IS NULL
+----
+====
+
+该接口的响应格式是一个JsonArray，其中菜单管理区域响应格式如下：
+
+[source,json]
+----
+{
+    "key": "f37f66c0-40a9-4816-ade2-4230f4ee045f",
+    "name": "菜单设置",
+    "code": "rule.menu",
+    "phase": "EAGER",
+    "runType": "ROLE",
+    "dmType": "FLAT",
+    "dmComponent": "io.vertx.mod.rbac.ruler.HSDimNorm",
+    "dmConfig": {
+        "...": "（略）"
+    },
+    "ui": "HxSite",
+    "uiSort": 1,
+    "uiType": "DAO",
+    "uiConfig": {
+        "...": "（略）"
+    },
+    "uiCondition": {
+        "...": "（略）"
+    },
+    "uiComponent": "io.vertx.mod.rbac.ruler.HSUiNorm",
+    "uiSurface": {
+        "...": "（略）"
+    },
+    "sigma": "Qxw5HDkluJFnAPmcQCtu9uhGdXEiGNtP",
+    "language": "cn",
+    "active": true,
+    "createdBy": "zero-environment",
+    "label": "菜单设置"
+}
+----
+
+上述结构的构造来自于 `S_PATH` 中的配置，其中只有一个属性比较特殊，`ui` 属性来自于配置 `uiSurface` 中的 `webComponent` 属性，此处对照 `S_PATH` 对各个属性再加以说明（此处只枚举特殊属性，不枚举Zero规范下的标准化字段如 `sigma, active` 等）。
+
+[options="header"]
+|====
+|属性|子属性（Json格式内定义）|数据列|含义
+|name||NAME|菜单权限管理标题
+|label|||来源于 name
+|code||CODE|菜单权限管理的系统编码，该系统编码会辅助后期生成配置数据和取值专用数据。
+|phase||PHASE|UI数据的提取阶段。
+|runType||RUN_TYPE|当前配置管理类型，目前只支持：ROLE（角色级）。
+|mapping||MAPPING|从 dm -> ui 的转换，用户触发维度操作时，将维度数据转换成界面数据的查询条件专用映射配置。
+|dmType||DM_TYPE|维度分组类型。
+|dmComponent||DM_COMPONENT|维度数据提取专用组件。
+|dmCondition||DM_CONDITION|维度数据提取时的查询条件，遵循查询引擎专用语法，会被 dmComponent 消费。
+|dmConfig|items|DM_CONFIG|（前端）维度界面配置 / items用于描述维度数据的呈现基础规则。
+||webAction||（前端）维度界面配置 / webAction负责维度数据操作触发的连接（右上角按钮事件配置）。
+|ui|||来源于 uiSurface 中的 webComponent 属性，当前管理界面的主要组件。
+|uiSort||UI_SORT|当前区域的排序，最终在页签中呈现的顺序按 uiSort 进行排列。
+|uiType||UI_TYPE|界面数据提取类型。
+|uiConfig||UI_CONFIG|界面数据配置专用，会直接被 uiComponent 在后端消费。
+|uiComponent||UI_COMPONENT|界面数据配置组件，用于提取界面数据以及处理专用。
+|uiCondition||UI_CONDITION|界面数据查询模板，遵循 QR 查询引擎专用语法。
+|uiSurface|webComponent|UI_SURFACE|（前端）界面配置数据 / webComponent，界面呈现主要组件。
+||webBind||（前端）界面配置数据 / 前端和资源绑定的基础规则，某个组件和资源编码绑定，不同组件处理不同资源。
+||webTree||（前端）界面配置数据 / 界面数据以树模型呈现时，提供树型组件参数。
+||webData||（前端）界面配置数据 / 界面数据流规则定义。
+|====
+
+===== 维度属性 DM / 界面属性 UI
+
+Zero权限管理框架中有两个核心前缀：
+
+- DM：维度配置前缀，用于配置当前管理界面所需的维度信息（按某种维度分类管理规则），且不同前端组件对维度定义有所区别。
+- UI：界面配置前缀，用于配置当前管理界面交互式组件专用界面信息。
+
+[TIP]
+====
+最初您可能对 DM 以及 UI 的概念不太理解，但一旦配置过一个完整的权限管理模块（如菜单管理、流程管理），您就逐步理解二者的区别和用法了，权限管理界面大部分内容是通过配置的手段实现，并非使用代码开发的方式，所以才会有复杂的 DM / UI 架构来辅助您生成不同的界面。
+====
+
+===== 特殊属性说明
+
+1. 阶段属性 `phase`：阶段属性和权限管理其他位置的取值一致：`EAGER / LAZY` 两种：
+
++
+--
+- EAGER：加载区域元数据时同时提取界面数据资源，如菜单管理中系统所有菜单需要在加载界面时全部提取出来，才可以执行配置，这种模式是EAGER模式。
+- LAZY：加载区域元数据时不提取界面数据，这种一般用于 *动态建模*，提取维度数据之后，借用维度数据接口执行二次加载，此时界面数据才会被提取出来。
+--
+
+2. 运行属性 `runType`：该属性作为查询条件使用，现阶段只支持 `ROLE` 一种（角色级管理），后续可支持多种，取值对应到 `S_VIEW` 中的核心字段 `OWNER_TYPE`，目前有三种：`ROLE / USER / DIRECTORY`。
+3. 映射属性 `mapping`：映射属性十分重要，考虑这样一个场景：左侧有一个模型分类的树，来自于字典表 `X_CATEGORY`，当界面出现字典树时，用户会点击某个类型的字典去过滤所有模型数据，如：服务器下的路由器管理 等，这种场景下要将字典记录 `category` 转换成模型记录的查询条件实现过滤，它们之间表结构通常会如下图，所以映射属性就可以辅助我们完成从 DM 到 UI 的转换（此种转换通常适用于维度数据为动态数据的场景）。
+
++
+image:zero-p-admin-mapping.png[0,480]
+
+4. 维度类型 `dmType`：定义维度数据的提取模式
+
++
+--
+[options="header"]
+|====
+|值|含义
+|NONE|无维度数据提取，直接平行定义
+|FLAT|列表型数据提取，只划分区域执行列表型提取操作
+|TREE|树型数据提取
+|FOREST|森林型数据提取，等价于 FLAT 和 TREE 两种模式综合
+|====
+--
+
+5. 界面类型 `uiType`：定义界面数据的提取模式
+
++
+--
+[options="header"]
+|====
+|值|含义
+|NONE|无数据源，纯前端界面开发模式
+|WEB|静态数据专用，直接从 `json` 配置文件中解析界面数据完成数据提取
+|DAO|动态数据提取，使用静态模型的Dao层直接提取数据
+|ATOM|动态数据提取，使用动态模型的数据提取
+|DEFINE|自定义模式，组件使用模式，这种模式依赖 uiConfig 和 uiComponent 的自定义开发
+|====
+--
+
+6. dmConfig中的 `webAction` 属性，该属性主要用于构造连接保存模型，通常会实现防重复加载、事件连接、点击加载等一连串前端事件流程，命名规范如下：
+
++
+--
+- 连接点ID：`__ID` 作连接点前缀，触发 `Ux.connectId` 函数的按钮。
+- 被连接点ID：`__CID` 作被连接点前缀，`Ux.connectId` 函数参数 `id` 对应的按钮。
+--
+
+7. uiSurface中的 `webData` 属性，该属性用于处理页面数据流，提供了数据的 *初始化、读取、变更、提交* 等核心数据流程，常用的几个属性如下：
+
++
+--
+[options="header"]
+|====
+|参数名|含义和值
+|paramIn|数据初始化时的默认数据信息。
+|paramView|视图相关数据，主要设置视图的两个核心维度 `view, position` ，不设置时使用默认值：`DEFAULT / DEFAULT`
+|paramVisit|初始化访问者 `S_VISITANT` 时的专用数据配置，一般新增访问者需要。
+|paramDefault|无值默认行为，ALL代表全选，NONE代表全部不选中，常用值为ALL。
+|initializer|初始化JS函数
+|requester|提交专用JS函数
+|====
+--
+
+
+
+
+
+
+
+
+

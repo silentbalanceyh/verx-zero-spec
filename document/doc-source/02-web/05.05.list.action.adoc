@@ -1,0 +1,536 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 定制化开发
+
+本章讲解列表**定制化开发**部分，当您使用了列表组件 `ExListComplex / ExListFast` 之后，您可以参考本章的引导对标准列表进行**操作定制**，列渲染和过滤本身的定制目前先不讲解，后续遇到之后会逐步开放。
+
+====
+本章节的定制化开发主要是针对开发人员对标准列表进行扩展和定制开发，所以不支持直接**配置**的模式，后期版本开通 SSR 功能之后可以让行为在服务端实现直接定制，就可以打开**配置**功能。
+====
+
+==== 添加区域
+
+===== 定制步骤
+
+在标准的列表中（ `ExListComplex` 组件），它的头部主要分为了四个区域，本章节定制**添加区域**，参考如下截图：
+
+image:exp-list-define-open.png[,900]
+
+本章节详细讲解如何拓展新增区域并追加一个按钮以实现次区域的定制，您可以按照如下步骤进行：
+
+1. 在 `options` 节点中配置 `op.extension.xxx` 这种前缀为 `op.extension` 的操作按钮节点
+
++
+--
+[source,json]
+----
+{
+    "_grid": {
+        "...": "...",
+        "options": {
+            "...": "...",
+            "op.extension.generate": {
+                "text": "批量发卡",
+                "icon": "build",
+                "className": "uc_green",
+                "region": "op.open.card",
+                "config": {
+                    "executor": "rxCard"
+                }
+            },
+            "op.extension.reject": {
+                "text": "批量拒绝",
+                "region": "op.batch.reject",
+                "plugin": {
+                    "prompt": "confirm.batch.reject"
+                },
+                "config": {
+                    "index": 1,
+                    "executor": "rxReject",
+                    "ajax": {
+                        "uri": "/api/todo/reject",
+                        "method": "POST"
+                    },
+                    "message": "message.batch.approval"
+                }
+            }
+        }
+    }
+}
+----
+在 Zero UI 中有一个基本限制，就是扩展 `ExListXxx` 类似的组件时，所有扩展区域的按钮必须以 `op.extension` 作为操作前缀，只有这种类型的前缀会被捕捉到并扩展到相对应的区域。解读一下上述配置的具体细节：
+
+[options="header",cols="2,8"]
+|====
+|配置项|含义
+|`op.extension.generate` |这是最早的配置项，不同的按钮其名称有所区别，这个名字只要不重复，您就可以无限扩展（当然也取决于您的**添加区域**的宽度），此处的按钮系统名称为 `op.extension.generate`。
+|`text` |此按钮显示的文字信息。
+|`icon` |此按钮上显示的图标，图标扩展会追溯到 `AntD 3.x` 中的 `<Icon type=""/>`，现在虽然升级了不能使用这种语法，可 Zero Ui 做了版本的兼容处理，这种配置依旧生效（ `Ux.v4Icon` 方法）。
+|`className` |当前按钮的风格信息，常用的风格参考对应章节，`uc_` 开头，全称为 `Uniform Color`。
+|`region` a|这个属性比较重要，按照列表本身的区域配置，头部会包含四个核心区域：`open, batch, search, extra`，这四个区域中支持按钮扩展的只有 `open, batch, extra`，所以此处命名方式遵循约定赋值到 `region` 属性中，此属性的含义如下：
+
+- `op.open` 前缀：表示按钮会追加到 `open` 区域（本例中）。
+- `op.batch` 前缀：表示按钮追加到 `batch` 区域。
+- `op.extra` 前缀：表示按钮追加到 `extra` 区域。
+
+如示例中实际拓展了两个按钮，一个位于 `open` 区域，一个位于 `batch` 区域。
+|`plugin` a|插件体系一般是按钮在 `batch` 区域时使用，此插件体系的完整版如：
+
+[source,json]
+----
+{
+    "op.extension.approval": {
+        "...": "...",
+        "plugin": {
+            "window": "window.batch.approval",
+            "componentType": "ExApprovalBatch",
+            "component": "batch.approval"
+        }
+    }
+}
+----
+此处的节点配置主要做对接扩展，配置的内容是**自由**格式，您可以根据自己按钮部分的定制选择使用哪种配置，此处的 `approval` 插件是参考的批量处理按钮的配置在设置，但实际格式取决于您开发的扩展按钮的内部逻辑。
+|`config` a|配置项，配置项是**半自由**格式，主要两个影响前端布局的属性如下：
+
+- `executor`：当前执行函数的函数名，一般是点击操作之后的**函数绑定**专用。
+- `index`：当前按钮的顺序，有了 `index` 之后可以对您的 `extension` 扩展进行排序，所有的 `extension` 的按钮基本位置是追加在原始的 `op.batch` 按钮之后，可以使用 `index` 进行重排。
+|====
+
+--
+
+2. 为 `rxReject` 处配置的 `executor` 定制外置函数。
++
+--
+[source,js]
+----
+const rxReject = () => (reference, config = {}) => (event) => {
+    Ux.prevent(event);
+    return Ux.sexBatch(reference, (keys = []) => {
+        const {ajax = {}} = config;
+        return Ux.asyncPromise(ajax, {keys});
+    }, {name: "rxBatchApproval", message: config.message});
+};
+----
+此处注意，上述函数此处是一个**三阶函数**，每一阶含义如下：
+
+1. 三阶：`()`，此处虽然没有带参数，但实际使用过程中它在最外层中，您实际是可以传入您想要的外置参数的。
+2. 二阶：`(reference, config = {})`，此处两个参数有待注意，`reference` 实际是组件 `ExListXxx` 的引用，而不是外层引用；`config` 则包含了上述配置中的 `config` 节点之下的所有内容。
+3. 一阶：`(event)`，直接绑定到按钮点击事件中。
+--
+
+3. 再看一个 `rxCard` 对应的 `executor` 的配置：
++
+--
+[source,js]
+----
+const rxCard = (ref) => (reference) => (event) =>
+    Ux.of(ref).open().done();
+----
+
+此处的基础定义和前一步骤是一致的，同样是一个**三阶函数**，每一个阶的含义如下：
+
+1. 三阶：`(ref)`：此处带有参数，实际 `ref` 表示的是最外层组件的组件引用，此处属于**外置参数**。
+2. 二阶：`(reference)`：此处没有开放 `config` 函数，其实此处也不需要开放第一参，只是单纯为了让开发人员找到 `ExListXxx` 的组件引用，所以保留了 `reference` 参数。
+3. 一阶：`(event)`，直接绑定到按钮点击事件中。
+--
+
+===== 高阶 vs 绑定
+
+注意：在列表定制开发中，此处头部区域的按钮绑定的都是 **三阶函数**，此处实质上 `ExListXxx` 组件中消费都是二阶函数，参考如下图示：
+
+image:exp-list-action-3.png[]
+
+实际上这个三阶函数的第三阶已经在调用组件外层就转换成二阶了，传入组件之后还会执行一次组件引用的绑定 `(reference, config)`，这次绑定会彻底生成最下层的按钮所需的 `(event)` 事件函数，这样的结构就让开发人员在书写函数时可以根据自己需要选择对应的引用去提取相关数据。这种设计在 Zero UI 中十分常见，很多开发人员不理解高阶函数的实用场景，参考下图：
+
+image:exp-list-split.png[]
+
+1. 如果您的事件**函数体**书写在 `UI.js` 中，结构/行为/显示三者不分离，此时函数内可以使用 `this` 拿到 `React` 组件引用。
+2. 但是若您将原来的 `UI.js` 拆分成 `UI.js 和 Op.js` 两个文件时，想要在 `Op.js` 中拿到 `React` 组件引用，您就可以考虑**多一阶**的方式去处理。
+3. 如此操作之后，您依旧可以在函数内部使用 `reference` 代替 `this` 拿到组件引用。
+
+[WARNING]
+====
+此处诱发另外一个思考：为什么不直接使用 `Function.bind` 的方式来切换函数本身的 `this` 作用域呢（最少Zero Ui中不推荐这种方式）？
+
+在 Zero Ui 中大量使用了**高阶**替换了 `this` 作用域的绑定，其考虑点如下：
+
+JavaScript 中的函数 `this` 作用域已经被 `ES6` 的箭头函数改掉了，它本身并非以 `OO` 范式设计的语言，`this` 本身的设计目的是在函数内部，指代函数当前的运行环境，早期的 `OO` 玩法是使用原型链打造近似于 `class` 的语法，但 `ES6` 吸取了大量语言的优点，进行了改动。这种模式下，若再考虑 `Function.bind` 的方式切换函数本身的作用域，有可能会造成**作用域**的管理不受控，这是Zero Ui使用**高阶**代替**绑定（ `bind` ）**的主要原因。再者在 React 框架中，很多时候组件本体的继承树会出现多层结构（可能您的组件结构没这么复杂），当这种结构出现时，`this` 的作用域管理会和组件引用产生一定的绑定关系，但这种绑定会导致开发人员无法清楚判断 `this` 的作用域引起不必要的 BUG，最典型会让函数本身变得依赖 `this` 导致副作用感染区域过大——绑定错误直接引起重用性问题，所以基于此考虑，Zero Ui推荐使用高阶的方式，这种方式职责更清晰，就像上述示例中 `ref` 代表外层组件引用，`reference` 代表内层组件引用。
+
+当然，不推荐部代表您不可以使用 `Function.bind`，您还是可以在环境中这样用，只要您书写的函数本身具备可观测性即可。
+====
+
+==== 行区域
+
+在标准的列表中（ `ExListComplex` 组件），行区域定制主要针对表格行操作链接（默认是链接，您可以切换成按钮），参考下图（角色管理）：
+
+image:exp-list-action-r.png[,900]
+
+===== 默认规则
+
+Zero Ui 中的 `ExListXxx` 类型的列表组件的列渲染中有一类 `EXECUTOR` 用于处理操作列，先参考角色管理中的列处理配置：
+
+[source,json]
+----
+[
+    {
+        "title": "操作",
+        "dataIndex": "key",
+        "fixed": "left",
+        "$render": "EXECUTOR",
+        "$option": [
+            {
+                "text": "编辑",
+                "executor": "fnEdit"
+            },
+            "divider",
+            {
+                "text": "删除",
+                "executor": "fnDelete",
+                "confirm": "确认删除选择的角色记录？"
+            },
+            "divider",
+            {
+                "text": "权限设置",
+                "executor": "fnAuthorize"
+            }
+        ]
+    }
+]
+----
+
+上述配置是**角色管理**中的三个按钮的基本配置，在列表行区域的默认规则如：
+
+[options="header", cols="3,7"]
+|====
+|`executor` 名称|含义
+|`fnEdit` |对应编辑表单专用的**执行器**，表单对应 `FormEdit`。
+|`fnDelete` |对应删除操作专用的**执行器**，表单对应 `FormEdit`。
+|====
+
+在通用的中后台管理模块中，`fnEdit` 和 `fnDelete` 属于默认配置，基本规则如下：
+
+1. 二者配置的时候无需额外配置，直接配置后会按照列表的基础配置呈现并执行相关规则。
+2. 您可以直接使用 `divider` 值呈现两个链接之间的分割线，这种格式配置为固定配置。
+3. 若您未配置 `fnEdit`，则可以默认开启查看功能（只读模式）：
++
+--
+[source,json]
+----
+{
+    "op.row.edit": false,
+    "op.row.delete": false,
+    "op.row.view": "查看"
+}
+----
+--
+
+===== 扩展行
+
+Zero Ui中扩展行配置如前边**角色扮演**所示，直接配置过程中您可以追加一个新的按钮如：
+
+[source,json]
+----
+[
+    {
+        "text": "权限设置",
+        "executor": "fnAuthorize"
+    }
+]
+----
+
+注意：这种模式并非纯配置模式，而是依赖**编程**开发扩展函数，此函数的脚本示例如下：
+
+[source,jsx]
+----
+    <ExListComplex  {...Ex.yoAmbient(this)}
+                    $executor={{
+                        fnAuthorize: (roleId, record = {}) => Ex.aclRoute(this, {
+                            key: roleId,
+                            view: "ROLE",
+                            data: record,
+                        })
+                    }}
+                    config={config} $form={form}/>
+----
+
+上述 `fnAuthorize` 为行定制专用函数，此函数签名您可以参考**列渲染**章节，此处由于开发脚本存在于同一个文件 `UI.js` 中，所以并没有使用**高阶**函数绑定事件，而是直接定义了函数，采用了 `this` 引用。
+
+====
+关于四个区域的扩展，等后边深度定制的时候再提供教程来梳理，不同区域的函数签名略微有些差异。
+====
+
+===== 示例：`extra` 操作
+
+本章节看一个详细的例子（零点提供）来查看右上角的定制部分：
+
+image:exp-list-form-extra.png[0,900]
+
+此处可以看到，点击进入详情页之后，此处的按钮已经被重新定制过了，且定制成了自定义的模式（此处使用了 Smart 开发模式）。
+
+1. 关闭和定制列表的选项：
++
+--
+[source,js]
+----
+{
+    Options: {
+        rm: [
+            "form.add",         // 关闭添加表单
+            "form.filter",      // 关闭高级搜索表单
+            "op.open.add",      // 按钮：添加
+            "op.extra.export",  // 按钮：导出
+            "op.extra.import",  // 按钮：导入
+            "op.batch.edit",    // 按钮：批量编辑
+            "op.batch.delete",  // 按钮：批量删除
+            "op.submit.add",    // 内页：添加提交
+            "op.submit.save",   // 内页：编辑提交
+            "op.submit.delete", // 内页：删除提交
+            "op.submit.reset",  // 内页：重置
+        ]
+    },
+    Form: {
+        name: "FormBook",
+        FormEdit
+    }
+}
+----
+有一点注意，此处的 `FormEdit` 是**自定义编辑表单**。
+--
+
+2. 挂载右上的按钮部分：
+
++
+--
+[source,js]
+----
+    yoRx: (reference) => ({
+        rxPostClose: () => Fn.ioOrderClose(reference, {$booked: false}),
+        rxExtraEdit: (data, ref, fnJsx) => Jx.aiPayMenu(reference, data, fnJsx),
+    })
+----
+此处挂载了两个 `rx` 函数，其含义分别如下：
+
+- `rxPostClose`：此函数和右上的按钮没有任何关系，只是单纯提供了核心函数方法，此方法在关闭页签之后触发：`Post Close`。
+- `rxExtraEdit`：此函数为核心渲染方法，它有三个参数：`data` 表示当前界面绑定的远程数据记录的基础数据；`ref` 是外层的 React 组件引用；`fnJsx` 是挂载的外层 `Jsx` 渲染器，界面呈现就是依赖此处的 `rxExtraEdit` 来扩展定制。
+--
+
+3. 行操作触发函数（行区域扩展）：
++
+--
+[source,js]
+----
+    yoExecutor: (reference) => ({
+        fnIncome: Ex.rxRowOpen(reference, {
+            // 打开后操作
+            rxAfter: (bookKey, record) => Fn.ioOrderOpen(reference, record, {bookKey}),
+        }),
+        fnView: Ex.rxRowOpen(reference, {
+            // 调用订单关闭时的操作
+            rxAfter: (id, record) => reference.setState({$booked: true}),
+        }),
+    })
+----
+这里调用了 `Ex` 中的 `rxRowOpen` 来打开行相关内容，说明一下几个点：
+
+1. 此处的 `fnIncome / fnView` 就是行配置中的 `EXECUTOR` 配置中对应的 `executor` 配置属性。
+2. `rxAfter / rxBefore` 是所有的 `executor` 自定义扩展都可以直接定义的**前置操作**和**后置操作**。
+--
+4. 行状态控制——行状态控制是更加细粒度的控制操作，您可以根据当前行的记录数据控制哪些链接显示哪些链接不显示，此处主要定制：`koRow` 函数：
++
+--
+[source,js]
+----
+    yoPlugins: (reference) => ({
+        // 行操作
+        koRow: (record, config, ref) => {
+            if ("Finished" === record.status) {
+                return "fnView" === config.executor;
+            } else {
+                return "fnIncome" === config.executor;
+            }
+        }
+    })
+----
+先解释下上述的控制逻辑，直接检查记录中的 `status` 属性：
+
+1. 若 `status=Finished` 表示已完成的账单，这种情况会触发 `fnView` 的执行器（ `fnView` 执行器是直接从 `fnEdit` 转换过来的查看执行器，不用配置，切换查看页面流专用 ）。
+2. 若 `status` 的值不是 `Finished` 则执行 `fnIncome` 的执行器，继续执行管理操作。
+
+这样配置之后，这个模块的行就包含了**行双态**，行的数据会影响行的按钮行为，这个功能在很多场景中都可以使用。
+--
+
+此处放出完整的定制模块源代码，让读者对此有更深刻的理解：
+
+_UI.json_
+
+[source,json]
+----
+{
+    "_assist": {
+        "tabular": {
+            "uri": "/api/types/tabulars",
+            "method": "POST",
+            "magic": {
+                "$body": [
+                    "preorder.category",
+                    "preorder.method",
+                    "surety.type",
+                    "code.source",
+                    "code.market",
+                    "code.pricecat",
+                    "order.status",
+                    "zero.customer",
+                    "gender.type",
+                    "idc.type",
+                    "bill.type",
+                    "bill.status",
+                    "bill.category",
+                    "pay.term.type",
+                    "in.room.type"
+                ]
+            },
+            "group": "type"
+        },
+        "room.type": {
+            "uri": "/api/room-type/by/sigma"
+        },
+        "code.price": {
+            "uri": "/api/room-price/hotel/:hid",
+            "magic": {
+                "hid": "PROP:app.mHotel.key"
+            }
+        }
+    },
+    "_grid": {
+        "query": {
+            "criteria": {
+                "sigma": "PROP:app.sigma",
+                "": true,
+                "major": "BOOL:false"
+            }
+        },
+        "module": {
+            "NAME": "账本",
+            "MODULE": "fm-book",
+            "IDENTIFIER": "fm.bank"
+        },
+        "options": {
+            "search.advanced": false,
+            "op.row.edit": false,
+            "op.row.delete": false,
+            "op.row.view": false,
+            "tabs.edit": "账务管理"
+        },
+        "table": {
+            "columns": [
+                {
+                    "title": "操作",
+                    "dataIndex": "key",
+                    "fixed": "left",
+                    "width": 80,
+                    "$render": "EXECUTOR",
+                    "$option": [
+                        {
+                            "text": "账务处理",
+                            "executor": "fnIncome",
+                            "ajax": {
+                                "uri": "/api/order/:orderId"
+                            }
+                        },
+                        {
+                            "text": "查看账本",
+                            "executor": "fnView"
+                        }
+                    ]
+                }
+            ]
+        },
+        "synonym": {
+            "modelKey": "房号"
+        }
+    }
+}
+----
+
+_UI.js_
+
+[source,js]
+----
+import Ui from "ui";
+import Ex from 'ex';
+import FormEdit from './UI.Form';
+import {Fn, Jx} from "app";
+import Ux from "ux";
+
+export default Ui.smartList({
+    ns: require("./Cab.json"),
+    name: "PxBook",
+    Options: {
+        rm: [
+            "form.add",         // 关闭添加表单
+            "form.filter",      // 关闭高级搜索表单
+            "op.open.add",      // 按钮：添加
+            "op.extra.export",  // 按钮：导出
+            "op.extra.import",  // 按钮：导入
+            "op.batch.edit",    // 按钮：批量编辑
+            "op.batch.delete",  // 按钮：批量删除
+            "op.submit.add",    // 内页：添加提交
+            "op.submit.save",   // 内页：编辑提交
+            "op.submit.delete", // 内页：删除提交
+            "op.submit.reset",  // 内页：重置
+        ]
+    },
+    Form: {
+        name: "FormBook",
+        FormEdit
+    },
+    yoRx: (reference) => ({
+        rxPostClose: () => Fn.ioOrderClose(reference, {$booked: false}),
+        rxExtraEdit: (data, ref, fnJsx) => Jx.aiPayMenu(reference, data, fnJsx),
+    }),
+    yoExecutor: (reference) => ({
+        fnIncome: Ex.rxRowOpen(reference, {
+            // 打开后操作
+            rxAfter: (bookKey, record) => Fn.ioOrderOpen(reference, record, {bookKey}),
+        }),
+        fnView: Ex.rxRowOpen(reference, {
+            // 调用订单关闭时的操作
+            rxAfter: (id, record) => reference.setState({$booked: true}),
+        }),
+    }),
+    yoPlugins: (reference) => ({
+        // 行操作
+        koRow: (record, config, ref) => {
+            if ("Finished" === record.status) {
+                return "fnView" === config.executor;
+            } else {
+                return "fnIncome" === config.executor;
+            }
+        }
+    }),
+    componentInit: (reference) => {
+        Ex.yiAssist(reference)
+            .then(Ux.ready)
+            .then(Ux.pipe(reference));
+    },
+    componentYo: (reference, inherit = {}) => {
+        const {$booked} = reference.state;
+        if ($booked) {
+            // 查看账本，如果有特殊逻辑则在此处加新代码
+        } else {
+            // 订单处理
+            Fn.yoBill(reference, inherit);
+        }
+        // 设置 $entry
+        inherit.$entry = "BILL";
+        return inherit;
+    }
+})
+----
+
+====
+若您仔细阅读了前边章节的列表定制，那么这样两份代码是没有任何难度的；除了本章提到的扩展以外，实际在定制过程中还有很多扩展方式无法一一梳理，也没法书写相关细节，等到后续案例章节来一一说明。
+====
+

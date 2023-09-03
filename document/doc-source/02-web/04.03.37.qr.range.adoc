@@ -1,0 +1,33 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiSearchRangeDate`
+
+查询范围组件，配置如：
+
+[source,json]
+----
+{
+    "metadata":"infoAt,日志记录时间,24,,aiSearchRangeDate",
+    "optionJsx.config":{
+        "mode":"FULL",
+        "format":"YYYY-MM-DD HH:mm",
+        "placeholder":["开始时间","结束时间"]
+    }
+}
+----
+
+查询范围组件一般用于 **时间格式** 的查询过程中，此处就不截图了。
+
+===== 模式
+
+[options="header",cols="3,7"]
+|====
+|值|含义
+|`FULL`|日期时间全格式
+|`DATE`|日期范围查询
+|`MONTH`|月份范围查询
+|`TIME`|时间范围查询
+|====
+

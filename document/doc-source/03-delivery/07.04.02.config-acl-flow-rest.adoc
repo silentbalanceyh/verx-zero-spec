@@ -1,0 +1,58 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+:sectlinks:
+:linkattrs:
+
+==== 资源请求流程
+
+用户发送请求时，直接将登录过程中拿到的 `<access_token>` 追加到资源访问的请求头中发送本次请求：
+
+[source,bash]
+----
+Authorization: Bearer <access_token>
+----
+
+
+===== 流程图
+
+参考下边的时序图看看整个资源请求流程的完整步骤（不包含安全视图和数据域部分）：
+
+image:zbac-403.png[0, 1024]
+
+===== 关于缓存池
+
+整个资源访问过程中会使用到两个缓存池用于优化认证授权性能，缓存本身带有 *间接会话校验* 以证明发送请求者的身份信息：
+
+1. `ZERO-CACHE-401`： link:#__SEC_CACHE_AUTHENTICATE[认证缓存池,window="_blank"]，存储用户身份、令牌、会话相关信息以验证请求识别身份。
+2. `ZERO-CACHE-403`： link:#__SEC_CACHE_AUTHORIZATION[授权缓存池,window="_blank"]，存储用户已经访问过的资源授权情况（可访问、不可访问），直接快速响应客户端用户 *能不能* 访问当前资源。
+
+===== 令牌组合
+
+用户最开始登录拿到的 `<access_token>` 是访问令牌，其中数据包括：
+
+[source,json]
+----
+{
+    "user": "xxx",
+    "session": "xxx",
+    "habitus": "xxx"
+}
+----
+
+在认证通过之后，存储到认证缓存池中的数据如下（后续授权流程、安全视图流程、资源访问者流程都会使用到令牌数据）：
+
+[source,json]
+----
+{
+    "user": "xxx",
+    "session": "xxx",
+    "habitus": "xxx",
+    "access_token": "xxx",
+}
+----
+
+[NOTE]
+====
+上边这种变化就是令牌组合干的事，组合令牌的目的是在特定插件、组件、签名等后端模块中实现快速比对，JWT Token的 `encode/decode` 过程从测试上看起来是十分费时的，如果每次需要使用令牌或者使用令牌中的数据都执行这个步骤会导致性能层面的损耗，所以此处是用空间换时间，令牌使用两种形态存储在缓存中，如何使用取决于最终的业务场景。
+====

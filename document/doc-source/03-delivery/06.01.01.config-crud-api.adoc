@@ -1,0 +1,197 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:stylesheet:
+
+=== 标准化接口[[__CONFIG_CRUD_API]]
+
+`zero-crud` 项目中的标准化接口不针对特定的实体或模型，即该引擎开放出来的接口会根据您所选择的模型会有区别，此处先理解几个概念：
+
+- 抽象接口：如某个接口可能是：`POST /api/:actor` 格式，这种接口就是抽象接口，当路径中 `actor` 参数不同则表示不同的模型，最终会生成不同的具象接口。
+- 具象接口：`actor` 取某个固定值时产生的某个模块的相关接口，如：
++
+--
+- actor的值为 `user` 时，上述接口为 `POST /api/user`，该接口为用户模块具象接口。
+- actor的值为 `role` 时，上述接口为 `POST /api/role`，该接口为角色模块具象接口。
+--
+
+- 建模参数：CRUD引擎中所有建模参数统一使用术语 `actor`，您可以这样理解，不同的 `actor` 值代表不同的模块、模型等。
+
+理解上述几个概念之前，先看看标准化接口表：
+
+[options="header"]
+|====
+|HTTP方法|接口|支持视图参数？|多表连接|含义
+|image:im-post.png[0,64]| `/api/:actor` | || 新增单条记录
+|image:im-get.png[0,64]| `/api/:actor/:key` | || 读取单条记录
+|image:im-put.png[0,64]| `/api/:actor/:key` | || 更新单条记录
+|image:im-delete.png[0,64]| `/api/:actor/:key` | || 删除单条记录
+|image:im-put.png[0,64]| `/api/batch/:actor/update` | |支持| 批量更新记录
+|image:im-delete.png[0,64]| `/api/batch/:actor/delete` | || 批量删除记录
+|image:im-get.png[0,64]| `/api/:actor/by/sigma` | |支持| 按 `sigma` 读取所有记录
+|image:im-post.png[0,64]| `/api/:actor/search` | 支持|支持| Qr搜索引擎专用接口，支持分页、排序、列过滤
+|image:im-post.png[0,64]| `/api/:actor/missing` |  |支持| 数据记录丢失检查，不存在返回true，存在返回false
+|image:im-post.png[0,64]| `/api/:actor/existing` | |支持| 数据记录存在检查，存在返回true，不存在返回false
+|image:im-post.png[0,64]| `/api/:actor/export` | 支持 |支持| 数据导出专用接口
+|image:im-post.png[0,64]| `/api/:actor/import` | |支持| 数据导入专用接口
+|image:im-get.png[0,64]| `/api/columns/:actor/full` | 支持 |支持| 读取视图全列专用接口
+|image:im-get.png[0,64]| `/api/columns/:actor/my` | 支持 |支持| 读取我的可访问列专用接口
+|image:im-put.png[0,64]| `/api/columns/:actor/my` | 支持 |支持| 更新保存我的视图专用接口
+|====
+
+[CAUTION]
+====
+
+- 此处 *视图参数* 表示系统会使用Zero中定义的特殊注解和数据结构： `io.vertx.up.atom.secure.Vis` 和特殊参数注解 `jakarta.ws.rs.PointParam`，该参数用于解析 `view` 和 `position` 两个核心安全视图参数。
+- 还有一点需要详细说明的是，此处部分标准化接口使用了 *POST查询* 做查询参数传输，而这些查询本身您可以放心调用，内部已补齐了 HTTP 协议中 *幂等性和安全性* 不足的情况。
+====
+
+上述标准化接口主要对应到前端的 `ExListComplex` 应用，基本内容是和前端该组件完全对齐的。从 RESTful 规范上看，上述接口可能会占用您的设计主接口，比如您想要写一个新接口：`/api/user/:name`，这个接口由于和标准化接口中的 `/api/:actor/:key` 冲突，导致最终 EventBus 中出现二义性导致您的接口出现二义性，为了解决这种冲突，Zero中引入 `@Order` 机制，这些标准化接口的 `@Order`（优先级，名字取自Vert.x中的 `order()` ）是低于自定义的，简单说若您写了一个 `/api/user/:name`，则 `crud` 中的接口会直接被覆盖掉，开发的自定义接口优先适配。
+
+您可以参考下边的推荐法则：
+
+1. 若遇到复杂接口编写，建议使用 `POST /api/pojo/xxx` 的接口处理：
++
+--
+- 使用POST接口可支持复杂参数的传递，如订单提交您可以用 `POST /api/order/submit` 来编写。
+- 编写此类接口时记住一定要区分：行为提交和POST查询两种，最好在您的文档中标注，以防止您的接口产生不必要的副作用。
+--
+2. 若您有重写接口的需求，可直接制定路径和方法，如 `GET /api/pojo/:name` 接口重写之后会覆盖原始的 `GET /api/pojo/:key` 方法（HTTP方法类型要保持一致）。
+3. 若您的查询参数比较多，尽可能使用 *POST查询* 代替路径查询，不使用过多路径参数处理查询条件，如：`/api/user/:status/:name/:type` 这种路径不推荐，往往使用类似 `POST /api/user/by/requirement` 这种格式（在Zero Extension规范中，通常使用介词和中划线连接符修饰接口，让接口语义更清晰）。
+4. 若您书写了 *POST查询*，必须解决这种查询模式下接口的 *幂等性* 和 *安全性* 问题。
+
+=== 安全配置
+
+上述接口一般配置完成后，您需要做的第一件事就是将这些接口配置到 `zero-rbac` 中实现授权访问，未授权的接口会在后端抛出 `403，404，405` 等接口规范相关错误。基本表配置如下：
+
+[options="header"]
+|====
+|配置表|含义
+|`S_ACTION` | 将此接口配置到 `S_ACTION` 表中实现 *安全行为* 定义，将接口规范和安全行为绑定到一起。
+|`S_RESOURCE` | 基于当前 `S_ACTION` 配置，将资源和安全行为绑定，让系统可以自动识别追加的资源信息。
+|`S_PERMISSION` | 设置新接口所需的权限，通常权限不用 15 个，可自行分类，分类粒度取决于需求。
+|`S_PERM_SET` | 权限集（方便管理）设置，并将新的权限追加到权限集中。
+|`R_ROLE_PERM` | 角色权限关联信息配置，将您角色中的信息和权限挂载到一起。
+|====
+
+安全配置中需要注意的是您的鉴权是针对 *具象接口* ，而不是 *抽象接口*，即当您对某个接口鉴权时，您应该在 `S_ACTION` 中配置的路径是 `/api/pojo/:key`，而不是 `/api/:actor/:key`，这样您才可以针对不同的模型接口进行鉴权，而 Zero Extension 框架开启鉴权功能时，会自动将 `:actor` 作为 *超参数* 处理，所有使用鉴权路径的地方您都不会看到类似 `:actor` 的路径。
+
+==== 视图接口
+
+关于视图接口，先参考下边截图：
+
+image:zcrud-view.png[0,800]
+
+此处是视图三接口的处理逻辑：
+
+- 若您未启用 *动态列* 功能，则不依赖 `zero-ui` 中的配置。
+- 启用了 *动态列* 功能后，您的列数据会被存储在 `UI_COLUMN` 表中实现可定制化。
+
+静态列功能中，`/api/columns/pojo/full` 接口读取的所有列信息是固定的，而动态列打开过后该接口读取的数量会随着配置有所变化。而个人视图 `/api/columns/pojo/my` 以安全视图的方式存储在 `zero-rbac` 模块中，只要启用了这个模块就可以使用安全视图功能了（截图中还演示了 ServiceLoader 接口的用法）。
+
+[TIP]
+====
+您若打开全局配置文件 `configuration.json` 会看到如下片段：
+
+[source,json]
+----
+    "columnKeyField": "dataIndex",
+    "columnLabelField": "title"
+----
+
+此处的字段名取决于前端，由于Zero Ui中使用了 Ant Design 框架，所以此处的 `dataIndex` 和 `title` 两个属性名是根据 Ant Design 中的 `<Table/>` 来定义的，您也可以按照自己使用的不同前端来定义这两个属性。
+
+====
+
+==== 列定义
+
+Zero Extension中对列的定义如下：
+
+image:zcrud-column.png[0,800]
+
+解释一下几个基本概念：
+
+[options="header"]
+|====
+|概念|含义
+|可见列|除开系统不可见部分（如开发后台属性、系统字段等）以外所有可访问的当前模型的属性构成的列信息。
+|可配列|这部分控制可结合Zero Extension中的 `zero-ui` 的实现 *动态配置*（数据库中存储）和 *静态配置*（配置文件中定义）两种，只有动态配置的列可在平台级去管理（增删改）。
+|可控列|可控列主要包含 *角色级* 和 *用户级* 两种，这两种列信息的控制就是 *安全视图* 的核心，角色级由后台管理员维护，用户级就是个人视图管理，这部分在安全部分有说明，此处不累赘。
+|====
+
+Zero Extension中的列定义存储有几种不同的模式，先看看下边的存储定义信息。
+
+[options="header"]
+|====
+|模式|前端 `Cab.json` |后端静态文件 |后端表结构| 含义
+|纯前端| o | ||这种模式不依赖后端 `zero-ui` 和 `zero-rbac`，可直接在前端关闭动态列功能，前端独立呈现列信息。
+|后端静态| o | o ||依赖 `zero-ui`，从静态文件中读取列定义数据：`plugin/ui/column`。
+|后端动态| o | | o |依赖 `zero-ui`，从动态数据库中读取列定义数据（表：`UI_COLUMN`）。
+|====
+
+=== 入口配置
+
+前文讨论了最基本的标准化接口以及安全配置相关内容，本章详细讲解入口配置，如何在您的系统中直接启用 `zero-crud` 的配置，本项目的入口配置通常分两类：*启动器级*、*模块级*。
+
+[TIP]
+====
+既然提到路径，模块级，启动器级，则目录根路径就必须遵循三种环境的 link:#__SPEC_DATA_PATH[目录规范,window="_blank"]，所以下边的路径部分大多数就不提 `src/main/resources` 了。
+====
+
+==== 启动器级
+
+启动器级启用 `zero-crud` 配置主要遵循下边三步：
+
+1. 在路径 `src/main/resources/plugin/crud/` 中创建 `configuration.json` 文件配置该模块。在 Zero Extension规范中，每个模块有一个全局配置文件，若您的模块为 `zero-crud`，则以 `<prefix>-<module>` 格式描述该模块基本语法，那么您的全局配置文件通常位于：`plugin/<module>/configuration.json`，注此处的 `src/main/resources` 是开发环境（ `Development` ）专用路径，若是其他路径此处会有所不同。
+2. 在路径 `plugin/crud/module` 中配置单个模型相关信息，文件名就是模型统一标识符，如 `user` 的配置为 `sec.user.json` 文件。
+3. 列定义配置信息存储在路径：`plugin/ui/column` 路径中（动态模式走数据库访问，不存在配置文件）。
+
+==== 模块级
+
+模块级启用 `zero-crud` 配置主要遵循下边步骤：
+
+1. 在路径 `plugin/<module>/oob/module/crud/` 中配置不同模型的基础CRUD配置，同 *启动器* 第二步骤配置文件。
+2. 在路径 `plugin/<module>/oob/module/ui/` 中配置列存储静态配置文件，同 *启动器* 第三步骤配置文件。
+3. *模块化配置* 专属：在 `plugin/<module>/oob/module.json` 配置文件中选择哪些模块级模型开启该功能，模块化部分只针对 `module.json` 中的模块执行上述两个功能的 *启用/禁用*。
++
+[source,json]
+----
+[
+    "x.category",
+    "x.log",
+    "x.tabular"
+]
+----
+
++
+--
+如上述片段的配置，要求在您的 `plugin/<module>/oob/module/` 目录下的 `crud/` 和 `ui/` 中必须包含对应的文件，如上述配置中的 `x.log.json`，两个目录中文件名一致，只是内容有差异。
+--
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

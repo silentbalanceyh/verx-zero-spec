@@ -1,0 +1,35 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== CRUD快速模块（zero-crud）[[__MODULE_CRUD]]
+
+众所周知，信息管理型系统在开发过程中避免不了重复的 CRUD 劳动，为了将您从CRUD的泥潭中彻底解放出来，Zero Extension中提供了模板化的CRUD引擎，除了普通的增删查改搜以外，还会提供标准化的其他接口。
+
+若想要启用Zero Extension中的CRUD快速模块配置，可在您的Maven中追加如下依赖：
+
+[source,xml]
+----
+    <!-- CRUD引擎 -->
+    <dependency>
+        <groupId>cn.vertxup</groupId>
+        <artifactId>zero-crud</artifactId>
+        <version>ZERO_VERSION</version> <!-- 版本跟随Zero版本 -->
+    </dependency>
+----
+
+该模块在 CRUD 功能部分几乎采用了 *零编码* 的模式，只要您理解了本章的配置基础，大量的 CRUD 场景是不依赖开发的，您只需要稍作配置，实施这样一个完整的基础管理模块也就是 30 分钟的事，即使您的字段数量可能特别多，在现阶段成熟度的 Zero Extension 和 Zero Ui框架中，最终实施时间也不会超过 2 个小时。
+
+[CAUTION]
+====
+为什么不采用代码生成？现阶段网上很多低代码工具、以及CRUD快速开发工具都使用了代码生成的方式，Zero最终没有采用代码生成，原因如下：
+
+- 代码生成的定制和二次开发需要您去修改代码进行重编译，后期如果做功能管理工具时不方便。
+- 代码生成增加了开发人员的运维量，您需要理解生成代码才可以针对后续需求不断扩展。
+- 代码生成的模式产生的冗余代码量比较大，当某个标准化接口需改动时，您不得不更改已经使用的大量模块代码。
+
+况且，Zero后续对接开发中心后做的建模设计、表单设计、接口发布动作都是所见即所得的 *零代码* 模式，简单说，可使用申明方式完成所有功能模块需求，Zero中优先采用声明式，而不是编程方式实现。
+====
+
+include::06.01.01.config-crud-api.adoc[]
+include::06.01.02.config-crud-std.adoc[]
+include::06.01.03.config-crud-adv.adoc[]

@@ -1,0 +1,217 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+===== 开始配置
+
+开始配置通常位于 `startConfig` 属性中，参考如下配置片段了解主单流转中的开始阶段（依旧是 *出差申请* ）：
+
+[source,json]
+----
+{
+    "todo": {
+        "name": "`出差申请：${serial}, ${title}`",
+        "todoUrl": "`/workflow/run?name=process.oa.trip`",
+        "modelComponent": "cn.vertxup.erp.domain.tables.daos.EEmployeeDao",
+        "modelId": "res.employee",
+        "indent": "W.Business.Travel"
+    },
+    "record": {
+        "flag": "UPDATE",
+        "virtual": true
+    },
+    "children": {
+        "dao": "cn.vertxup.erp.domain.tables.daos.TOaTripDao",
+        "fields": [
+            "key",
+            "requestBy",
+            "startAt",
+            "endAt",
+            "days",
+            "tripProvince",
+            "tripCity",
+            "tripAddress",
+            "reason",
+            "workContent"
+        ],
+        "auditor": [
+            "requestBy"
+        ]
+    }
+}
+----
+
+先看看上述配置段中的核心属性：
+
+[options="header"]
+|====
+|属性名|含义
+|todo|构造任务单（ `w.todo` ）和主单（ `w.ticket` ）所需的系统默认数据（这些数据不会从前端输入）。
+|record|作用于主实体的行为影响定义，用于描述主实体的元数据配置。
+|children|扩展单配置，针对 `w.ticket` 扩展单的核心配置，通常里面所有的字段都是扩展单中的字段定义。
+|====
+
+构造任务单常用属性如下：
+
+1. `indent`：该值表示主单的序号规则，对应 `X_NUMBER` 表中的 `CODE` 编号字段，系统会直接读取唯一编号规则为当前流程主单生成工单编号。
+2. `modelId/modelComponent`：这种配置证明当前主实体模型是 *静态模型*，模型标识为 `res.employee`。
+3. `record`：包含特定主实体规则，它的完整结构如：
++
+[source,json]
+----
+{
+    "unique": "xxx",
+    "indent": "xxx",
+    "virtual": "true | false",
+    "flag": "ADD | UPDATE | DELETE",
+    "mode": "ATOM | DAO | CASE"
+}
+----
++
+--
+[options="header",title="属性说明"]
+|====
+|属性|含义
+|unique|主实体的唯一主键，最终系统根据唯一主键生成或更新数据。
+|indent|仅当 flag = ADD 时有用，为主实体生成编号，对应 `X_NUMBER` 表中的 `CODE` 编号规则。
+|virtual a|是否虚拟模式，虚拟模式仅在流程结束时对主单执行变更，中间节点不会做任何和主实体相关的操作。
+
+image:zwf-vr.png[0,600]
+
+- 当 virtual = true 时，通常是流程执行完成之后对主实体产生影响，如出差申请，流程成功执行完成后修改员工状态。
+- 而 virtual = false 时（默认），通常是流程最初对主实体的影响就开始了，如入库时就已经将某些数据添加到库存中，等到流程执行完成后修改状态。
+|flag a|主实体的影响，流程执行完成之后可针对主实体进行改动
+
+- ADD：流程结束后增加主实体，如进销存中的商品入库动作。
+- UPDATE：流程结束后更新主实体，如休假申请、出差申请等。
+- DELETE：流程结束后删除主实体，如离职流程等。
+|mode a|主实体建模方式：
+
+- DAO：默认模式，使用静态建模方式处理主实体。
+- ATOM：动态建模方式处理主实体。
+- CASE：（保留）此种模式会直接使用Camunda内置的工单系统运行主实体。
+|====
+--
+
+4. `children`：该节点会描述扩展单相关信息，如上述示例是出差申请，则此处所有字段 `fields` 都是出差申请单中扩展的属性。此处重点讲解一下 `auditor` 的用法，该属性表示开放的扩展单属性是类似 `openBy/closeBy` 这种关联人员的属性，此处做此定义的主要原因是操作日志表达式中可能会使用，生成操作日志时，通常会读取人员的姓名、工号、邮箱等附加属性，由于此处只存储了用户ID，所以一旦作为 `auditor` 属性中枚举的属性流程引擎会自动转换成完整的用户 Object （ `{}` ）供您在操作表达式中使用。
+
+===== 运行配置（可递归）
+
+运行配置通常位于 `runConfig` 属性中，参考如下配置片段了解主单流转中的运行阶段（依旧是 *出差申请* ）：
+
+[source,json]
+----
+{
+    "e.start": {
+        "data": {
+            "draft": "draft"
+        }
+    },
+    "e.approve": {
+        "data": {
+            "confirmed": "confirmed"
+        },
+        "rule": [
+            {
+                "field": "confirmed",
+                "value": true,
+                "record": {
+                }
+            },
+            {
+                "field": "confirmed",
+                "value": false,
+                "todo": {
+                    "status": "REJECTED"
+                }
+            }
+        ]
+    },
+    "e.admit": {
+        "...": "<省略>"
+    }
+}
+----
+
+上述配置为运行阶段的配置，运行配置的根节点就是流程图上的节点名，它表示该节点执行时的配置信息，如上述片段中的 `e.start、e.approve、e.admit` 等，每个节点的运行配置很简单：
+
+[options="header",title="节点配置"]
+|====
+|属性|含义
+|data|该数据用于从前端做数据映射，目前根据标准规范此处左右值一致，但实际是有映射规则的，右值代表前端表单接收的值，左值代表后端转换到流程引擎的值（左值才是流程图上流转所需的值）。
+|rule a|该节点通常在当前运行节点下一节点是分支节点时生效，系统会根据规则执行对应的影响。
+`field` 和 `value` 是条件的满足处理，如上述规则条件表示：`confirmed=true` 时执行第一条规则，`confirmed=false` 时执行第二规则。
+
+影响节点通常如下：
+
+- todo: 影响任务单数据（可配置固定数据，也可配置表达式）。
+- record：影响主实体数据，会对主实体数据执行更新操作。
+- ticket：影响主单数据（此处主单数据包含扩展单）。
+
+_如：示例中当 `confirmed=false` 时，将当前任务单状态 `status` 更改成 `REJECTED`，于是实现了拒绝的动作_。
+|====
+
+
+===== 生成配置（可递归）
+
+生成配置通常位于 `generateConfig` 属性中，参考如下配置片段了解主单流转中的生成阶段（依旧是 *出差申请* ）：
+
+[source,json]
+----
+{
+    "e.approve": {
+        "data": {
+            "confirmed": "confirmed"
+        },
+        "rule": [
+            {
+                "field": "confirmed",
+                "value": false,
+                "todo": {
+                    "status": "DRAFT"
+                }
+            }
+        ]
+    },
+    "e.admit": {
+        "data": {
+            "confirmed": "confirmed"
+        },
+        "rule": [
+            {
+                "field": "confirmed",
+                "value": false,
+                "todo": {
+                    "status": "DRAFT"
+                }
+            }
+        ]
+    }
+}
+----
+
+生成配置的主要属性和运行配置是一致的，此处讨论下生成配置的使用场景。默认情况下，Zero中流程引擎会自动将当前任务单关闭生成下一任务单，生成配置一般用于：*拒绝*、*驳回*、*召回* 类型，这些类型同样会生成新的任务单，但新的任务单的状态不能是 `PENDING`，往往是 `DRAFT` 状态（草稿），这样就将单据扭转回到了提交人手中而实现递归往复操作。
+
+最终参考下图理解一下 `data` 和 `rule` 的关联关系：
+
+image:zwf-transfer-rule.png[0,960]
+
+[CAUTION]
+====
+
+- 注意不要将 `data` 节点中的数据配置方向弄错，它的左值如果会驱动流程如 `confirmed`，则您需要左值固定，而右值主要来自于表单，可随意，示例中Zero规范下左右值一致而已。
+- 规则中的影响属性不是三选一，您可以选择：主实体、工单（主单和扩展单）、任务单任意组合执行数据层面的自动更新，由于表单中已经包含了呈现数据，所以通常此处是更新后台数据。
+- 生成配置的 `gateway` 模式为网格分派的高级功能，在后续讲解派工的时候再讲，此处暂时不做任何说明。
+====
+
+==== 标准化流转字段
+
+下边表格中是Zero流程引擎中常用的流转字段（仅作参考）：
+
+[options="header"]
+|====
+|属性名|含义
+|draft|暂存、直接提交的流转专用属性。
+|confirmed|审批、拒绝的流转专用属性。
+|escalate|升级、可选择审批的流转专用属性。
+|admit|高级审批，特权审批的流转专用属性。
+|====

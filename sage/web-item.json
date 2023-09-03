@@ -1,0 +1,47 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/sage/web-item.json",
+    "$defs": {
+        "secure-dm": {
+            "if": {"type": "array"},
+            "then": {
+                "$ref": "http://www.vertx-cloud.cn/sage/web-option.json#/$defs/common",
+                "description": "「静态模式」（两种，String / Object），各自处理成合法的 Option"
+            },
+            "else": {
+                "if": {"type": "string"},
+                "then": {
+                    "$ref": "http://www.vertx-cloud.cn/sage/web-option.json#/$defs/datum",
+                    "description": "「前端模式」字典解析"
+                },
+                "else": {
+                    "if": {
+                        "properties": {
+                            "source": { "type": "string" },
+                            "dao": { "const":  null }
+                        }
+                    },
+                    "then": {
+                        "$ref": "http://www.vertx-cloud.cn/sage/web-option.json#/$defs/datum",
+                        "description": "「前端模式」字典解析"
+                    },
+                    "else": {
+                        "if": {
+                            "properties": {
+                                "dao": { "type": "string" },
+                                "source": { "const":  null }
+                            }
+                        },
+                        "else": {
+                            "$ref": "http://www.vertx-cloud.cn/semantic/dao.json#/$defs/static",
+                            "description": "「后端模式」访问 DAO 提取维度数据"
+                        }
+                    }
+                }
+            }
+        },
+        "client": {
+
+        }
+    }
+}

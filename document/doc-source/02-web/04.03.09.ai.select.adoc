@@ -1,0 +1,54 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiSelect` (A)
+
+对应 `AntD` 中的 `<Select/>` 组件，您可以直接设置下拉信息，配置如（ **此处使用静态完整配置** ）：
+
+[source,json]
+----
+[
+    {
+        "metadata": "type,数据类型,19,,aiSelect,placeholder=必选",
+        "optionJsx.config.items": [
+            {
+                "key": "java.lang.String",
+                "label": "字符串"
+            },
+            {
+                "key": "java.lang.Integer",
+                "label": "整数"
+            },
+            {
+                "key": "java.lang.Long",
+                "label": "长整型"
+            },
+            {
+                "key": "java.lang.Boolean",
+                "label": "布尔值"
+            },
+            {
+                "key": "java.math.BigDecimal",
+                "label": "浮点数"
+            },
+            {
+                "key": "java.time.LocalTime",
+                "label": "时间格式"
+            },
+            {
+                "key": "java.time.LocalDate",
+                "label": "日期格式"
+            },
+            {
+                "key": "java.time.LocalDateTime",
+                "label": "日期/时间格式"
+            }
+        ],
+        "optionConfig.rules": [
+            "required,请选择数据类型！"
+        ]
+    }
+]
+----
+

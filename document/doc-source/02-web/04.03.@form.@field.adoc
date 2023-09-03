@@ -1,0 +1,86 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 字段配置[[__WEB_FORM_FIELD]]
+
+字段配置是表单配置中的重头戏，参考前文提到的字段解析器，实际字段配置中会包含如下特殊的属性：
+
+[options="header",cols="2,8"]
+|====
+|配置属性|含义
+|`metadata / field` a|当前字段的字段名，有两种配置模式
+
+- `metadata`：启用属性解析器的模式，这种模式下可以参考前文提到的解析信息。
+- `field`：全格式，这种模式不启用 **属性解析器**，需将 JSON 部分内容全部配置完整。
+|`optionConfig`|此属性服务于早期 `AntD` 中的双向绑定相关配置，目前虽然升级但也沿用下来了此配置，方便开发人员理解。
+|`optionItem`|此属性主要对应到 `<Form.Item/>` 中的设置，文字、宽度、布局、风格等相关信息。
+|`optionJsx`|此属性为输入控件专用属性，对应到真正的 `AntD` 中的表单组件中（原生映射）。
+|`moment`|当前字段是否时间格式，理论上此处不应该如此设置，但由于 `optionXxx` 都是直接和 `AntD` 绑定，所以此处不能再将 `moment` 属性转移到内置属性中，就只能沿用此处属性了。
+|`span`|当前字段在 `Grid` 布局中的宽度。
+|====
+
+表单的字段配置主要位于：
+
+[source,json]
+----
+{
+    "ui": [
+        [
+            "字段定义",
+            {
+                "comment": "字段定义"
+            }
+        ]
+    ]
+}
+----
+
+
+====
+optionConfig.rules 会在单独的 **验证规则** 章节说明，此处就不累赘。
+
+- 本章只讲解各种字段基础配置，若找不到示例代码可能由于字段本身不常用，这种场景教程不会完全覆盖。
+- 标题中带 `(A)` 标记的是 `AntD` 的原生组件。
+- 每个章节中的 **特殊配置** 是根据 `AntD` 和 Zero UI 结合的实用性配置，和 `AntD` 不同的点在于 Zero UI 几乎全程是配置驱动。
+- 部分复杂的 **高频** 使用组件我会在教程中附上对应截图，让开发人员对 Zero UI 中的表单类 **交互式组件** 有个感性的认识，截图由零点科技有限公司（使用Zero的友人）提供。
+====
+
+include::04.03.01.ai.input.adoc[]
+include::04.03.02.ai.hidden.adoc[]
+include::04.03.03.ai.input.multi.adoc[]
+include::04.03.04.ai.input.number.adoc[]
+include::04.03.05.ai.textarea.adoc[]
+include::04.03.06.ai.password.adoc[]
+include::04.03.07.ai.protocol.adoc[]
+include::04.03.08.ai.radio.adoc[]
+include::04.03.09.ai.select.adoc[]
+include::04.03.10.ai.checkbox.adoc[]
+include::04.03.11.ai.date.picker.adoc[]
+include::04.03.12.ai.time.picker.adoc[]
+include::04.03.13.ai.file.logo.adoc[]
+include::04.03.14.ai.file.batch.adoc[]
+include::04.03.15.ai.file.upload.adoc[]
+include::04.03.16.ai.group.switcher.adoc[]
+include::04.03.17.ai.captcha.adoc[]
+include::04.03.18.json.editor.adoc[]
+include::04.03.19.braft.editor.adoc[]
+include::04.03.20.address.selector.adoc[]
+include::04.03.21.check.json.adoc[]
+include::04.03.22.list.selector.adoc[]
+include::04.03.23.tree.selector.adoc[]
+include::04.03.24.matrix.selector.adoc[]
+include::04.03.25.dialog.editor.adoc[]
+include::04.03.26.table.editor.adoc[]
+include::04.03.27.transfer.adoc[]
+include::04.03.28.table.transfer.adoc[]
+include::04.03.29.tree.select.adoc[]
+include::04.03.30.user.group.adoc[]
+include::04.03.31.user.leader.adoc[]
+include::04.03.32.user.selector.adoc[]
+include::04.03.33.action.adoc[]
+include::04.03.34.title.adoc[]
+include::04.03.35.magic.adoc[]
+include::04.03.36.qr.input.adoc[]
+include::04.03.37.qr.range.adoc[]
+

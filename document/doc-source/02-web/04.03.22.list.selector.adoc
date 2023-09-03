@@ -1,0 +1,109 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiListSelector`
+
+（高频组件）常用的列表选择器，选择关联数据专用。配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "username,关联账号,8,,aiListSelector,placeholder=（请选择账号）",
+        "optionJsx.config": {
+            "ajax": {
+                "metadata": "POST,/api/user/search,1,10,sorter=updatedAt`DESC",
+                "params.criteria": {
+                    "sigma": "PROP:app.sigma",
+                    "": "OPERATOR:AND"
+                }
+            },
+            "linker": {
+                "key": "userId",
+                "username": "username",
+                "realname": "viceName",
+                "email": "viceEmail",
+                "mobile": "viceMobile"
+            },
+            "table": {
+                "columns": [
+                    "username,用户账号",
+                    "realname,用户名称",
+                    "mobile,手机号",
+                    "email,邮箱"
+                ]
+            },
+            "validation": "请选择关联账号！",
+            "window": "关联账号,选择,关闭,false,800,false",
+            "search": {
+                "username,c": "账号",
+                "realname,c": "姓名"
+            }
+        },
+        "optionJsx.allowClear": true
+    }
+]
+----
+
+这个组件用于从另外一张表筛选数据关联到当前属性中，属于相对比较复杂的 **组件**。
+
+列表选择器如下：
+
+image:exp-input-listselector.png[0,800]
+
+===== 特殊属性
+
+配置属性表：
+
+[options="header",cols="3,7"]
+|====
+|属性路径|含义
+|`optionJsx.config.ajax`|Ajax远程通信专用配置，此处配置支持 **属性解析器**，且使用了查询引擎的基本语法，参考 `params.criteria` 部分。
+|`optionJsx.config.linker`|Zero UI中专用的 `linker` 配置。
+|`optionJsx.config.table`|弹出的对话框中的表格专用配置，此表格配置遵循列表配置规范，可以像 **主列表** 一样配置。
+|`optionJsx.config.validation`|选择验证的提示文字，启用了此组件之后，在弹出的对话框中您需要选择某一行数据做选项，若不选择则无法点击。
+|`optionJsx.config.window`|弹出框的基本配置，此配置支持 **属性解析器** 中的弹出窗口解析。
+|`optionJsx.config.search`|搜索框配置，您可以在弹出框中设置搜索功能，具体搜索参考查询引擎专用语法，此处生成：`username like ? AND realname like ?`。
+|====
+
+===== linker配置
+
+Zero UI中的 `linker` 配置也属于高频配置，通常位于：
+
+[source,json]
+----
+{
+    "optionJsx.config.linker": {
+        "from1": "to1",
+        "from2": "to2",
+        "...": "...",
+        "fromN": "toN"
+    }
+}
+----
+
+上述数据结构中，`fromX` 表示选中记录中的属性，而 `toX` 则表示当前表单中的属性，当您触发了选择操作之后，就可以将对应属性拷贝到表单上（右值绑定表单），上述结构参考下图：
+
+image:exp-app-linker.png[0,800]
+
+从图上可以看出 `linker` 的核心值拷贝原理。
+
+[WARNING]
+====
+列表选择器基本属于 Zero UI 开发过程中的高频组件，基本可以让你完成 **双表连接** 的前端交互操作，只要后端的API是准备好的，那么这种双表连接不论是否支持外键都是一种前端交互的最优选择，而且弹出的对话框本身是支持：**分页、查询、跳页** 等列表功能的，可以当做是一个列表的简易版本。
+====
+
+====
+前端所有的 `Selector` 级别的配置都是双字段配置模式，简单说表单中必须包含两个字段与之对应，假设目前有一个表单属性：`category`，那么这个属性通常配置 `Selector` 时会使用：
+
+- `categoryName`：虚拟属性，此属性在后端可以没有任何模型与之对应，只是单纯用于 **组件呈现**。
+- `category`：实际属性，此属性才是最终存储在模型中的值，此属性一般配置到 `hidden` 中。
+
+这种做法的核心原因是早期的表单开发不成熟导致，由于本身使用过程没有出现过问题，所以就没有再重新定义组件来更改，其中常用的 `Selector` 包括：
+
+- `ListSelector`
+- `UserSelector`
+- `TreeSelector`
+- `AddressSelector`（地址选择器在某些场景中直接使用级联下来完成）
+====

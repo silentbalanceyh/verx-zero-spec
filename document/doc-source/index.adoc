@@ -1,0 +1,147 @@
+:doctype: book
+:icons: font
+:page-previous-text: 上一页
+:page-next-text: 下一页
+
+= Zero云平台白皮书
+:author: 虞浪
+:partnums:
+:part-signifier: Chapter
+:sectnums:
+:sectnumlevels: 5
+:email: silentbalanceyh@126.com
+:revnumber: v1.52
+:revdate: 2023年9月04日
+:toc: left
+:toclevels: 3
+:toc-title: 目录
+:description:
+:source-highlighter: highlightjs
+:imagesdir: ./images
+:data-uri:
+:table-caption!:
+:sectlinks:
+:linkattrs:
+:page-width: 16in
+
+[options="header",title="版本修订历史",cols="15,15,15,55"]
+|====
+|版本|作者|时间|描述
+|1.52|Lang|2023-09-04|列操作定制
+|1.51|Lang|2023-08-29|上传/下载详解
+|1.50|Lang|2023-08-15|CRUD实战
+|1.40|Lang|2023-07-20|前端基础教程
+|1.30|Lang|2023-06-04|AOP分流器文档
+|1.20|Lang|2023-05-02|Agreed Metadata Specification
+|1.10|Lang|2023-04-17|前端基础
+|1.09|Lang|2023-03-26|附件、文档管理
+|1.08|Lang|2023-03-23|工作流引擎配置
+|1.07|Lang|2023-03-22|Zero Extension详细介绍
+|1.06|Lang|2023-03-20|模块化配置/文档修订
+|1.05|Lang|2023-03-16|Qr查询引擎（前后端）
+|1.04|Lang|2023-03-11|配置/实施规范中的权限管理
+|1.03|Lang|2023-02-22|前端样式规范补充
+|1.02|Lang|2023-02-14|前端结构规范补充
+|1.01|Lang|2023-02-12|动态建模平台一键式部署修订
+|1.00|Lang|2023-02-07|起草基本云平台规范
+|====
+
+[CAUTION]
+====
+前后端视频教程（持续更新）
+
+- 链接: <https://pan.baidu.com/s/19ykMgAZLfOxA-fIxy71pUw>
+- 提取码: mbk8
+- 目录：/Zero Framework/video-training
+====
+
+[tree]
+= 环境标准
+
+include::00-intro/00.00.requirement.adoc[]
+
+== 流程管理
+
+include::00-intro/01.01.spec-dev.adoc[]
+include::00-intro/01.02.spec-polarion.adoc[]
+
+== 项目初始化
+
+include::00-intro/02.@env.adoc[]
+
+= 工程规范
+
+include::01-spec/01.01.spec-backend.adoc[]
+include::01-spec/01.02.spec-backend-boot.adoc[]
+
+include::01-spec/02.01.spec-frontend.adoc[]
+include::01-spec/02.02.spec-frontend-style.adoc[]
+include::01-spec/02.03.spec-frontend-src.adoc[]
+include::01-spec/03.01.@spec-is.adoc[]
+
+= 前端实施
+
+include::02-web/01.@web.adoc[]
+
+= 后端实施
+
+== 标准化
+
+include::03-delivery/00.01.ams.adoc[]
+include::03-delivery/00.02.ams-program.adoc[]
+include::03-delivery/00.03.ams-action.adoc[]
+include::03-delivery/00.04.ams-design.adoc[]
+
+== 全局环境
+
+include::03-delivery/01.01.config-app.adoc[]
+include::03-delivery/01.02.config-app-hed.adoc[]
+include::03-delivery/01.03.config-app-modulat.adoc[]
+include::03-delivery/01.04.config-app-upload.adoc[]
+include::03-delivery/01.05.config-app-number.adoc[]
+include::03-delivery/01.06.config-app-tabb.adoc[]
+
+
+include::03-delivery/02.01.mod.adoc[]
+
+
+include::03-delivery/06.01.@config-crud.adoc[]
+include::03-delivery/06.02.@config-modulat.adoc[]
+include::03-delivery/06.03.@config-is.adoc[]
+include::03-delivery/06.04.@config-doc.adoc[]
+
+
+include::03-delivery/07.@config-acl.adoc[]
+
+
+include::03-delivery/08.@config-model.adoc[]
+
+== 动态配置
+
+include::03-delivery/09.config-mod-jet.adoc[]
+include::03-delivery/09.config-mod-web.adoc[]
+
+
+include::03-delivery/10.@config-wf.adoc[]
+
+
+= 场景/技巧
+
+== 模块开发
+
+include::06-action/01.@module.adoc[]
+
+== 辅助模块开发
+
+include::06-action/02.@assist.adoc[]
+
+= 核心原理
+
+include::04-critial/01.@core-qr.adoc[]
+include::04-critial/02.@core-cache.adoc[]
+
+= 开发中心（低代码）
+
+include::05-development/01.config-dev.adoc[]
+
+== 待定

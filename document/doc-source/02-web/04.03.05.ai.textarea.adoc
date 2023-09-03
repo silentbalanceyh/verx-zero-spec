@@ -1,0 +1,19 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiTextArea` (A)
+
+对应 `AntD` 中的 `<Input.TextArea/>` 组件，用于多行文本录入，默认场景下多行文本录入由于追加了 `textarea` 的 CSS 是不允许做尺寸更改的，这也是 Zero UI 中的限定，尺寸的更改有可能会更改布局导致问题。配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "comment,备注,24,,aiTextArea,maxLength=1024",
+        "optionJsx.rows": 3
+    }
+]
+----
+
+多行文本常用的两个属性如 `rows, maxLength`，不过这两个属性都不属于 **特殊属性**，实际是 `AntD` 原生属性。

@@ -1,0 +1,21 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiTimePicker` (A)
+
+对应到 `AntD` 中的 `<TimePicker/>` 组件，可以直接进行时间选择，配置如下：
+
+[source,json]
+----
+[
+    "pTimeArrive,默认到店时间,,,aiTimePicker,format=HH:mm",
+    "pTimeLeave,默认离店时间,,,aiTimePicker,format=HH:mm",
+    "pOrderKeep,无效订单保留,,,,addonAfter=天"
+]
+----
+
+时间选择器默认会被 Zero UI 直接追加 `moment / true` 的属性，所以后期升级之后此属性也可以逐渐被拿掉。时间选择器如下：
+
+image:exp-input-time.png[0]
+

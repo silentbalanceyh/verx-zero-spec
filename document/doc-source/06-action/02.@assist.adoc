@@ -1,0 +1,7 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 关联开发
+
+include::02.01.assist.tabular.adoc[]

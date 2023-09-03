@@ -1,0 +1,58 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+==== 单区域：元数据
+
+Zero权限管理中在点击页签时（除开第一个页签）会调用 `GET /api/authoriy/region-d/:key` 接口提取单个区域的所有配置信息，它的响应格式如下：
+
+[source,json]
+----
+{
+    "group": {
+        "...": "（略）"
+    },
+    "config": {
+        "...": "（略）"
+    },
+    "ui": "HxSite",
+    "key": "f37f66c0-40a9-4816-ade2-4230f4ee045f",
+    "label": "菜单设置",
+    "value": "rule.menu",
+    "datum": {
+        "...": "（略）"
+    },
+    "data": {
+        "...": "（略）"
+    }
+}
+----
+
+上述结构是对单个区域执行过标准化的结构，其内容和含义如下：
+
+[options="header"]
+|====
+|节点名称|含义
+|group|维度处理专用数据
+|config|界面配置专用数据
+|datum|维度元数据定义，对应前一章节的 region 定义信息
+|data|界面显示专用数据
+|====
+
+[CAUTION]
+====
+不论是全区域元数据还是单区域元数据中，都牵涉 `webComponent` 的配置，实际该配置是前端和后端配合操作的基础，目前支持的值如：
+
+- HxQueue：流程QBE列表配置组件
+- HxFlow：流程图配置组件
+- HxAction：操作配置组件
+- HxMenu：旧版菜单配置组件
+- HxSite：带应用维度菜单配置组件
+
+您可以在Zero UI前端开发过程中拓展自己的权限管理专用组件，所有 `Hx` 前缀组件都是权限管理专用。
+====
+
+
+
+
+
+

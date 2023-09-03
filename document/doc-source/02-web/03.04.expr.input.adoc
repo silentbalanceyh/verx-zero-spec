@@ -1,0 +1,273 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 输入解析器
+
+输入解析器又称为 **数据来源解析器**，该解析器的使用场景如下：
+
+1. 表单初始化字段初始值配置。
+2. 组件的Ajax请求参数配置。
+3. 列表的查询参数设置。
+
+参考如下配置：
+
+[source,json]
+----
+{
+    "ajax": {
+        "metadata": "POST,/api/customer/search,1,10,sorter=name`ASC",
+        "params.criteria": {
+            "sigma": "x",
+            "type": "y",
+            "": true
+        }
+    }
+}
+----
+
+上述配置中，此处生成的 **伪SQL** 条件如下：
+
+[source,sql]
+----
+sigma = 'x' AND type = 'y'
+----
+
+**编程模式** 下，此处的 `x` 和 `y` 可直接通过脚本制定，但若是配置模式（描述型），此处就要制定不同的数据来源来填充 `sigma` 和 `type` 才能生效，所以才有了 **输入解析器** 的存在价值，若使用输入解析器，上述配置可能会写成如下：
+
+[source,json]
+----
+{
+    "ajax": {
+        "metadata": "POST,/api/customer/search,1,10,sorter=name`ASC",
+        "params.criteria": {
+            "sigma": "PROP:app.sigma",
+            "type": "FIX:corporation",
+            "": "OPERATOR:AND"
+        }
+    }
+}
+----
+
+上述配置表示：
+
+1. `sigma` 的值来自于 React Component 中的 props 属性中，从 `$app` 中提取 `sigma` 的值。
+2. `type` 的值为固定值，设置为 `corporation` 的固定字符串。
+3. 两个条件之间的条件为 `AND` 连接符。
+
+所以输入解析器通常会使用 `<SOURCE>:<EXPRESSION>` 的格式执行相关定义，下边章节一一讲解所有的可解析数据源头。
+
+==== `NUMBER`
+
+在 `JavaScript` 中的数值类型只有 `Number`，所以数据源中处理数值时需依赖此输入解析器，不可以使用 `"0"` 的字符串方式表示数值，它的示例片段为：
+
+[source,json]
+----
+{
+    "person": "NUMBER:1",
+    "price": "NUMBER:0"
+}
+----
+
+==== `BOOL`
+
+布尔值的用法几乎和 `NUMBER` 一致，直接将参数转换成 `Boolean` 的数据类型，防止直接使用 `"false"` 这种字符串字面量方式，示例片段如下：
+
+[source,json]
+----
+{
+    "active": "BOOL:true"
+}
+----
+
+[CAUTION]
+====
+JavaScript 是弱类型语言，通常在执行类型处理时不会直接转换成合法类型来对待，而后端的数据类型是 **严格** 的，所以很多场景下需要将前端的 JavaScript 中的字符串字面量转换成带有 **强类型** 语言特征的值才能正确和后端交互，这种场景下 `NUMBER` 和 `BOOL` 两种输入解析器的优势就体现出来了。
+====
+
+==== `OPERATOR`
+
+此输入解析器只针对 `QR` 查询引擎生效，用于描述当前层中条件连接符，而根据 Zero 中的查询引擎规范，条件连接符使用空字符串作字段名，所以示例如下：
+
+[source,json]
+----
+{
+    "params.criteria": {
+        "sigma": "PROP:app.sigma",
+        "type": "FIX:corporation",
+        "": "OPERATOR:AND"
+    }
+}
+----
+
+====
+注意在 QR 查询语法中，如果不设置连接符，那么默认使用 `OR` 的连接符来连接查询条件。
+====
+
+==== `FIX`
+
+此输入解析器为固定值解析器，后续内容就是设置的值，又称为 **常量值解析器**，您的配置中写什么就是什么，示例如下：
+
+[source,json]
+----
+{
+    "value": "FIX:student"
+}
+----
+
+上述表达式中 value 的值会被直接解析成 `value = student`。
+
+==== `DELAY`
+
+这种格式很特殊（ **延迟渲染** ），在 `Ant Design` 的表单中第一次 `render()` 方法调用表单时旺旺没有任何初始化操作，这种模式下可能需要启用延迟加载，延迟加载有可能是 `componentDidMount` 方法中直接从远程读取，也可能是第一次初始化之后从 `componentDidUpdate` 方法从远程读取，这种类型的延迟操作都依赖这种方式的输入源。
+
+====
+这种模式下延迟字段会引起 Ajax 延迟远程加载后编程数据发送出来。
+====
+
+==== `ENUM`
+
+枚举格式 **输入解析器**，这种格式通常用于多值输入源的情况，示例如下：
+
+[source,json]
+----
+{
+    "status,i": "ENUM:Requested`Pending`Finished"
+}
+----
+
+上述枚举类型最终会解析成如下结构的数据：
+
+[source,json]
+----
+{
+    "status,i": [
+        "Requested",
+        "Pending",
+        "Finished"
+    ]
+}
+----
+
+====
+此处注意枚举值之间的格式是使用的 ``` 符号，**英文逗号** 在解析结果中包含特殊的解析含义，因为此原因枚举值和值之间的间隔符使用了此符号。
+====
+
+==== `FORM`
+
+特殊输入来源：数值来源于 Ant Design 中的表单，一般初始化过程中不会使用此 **输入解析器**，初始化过程中由于表单本身可能未加载完成，所以不能使用这种 **输入解析器**，所以此解析器通常用于表单交互过程，如级联下拉、级联过滤等。示例如下：
+
+[source,json]
+----
+{
+    "metadata": "floorId,楼层,14,,aiSelect,placeholder=（请选择层信息）",
+    "optionJsx.config.datum": "source=floors,key=key,label=name",
+    "optionJsx.config.cascade": {
+        "source": "tentId",
+        "target": "FORM:tentId"
+    }
+}
+----
+
+上述配置中配置了级联过滤，使用 `tentId = 表单选择数据` 对当前下拉执行过滤。
+
+==== `DAUTM / UNIQUE`
+
+这两种类型的 **输入解析器** 比较接近，也属于常使用的 **输入解析器**，它会定义一个字典作为数据源，如一个配置项的状态：
+
+[options="header",title="状态字典"]
+|====
+|值|显示文字
+|`RUNNING`|运行中
+|`PENDING`|等待审批
+|`BUILDING`|在建
+|====
+
+假设此处配置的字典名称为 `ci.status`（对应到 `source` 配置），那么本章的 **输入解析器** 如下：
+
+[source,bash]
+----
+// 格式一：直接拉取数组的 Array
+DATUM:source=ci.status
+
+// 格式二：根据条件对数组执行过滤
+DATUM:source=ci.status,code=(xxx)
+----
+
+此处的 `xxx` 是 **嵌套表达式**，这种模式只有在特定场景会使用，此处就不累赘了，`UNIQUE` **输入解析器** 是 `DATUM` 的一种变体，用于读取唯一记录集：
+
+[source,bash]
+----
+{
+    "status": "UNIQUE:ci.status,key,code=FIX:RUNNING"
+}
+----
+
+上述结构中消费 `ci.status` 的内部逻辑如下图：
+
+image:exp-app-datum.jpg[0,800]
+
+==== `PROP / STATE`
+
+此输入源很简单，直接从 React 组件的属性或状态中提取相关值，由于 Zero UI 存在专用数据模型，所以在提取数据时会有一定的规则。示例如下：
+
+[source,json]
+----
+{
+    "sigma": "PROP:app.sigma"
+}
+----
+
+[CAUTION]
+====
+此数据规则对所有类似 `xxx.yyy` 格式的提取都生效，包括后续会提到的 `USER`、`ROUTE` 等类型。
+
+- 如果 `$app` 是一个 `DataObject`，则直接调用 `$app._("sigma")` 提取数据。
+- 如果 `$app` 是一个 JavaScript 中原生的 `Object`，则直接使用 `$app["sigma"]` 提取数据。
+====
+
+==== `ROUTE`
+
+此输入源直接从 React Router 构造的 `$router` 变量中提取和路由相关的数据，示例如：
+
+[source,json]
+----
+{
+    "params": {
+         "type": "ROUTE:type"
+    }
+}
+----
+
+内部会调用 `$router._("type")` 来提取参数，而路由参数会包含如下两种：
+
+[options="header",cols="2,3,5"]
+|====
+|类型|URI格式|含义
+|路径参数|`/xc/customer/:type`|浏览器访问 `/xc/customer/regular` 时，会解析 `type = regular`。
+|查询参数|`/xc/customer/ext?type=test`|此时直接解析 `type = test`。
+|====
+
+==== `USER`
+
+此输入源会从当前登录用户中提取数据信息，切支持 **嵌套对象** 提取。示例如：
+
+_直接提取_
+
+[source,json]
+----
+{
+    "companyId": "USER:companyId"
+}
+----
+
+_嵌套提取_
+
+[source,json]
+----
+{
+    "companyId": "USER:company.key"
+}
+----
+
+上述第二个示例中会从 `company = {}` 去提取二级嵌套属性的值来执行赋值。

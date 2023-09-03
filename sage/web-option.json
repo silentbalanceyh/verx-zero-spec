@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/sage/web-option.json",
+    "$defs": {
+        "common": {
+            "type": "array",
+            "description": "「二义性」String | Object 数组元素",
+            "items": {
+                "if": {
+                    "type": "string"
+                },
+                "then": {
+                    "type": "string",
+                    "description": "选项解析: key, label, value"
+                },
+                "else": {
+                    "$ref": "http://www.vertx-cloud.cn/see/web-option.json#/$defs/common"
+                }
+            }
+        },
+        "datum": {
+            "oneOf": [
+                {
+                    "type": "string",
+                    "description": "选项解析: source=, value=, display=, label="
+                },
+                {
+                    "$ref": "http://www.vertx-cloud.cn/see/web-option.json#/$defs/datum"
+                }
+            ]
+        }
+    }
+}

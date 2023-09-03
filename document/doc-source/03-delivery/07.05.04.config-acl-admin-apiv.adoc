@@ -1,0 +1,57 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+==== 单区域：数据
+
+Zero权限管理中在点击页签时除了提取元数据信息以外，还会调用 `POST /api/authority/region-v/:key` 接口提取单个区域的所有数据信息，数据信息响应格式如下：
+
+[source,json]
+----
+{
+    "res.menu.read": {
+        "data": [
+            {
+                "h": {
+                    "name": [...]
+                },
+                "q": {},
+                "v": [],
+                "view": "DEFAULT",
+                "position": "DEFAULT",
+                "virtual": false
+            }
+        ],
+        "metadata": {
+            "h": {
+                "config": {},
+                "mapping": {
+                    "key": "name"
+                }
+            },
+            "q": {},
+            "v": {}
+        }
+    }
+}
+----
+
+如果读取数据时存在多个资源，此处响应数据不止一个 `key` 属性，上述示例中的属性键为 `res.menu.read`，这个值就是资源 `GET /api/menus` 接口的资源编码（后端系统中 `S_RESOURCE` 表对应的 `CODE` 字段的值），菜单在执行过滤过程中，Zero系统中采用的是行筛选（`ROWS` 模式），所以最终存储在视图中的数据结构如：
+
+[source,json]
+----
+{
+    "name": [
+        "...."
+    ]
+}
+----
+
+您可以从响应数据的 `data` 节点中捕捉到 `h` 类数据，而 `metadata` 中存储的则是转换规则，响应值的基本规则如：
+
+[options="header"]
+|====
+|属性|对应属性|含义
+|h|ROWS|h代表Horizon，行筛选。
+|v|PROJECTION|v代表Vertical，列筛选。
+|q|CRITERIA|q代表Query，查询引擎筛选。
+|====

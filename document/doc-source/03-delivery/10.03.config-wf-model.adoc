@@ -1,0 +1,248 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 工单模型
+
+本章主要讲解静态模型的一个和流程引擎相关的模型：工单模型（本章针对 *出差申请* 工单进行详细讲解），建模信息可参考： link:#__CONFIG_MODEL_HYBRID[静态建模, window="_blank"]。
+
+==== 主单/任务单
+
+工单模型首先需理解的概念为：*主单和任务单*，主单存储在 `W_TICKET` 表中，任务单存储在 `W_TODO` 表中，以下属性表格只枚举了核心属性，Zero标准表结构中的属性（系统属性）不枚举。
+
+===== 主单
+
+`W_TICKET` 的核心属性 / 字段如下：
+
+[options="header"]
+|====
+|属性|字段|含义
+|serial| `SERIAL` | 工单序号，基于 `X_NUMBER` 序号表生成的工单特殊序号。
+|name| `NAME` |（保留）工单名称（现阶段是标题）。
+|code| `CODE` |（保留）工单系统内部编码。
+|type| `TYPE` | 主单类型，流程单据类型通常会挂载到服务目录之下，表示当前业务主单是提供何种服务（注：此字段并非服务目录）。
+|phase image:i-workflow.png[0,22]| `PHASE` |当前工单所属阶段，阶段可通过 `phase` 配置进行扩展。
+|modelId| `MODEL_ID` |关联模型的 identifier（统一标识）。
+|modelKey image:i-key.png[0,22] | `MODEL_KEY` |关联某个模型的主键ID。
+|modelCategory| `MODEL_CATEGORY` |关联模型分类，通常是模型进行 `category` 分类时工单关联的分类信息。
+|modelComponent| `MODEL_COMPONENT` |一般是处理关联模型待办组件专用属性，可扩展，现阶段保留此设计。
+|modelChild image:i-key.png[0,22] | `MODEL_CHILD` |如果关联了多个模型记录时，之中存储了多个模型的ID记录（JsonArray类型）。
+|quantity| `QUANTITY` |若关联了多个模型记录时统计模型的数量总数。
+|flowDefinitionKey image:zwf-camunda.svg[0,22] | `FLOW_DEFINITION_KEY` |流程定义KEY，对应到Camunda中的API：getProcessDefinitionKey，标识当前主单属于哪个流程。
+|flowDefinitionId image:zwf-camunda.svg[0,22] | `FLOW_DEFINITION_ID` |流程定义ID，对应到Camunda中的API：getProcessDefinitionId，标识当前主单属于哪个流程定义。
+|flowInstanceId image:zwf-camunda.svg[0,22] | `FLOW_INSTANCE_ID` |流程实例ID，对应到Camunda中的API：getProcessId，标识当前主单绑定到哪个流程实例。
+|flowEnd image:zwf-camunda.svg[0,22] | `FLOW_END` |标识当前主单流程是否完结。
+|title| `TITLE` |工单业务标题，呈现在工单中的文字信息。
+|description| `DESCRIPTION` |工单业务内容，用户填写，可支持HTML富文本格式。
+|catalog| `CATALOG` |工单关联的服务目录相关信息，对应到服务目录详情。
+|category| `CATAGORY` |工单主类型，为ITSM预留。
+|categorySub| `CATAGORY_SUB` |工单第二分类。为ITSM预留。
+|owner image:m-auditor.png[0,22] | `OWNER` |拥有者/制单人。
+|supervisor image:m-auditor.png[0,22] | `SUPERVISOR` |监督人。
+|openGroup| `OPEN_GROUP` |开单组。
+|openBy image:m-auditor.png[0,22] / openAt| `OPEN_BY/OPEN_AT` |开单人/开单时间
+|cancelBy image:m-auditor.png[0,22] / cancelAt| `CANCEL_BY/CANCEL_AT` |撤销人/撤销时间
+|closeBy image:m-auditor.png[0,22] / closeAt| `CLOSE_BY/CLOSE_AT` |关单人/关单时间
+|closeSolution| `CLOSE_SOLUTION` | 关单时填写的关单解决方案
+|closeCode| `CLOSE_CODE` | 关单时的关闭代码
+|closeKB| `CLOSE_KB` | 关单时关联的KB链接地址
+|====
+
+特殊说明：
+
+1. `FLOW_` 系列的属性主要是对齐 Camunda 工作流引擎，虽然现在很多信息从调用结果看起来引擎数据是相同的，但后续若要拓展时可有一个和 Camunda 直接集成的机制来描述 Camunda 流程实例。
+2. 工单对应的主实体可支持不同的建模方式：
++
+--
+- 动态建模：直接使用 `MODEL_ID` 存储模型的统一标识符 identifier。
+- 静态建模：直接使用 `MODEL_COMPONENT` 组件存储静态建模中的 Dao组件信息。
+--
+
+3. 工单对应的主实体会根据不同的方式包含不同数量：
+
++
+--
+- 1:1模式：一个工单只对应一个单独的模型记录，这种模式使用 `MODEL_KEY` 记录模型ID即可。
+- 1:N模式：如资产入库，可能是关联多条资产记录，这种模式使用 `MODEL_CHILD` 记录所有模型的ID记录集（JsonArray格式）。
+--
+
+4. 工单的责任人信息在主单中保持唯一：
+
++
+--
+- 制单人：当前工单的拥有者，即 owner 的概念。
+- 监督人：当前工单的监督者，在部分特殊场景才会有使用价值。
+- 开单人：注意区分开单人和制单人，制单人是系统记录的工单创建者，开单人是业务级的工单创建者，我可以帮助别人开单。
+- 撤销人：工单撤销之后就等价于流程中断，所以工单撤销人只有一个。
+- 关单人：关单人只能拥有一个，如果是会签关单，那么关单人则是最后一个做完任务单的人。
+--
+
+===== 任务单
+
+`W_TODO` 的核心属性 / 字段如下：
+
+[options="header"]
+|====
+|属性|字段|含义
+|serial| `SERIAL` | 任务单序号，基于主单序号计算所得。
+|name| `NAME` |（保留）任务单名称（现阶段是标题）。
+|code| `CODE` | 待办系统码，使用流程时关联流程的任务ID。
+|icon image:i-react.png[0,22] | `ICON` | （Web）待办显示的图标信息，基于 Ant-Design 的前端配置。
+|status image:i-workflow.png[0,22] | `STATUS` | 任务单状态。
+|todoUrl image:i-react.png[0,22] | `TODO_URL` | （Web）任务单路径，前端处理专用的链接地址。
+|type| `TYPE` | 任务类型：现阶段两种待办任务。
+|expiredAt| `EXPIRED_AT` | 任务超时时间：任务超时的时间记录。
+|modelId| `MODEL_ID` | 动态模型关联的模型 identifier 属性，统一模型标识符。
+|modelKey image:i-key.png[0,22]| `MODEL_KEY` |关联模型的记录ID，用于记录哪个模型记录。
+|modelCategory| `MODEL_CATEGORY` |关联的分类记录，只针对叶节点。
+|parentId image:i-key.png[0,22]| `PARENT_ID` |工单支持父子级结构时，父待办执行时子待办同样会执行。
+|serialFork image:i-key.png[0,22] | `SERIAL_FORK` |多维分派的序号生成器，之中存储了任务的分支序号。
+|traceId image:i-key.png[0,22] | `TRACE_ID` |主单记录，对应到 `W_TICKET` 工单的主键关联信息。
+|traceOrder| `TRACE_ORDER` |待办处理顺序，该顺序会在前端执行编排。
+|taskId image:zwf-camunda.svg[0,22] | `TASK_ID` | 和任务单绑定的 Camunda 引擎相关的任务ID号，UUID格式。
+|taskKey image:zwf-camunda.svg[0,22] | `TASK_KEY` | 和任务单绑定的 Camunda 引擎相关的任务定义Key值。
+|comment | `COMMENT` | 待办描述信息（处理节点直接描述）。
+|commentApproval | `COMMENT_APPROVAL` | 审批描述。
+|commentReject | `COMMENT_REJECT` | 拒绝理由。
+|toLocation image:i-core.png[0,22] | `TO_LOCATION` | 按区域派工。
+|toGroup image:i-core.png[0,22] | `TO_GROUP` | 按指定用户组派工。
+|toTeam image:i-core.png[0,22] | `TO_TEAM` | 按指定业务组派工。
+|toRole image:i-core.png[0,22] | `TO_ROLE` | 按指定角色派工。
+|toUser image:i-core.png[0,22] | `TO_USER` | 制定下一处理人执行派工。
+|toDept image:i-core.png[0,22] | `TO_DEPT` | 按指定部门派工。
+|escalate image:i-workflow.png[0,22] | `ESCALATE` | 是否升级（需要领导审批时选择）。
+|escalateDate | `ESCALATE_DATA` | 升级时存储的单据升级数据。
+|acceptedGroup | `ACCEPTED_GROUP` | 任务单接收组。
+|assignedBy image:m-auditor.png[0,22] / assignedAt| `ASSIGNED_BY/ASSIGNED_AT` | 任务单分派人。
+|acceptedBy image:m-auditor.png[0,22] / acceptedAt| `ACCEPTED_BY/ACCEPTED_AT` | 任务单接收人。
+|finishedBy image:m-auditor.png[0,22] / finishedAt| `FINISHED_BY/FINISHED_AT` | 任务单完成人。
+|====
+
+==== 工单状态机
+
+工单状态机主要依赖两个核心字段：
+
+[options="header"]
+|====
+|表名|字段/属性
+|`W_TICKET` | `PHASE` / phase
+|`W_TODO` | `STATUS` / status
+|====
+
+===== 主单状态机
+
+`phase` 属性：
+
+image:zwf-phase.png[0,1024]
+
+特殊说明：
+
+1. 图中带 `T` 标记的如 `T1, T2, T3, T4` 表示不同的待办任务。
+2. 图中只是枚举了基本主单状态机，复杂场景要依赖待办任务状态机协同完成。
+
+[options="header",title="状态说明"]
+|====
+|特殊状态|含义
+|INIT|主单初始化阶段，该阶段是一个临时阶段，当主单处于此阶段，只表示：*直接申请* 和 *存草稿* 阶段之前，即该阶段仅作界面呈现用。
+|DRAFT|草稿阶段，*暂存* 操作之后为该阶段。
+|PENDING|等待阶段（可召回），*直接申请* 操作之后为该阶段。
+|ACCEPTED|长时主单拥有的阶段，当用户接收长时间任务才会出现该阶段，而且该阶段会具有特殊的业务意义。
+|PROCESS|自动化任务在用户处理时拥有的阶段，用户一旦开始处理主单会处于此阶段。
+|ADMIT|等待审批阶段（可召回），该阶段主要用于最终审批，若是初级审批依旧可使用 `PENDING` 代替。
+|EXPIRED|只有计时任务才会出现的阶段，一旦超时会发送提醒或直接关闭主单。
+|REDO|主单驳回，主单驳回会让用户接收任务（一般是驳回上一个节点）。
+|REJECTED|主单拒绝，一般拒绝会发送到最早的DRAFT状态，让用户重新提交单据。
+|CANCELED|「结束」撤销，直接中断该主单。
+|FINISHED|单流程下，FINISHED状态会自动转换成END状态，或者说不存在FINISHED状态，多流程会签时，FINISHED代表单流程结束。
+|END|「结束」结束，完整主单关闭。
+|====
+
+===== 任务单状态机
+
+`status` 属性：
+
+image:zwf-task.png[0,720]
+
+[options="header",title="状态说明"]
+|====
+|特殊状态|含义
+|PENDING|任务等待处理中
+|ACCEPTED|长时任务接收
+|FINISHED|任务完成
+|CANCELED|任务撤销
+|REJECTED|任务拒绝
+|====
+
+[CAUTION]
+====
+整个流程的驱动主要依赖主单的 `phase` 属性和任务单的 `status` 属性同时驱动，双循环状态机可解决 *多层审批、多级审批、复杂派工、循环派工、多次往复、多次拒绝* 等各种复杂场景问题。
+====
+
+==== 扩展单
+
+Zero中的扩展单通常使用 link:#__CONFIG_MODEL_HYBRID[静态建模, window="_blank"] 的方式构造，扩展单只和表单绑定，和主单连接处理数据部分，不处理流程驱动相关的内容。
+
+1. Zero中的扩展单通常使用 `T_` 表前缀。
+2. 您可以在 link:#__CONFIG_MODEL_HYBRID[静态建模, window="_blank"] 中定义扩展单模型，参考出差申请：`w.oa.trip / w.todo / w.ticket` 三表统一模型。
+3. 扩展单依赖 liquibase 中生成的表结构和 `Dao` 配置，您可参考现有流程定义了解相关内容。
+
+==== 主实体
+
+扩展单实际是对工单部分的拓展，此处没什么特别需要讲解的内容，但流程工单会有核心主实体和它关联，您必须了解 *主实体* 概念。例如：出差申请流程运行的是出差申请工单（`w.ticket / w.todo / w.oa.trip`），而出差申请流程执行完成之后应该如何呢？思考下边一个问题：
+
+1. 已出差的员工是否可以再执行部分业务？
+2. 如何区分已出差的员工和未出差的员工？
+
+所以，此处的主实体实际是 *员工*，工单中 `MODEL_` 系列的字段用于关联主实体，流程执行完成之后会对主实体有数据影响，它们最终的结构拓扑图如下：
+
+image:zwf-entity.png[0,960]
+
+[WARNING]
+====
+请您在此处理解 *主单*、*任务单*、*扩展单*、*主实体* 四个基本概念，后续配置中会有很多配置信息我会在文中直接使用这四个字眼。
+====
+
+==== 示例：综合状态机
+
+本小结结合：*休假申请* 的流程演示整个过程中的综合状态机相关信息，以确认您在书写操作日志时不会出错，综合状态机主要针对主单的 `phase` 和任务单的 `status` 双字段结合。
+
+image:zwf-flow.png[0,1024]
+
+查看下边状态转移表，中间保留转移线名称以示例，判断节点之前的转移不计算（如 `T1, T5, T7`）。
+
+[options="header",cols="15,8,8,30,15,8,8,8"]
+|====
+|开始|主单|任务|转移线|结束|主单|前任务|新任务
+|E1（`e.start`）|INIT||T2（`t.start-draft`）|E2（`e.draft`）|DRAFT||DRAFT
+|E2（`e.start`）|INIT||T3（`t.start-approve`）|E3（`e.approve`）|PENDING||PENDING
+|E2（`e.draft`）|PENDING|PENDING|T4（`t.draft-approve`）|E3（`e.approve`）|PENDING|FINISHED|PENDING
+|E3（`e.approve`）|PENDING|PENDING|T6（`t.approve-admit`）|E4（`e.admit`）|ADMIT|FINISHED|PENDING
+|E3（`e.approve`）|PENDING|PENDING|T10（`t.approve-draft`）|E2（`e.draft`）|DRAFT|REJECTED|DRAFT
+|E4（`e.admit`）|ADMIT|PENDING|T9（`t.admit-draft`）|E2（`e.draft`）|DRAFT|REJECTED|DRAFT
+|E4（`e.admit`）|ADMIT|PENDING|T8（`t.admit-end`）|E5（`e.end`）|END|FINISHED|
+|====
+
+[TIP]
+====
+- 主单完成状态分两种：FINISHED 和 END
++
+--
+- FINISHED：表示当前分支已结束（多分支时才会出现该状态）。
+- END：表示整个流程已结束，所有标准工作流都会出现此状态。
+--
+- 整体状态迁移根据生命周期进行分类：
++
+--
+[options="header"]
+|====
+|模式|旧任务|新任务|主单
+|草稿提交|`DRAFT -> PENDING`|无|`DRAFT -> PENDING`
+|执行/审批|`PENDING -> FINISHED`| `PENDING` | `PENDING -> ADMIT/PENDING`
+|拒绝|`PENDING -> REJECTED`| `DRAFT` | `PENDING -> REJECTED`
+|驳回|`PENDING -> REDO`| `PENDING` | `PENDING -> REDO`
+|关闭|`PENDING -> FINISHED` | 无 | `PENDING / ADMIT -> FINISHED / END`
+|====
+--
+
+关于动态周期的引入设计考虑：后期所有的工单phase以及任务单的status会定义 `W_MOVE` 表进行存储和定义，在这种定义下开启生命周期的动态管理，则整个迁移流程会关联新的周期定义，以适配多种场景，这种模式下，主要是针对 phase 进行强定义，而任务单的状态一般情况不做相关变更。
+====

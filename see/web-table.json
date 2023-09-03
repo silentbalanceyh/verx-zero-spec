@@ -1,0 +1,21 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/see/web-table.json",
+    "$defs": {
+        "simple": {
+            "type": "object",
+            "properties": {
+                "columns": {
+                    "type": "array",
+                    "description": "表格列专用配置",
+                    "items": {
+                        "$ref": "http://www.vertx-cloud.cn/sage/web-column.json#/$defs/common"
+                    }
+                }
+            },
+            "required": [
+                "columns"
+            ]
+        }
+    }
+}

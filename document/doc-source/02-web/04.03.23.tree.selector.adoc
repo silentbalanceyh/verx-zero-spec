@@ -1,0 +1,62 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiTreeSelector`
+
+专用树型选择器，和列表选择器的配置比较类似，只是弹出框是 **树** 的数据结构。配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "bankName,上级银行（父行）,8,,aiTreeSelector,placeholder=（请选择）",
+        "optionJsx.config": {
+            "ajax": {
+                "uri": "/api/bank/by/sigma",
+                "magic": {
+                }
+            },
+            "linker": {
+                "name": "bankName",
+                "key": "bankId"
+            },
+            "selection": {
+                "multiple": false,
+                "checkStrictly": true
+            },
+            "tree": {
+                "title": "name",
+                "parent": "bankId"
+            },
+            "validation": "请选择父行！",
+            "window": "选择父银行,选择,关闭,false,400,false"
+        },
+        "optionJsx.allowClear": true,
+        "optionJsx.depend.enabled": {
+            "branch": true
+        }
+    }
+]
+----
+
+树型选择器如下：
+
+image:exp-input-treeselector.png[0,800]
+
+
+===== 特殊属性
+
+配置属性表：
+
+[options="header",cols="3,7"]
+|====
+|属性路径|含义
+|`optionJsx.config.ajax`|Ajax远程通信专用配置，此处配置支持 **属性解析器**，且使用了 `magic` 模式的 **输入解析器**（只有查询分析器才会使用 `params.criteria` 参数）。
+|`optionJsx.config.linker`|Zero UI中专用的 `linker` 配置。
+|`optionJsx.config.selection`|属性选择器的专用配置，您可以设置属性选择器的选择模式，包括 **多选、单选**。
+|`optionJsx.config.tree`|针对查询的数据源的树相关配置（如何构造一颗树提供选择）。
+|`optionJsx.config.validation`|选择验证的提示文字，启用了此组件之后，在弹出的对话框中您需要选择某一行数据做选项，若不选择则无法点击。
+|`optionJsx.config.window`|弹出框的基本配置，此配置支持 **属性解析器** 中的弹出窗口解析。
+|====
+

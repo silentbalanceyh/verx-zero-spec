@@ -1,0 +1,165 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 存储规划[[__ACTION_IS_STORE]]
+
+示例中的核心内容是 **文档管理**，配合 Zero Extension 中的集成服务（ `zero-is` 模块），您必须针对合规文档执行存储规划，关于 Zero Extension 中的目录规划可参考 link:#__MOD_IS_DIR_STORE[异构目录规划]。
+
+[WARNING]
+====
+实际运行案例中，Zero一般都会接入 `zero-is` 集成服务做 **文档管理**，Zero Extension 中的上传是推荐启用 **目录** 的模式，若不带目录，不论是迁移还是运行，想要长久做企业级服务管理是有问题的，Zero中的 **目录规划** 和 **文档管理** 两个大功能借助 `zero-is` 的集成服务已经完全打通，除了OOB级别的目录是不可增删，您也可以像云盘一样直接在 **文档管理** 中调整动态目录结构，不仅如此，这样的的几个明显的优势如下：
+
+- 目录本身在存储这一级别对人工比较友好，容易阅读，**断电**模式下您可以很容易访问数据关联的存储文档。
+- 当您要执行迁移时，只需要做整个目录的内容拷贝，且支持 `本地、SSH、NFS、FTP` 各种不同协议之间的切换（ `zero-is` 集成）。
+- 企业永久存储管理，若您的企业流程依赖 **文档管理**，那么这种设计可以保证企业管理过程中不会轻易丢失重要文档。
+
+所以在实战过程中，提供了 **存储规划** 章节方便开发人员配置 **上传/下载** 的交互功能，且本章节不仅用于单纯的文档管理，像公告图片、上传备份、网盘等所有功能的基础配置教程都可以参考本章内容。
+====
+
+==== 目录规划组件
+
+调整过后，原始 **集成服务** 中的文档类型修订成了四大类：
+
+[options="header",cols="2,5,3"]
+|====
+|类型值|组件|含义
+|`workflow`|`io.horizon.spi.feature.CatalogArbor`|工作流文档目录
+|`document`|`io.horizon.spi.feature.CatalogArbor`|系统全局文档目录
+|`department`|`io.horizon.spi.feature.DepartmentArbor`|部门文档目录
+|`norm`|`io.horizon.spi.feature.CatalogArbor`|合规模块专用目录
+|====
+
+目前 Zero 开放了两种目录规划组件，`DepartmentArbor` 是基于部门的 **目录规划**，文档管理左侧是部门树；而 `CatalogArbor` 是比较通用的类别目录树，左侧是 `X_CATEGORY` 类别树。
+
+目录规划注意事项：
+
+- 由于示例中并没有追加Excel配置文件，配置文件写好之后，需在模块中执行 `aj mod` 命令更改 `initialize.json` 使得模块化配置生效。
+- 合规模块的目录树采用了 `X_CATEGORY` 作类别处理，所以组件是固定的。
+- 合规模块的目录树 **元类别** 的值为 `zero.document.norm`（可以管理和动态扩展），它依赖您在 `X_CATEGORY` 中创建新的存储路径，现阶段可创建：`法规库 / 制度库 / 底稿库` 三种。
+- 新追加的目录规划配置文件（ `cab/directory/` 目录内）在所有项目中不可以重复，现阶段四种：
++
+--
+[options="header", cols="2,2,6"]
+|====
+|类型值|模块|配置路径
+|`workflow`|`zero-ambient` | `cab/directory/ambient.dir.workflow.json`
+|`document`|`zero-ambient` | `cab/directory/ambient.dir.document.json`
+|`department`| `zero-erp` | `cab/directory/erp.dir.department.json`
+|`norm`| `zero-doc` | `cab/directory/doc.dir.norm.json`
+|====
+--
+
+==== 规划配置
+
+您可以按照如下步骤对 **合规模块/法规管理** 执行目录规划：
+
+1. 追加目录规划配置配置数据如下：
++
+--
+[options="header"]
+|====
+|属性|值
+|`type`|固定值：`zero.directory`
+|`name`| 合规文档
+|`code`| `norm`
+|`leaf`| `FALSE`
+|`identifier`|固定值：`i.directory`
+|`sort`| 根据实际目录排序考虑
+|`metadata`|设置成不可选中（目录专用属性）
+|`treeComponent`|`io.horizon.spi.feature.CatalogArbor`
+|`treeConfig`|`JSON:cab/directory/doc.dir.norm.json`
+|====
+--
+
+2. 在对应的配置文件中追加 `doc.dir.norm.json` 配置文件：
++
+--
+[source,json]
+----
+{
+    "query": {
+        "type": "zero.document.norm"
+    },
+    "store": {
+        "runComponent": "io.vertx.mod.is.uca.command.FsReadOnly",
+        "initialize": {
+            "visitMode": [
+                "r",
+                "w"
+            ]
+        }
+    }
+}
+----
+--
+
+3. 上述配置只定义了最 **抽象** 的目录规划配置，其次您还需针对三个库执行配置，三个库的 Excel 如下：
++
+--
+image:exp-config-store.png[]
+--
+4. 配置完成后，您就可以直接在 `aiFileXxx` 上传组件中配置对应的目录到参数里，完成 `法规库 / 制度库 / 底稿库` 的完成配置流程了（目录可用）。
+
+==== 运行结果
+
+详细内容参考之前的 **集成服务** 章节。
+
+1. **集成配置**：集成配置按照下边顺序检查：
++
+--
+[options="header",cols="2,8"]
+|====
+|优先级|配置方法
+|高|环境变量配置 `Z_SIS_STORE`，若您配置了此环境变量（开发环境使用 `.env.development` 文件），那么此环境变量会作为第一优先级的目录配置。
+|默认|默认情况下，若您启用了 `zero-is` 模块，直接在启动器的配置目录中书写配置文件 `plugin/is/configuration.json`。
+|====
+
+上述配置文件内容一般如：
+
+[source,json]
+----
+{
+    "storeRoot": "/Users/lang/runtime/zero-store"
+}
+----
+环境变量中的值会覆盖此处的配置！！！示例中 `Z_SIS_STORE` 的值为 `/Users/lang/zero-store`。
+--
+
+2. **应用配置**：应用配置（ 必须启用 `zero-ambient` 模块 ）检查启动器中的配置文件 `plugin/ambient/configuration.json`。
++
+--
+[source,json]
+----
+{
+    "supportSource": true,
+    "initializer": "io.horizon.spi.ambient.ApplicationInitializer",
+    "dataFolder": "init/oob/",
+    "fileStorage": "FILE",
+    "fileLanguage": "cn",
+    "fileIntegration": "zero.directory",
+    "storePath": "/apps/nm/document"
+}
+----
+
+注意上述配置中的核心配置：
+
+- `fileIntegration`：此值会控制目录规划中读取 `X_CATEGORY` 中的类型值，根据类型值规划目录：此功能目前还不够稳定，没有特殊情况直接使用默认值。
+- `storePath`：此处 `norm` 应用的定义为 `/apps/nm/document/`，所以最终的存储路径为：`/Users/lang/zero-store/apps/nm/document`。
+--
+3. 上述配置检查后，重新导入配置，启动容器：检查配置目录中是否多出了 `合规文档` 目录（配置完成后自动规划和同步）。
++
+--
+image:exp-config-directory.png[]
+--
+4. 然后检查数据库中的配置是否多出了配置记录，并检查配置记录是否符合您的 **存储规划**
++
+--
+image:exp-config-dirdb.png[]
+--
+
+[TIP]
+====
+完成上述步骤检查之后，证明您的 **集成服务**、**存储规划**、**文档管理** 三个核心依赖抽象目录的功能全部启动完成了，如此您就可以放心大胆在您的程序中配置 **上传/下载** 组件以及开启 **文档管理** 和 **合规模块** 了。
+====
+

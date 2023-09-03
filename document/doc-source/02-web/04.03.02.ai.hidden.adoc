@@ -1,0 +1,8 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiHidden`
+
+aiHidden 直接作用于表单配置中的 `hidden` 节点，通常在字段配置中是不需单独配置的，属于最特殊的渲染器。
+

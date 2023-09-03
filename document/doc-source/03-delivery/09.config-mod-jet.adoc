@@ -1,0 +1,5 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 接口/任务配置（zero-jet）
+

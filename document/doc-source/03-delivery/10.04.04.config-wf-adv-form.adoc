@@ -1,0 +1,290 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+===== 表单绑定
+
+Zero流程引擎中，若您使用 Camunda Modeler 设计了某个表单，则该表单就和一个同名的 `json` 文件绑定对表单进行定义，如 *出差申请* 的提交单配置文件：`trip.start.form.json`：
+
+[TIP]
+====
+表单配置属于Zero UI中的核心前端配置，并非后端配置，若您对前端配置细节不了解，还需参考Zero UI前端表单配置内容。
+====
+
+[source,json]
+----
+{
+    "initial": {
+        "catalog": "UNIQUE:service.catalog,code,code=FIX:process.oa.trip"
+    },
+    "hidden": [
+        "requestBy"
+    ],
+    "segment": {
+        "TICKET": [
+            [
+                "....",
+            ],
+            [
+                "...."
+            ]
+        ],
+        "ASSIGNMENT": "ASSIGN_SINGLE"
+    },
+    "synonym": {
+        "toUserNo": "交接人工号",
+        "toUserName": "交接人",
+        "toUserEmail": "交接人邮箱",
+        "toUserMobile": "交接人电话",
+        "toUserDept": "交接人部门",
+        "toUserTeam": "交接人工作组"
+    },
+    "action": {
+        "$opDraft": {
+            "data": {
+                "draft": true,
+                "status": "DRAFT",
+                "phase": "DRAFT"
+            }
+        },
+        "$opOpen": {
+            "validation": {
+                "toUser": [
+                    "required,对不起，您未指定\"处理人信息\"，流程提交必须指定处理人。"
+                ]
+            },
+            "data": {
+                "draft": false,
+                "status": "PENDING",
+                "phase": "PENDING"
+            }
+        }
+    }
+}
+----
+
+上述配置的属性信息如下：
+
+[options="header"]
+|====
+|属性|含义
+|initial|初始值设置，该初始值设置和前端的初始值设置是一致的，支持属性表达式模式提取不同字段值。
+|hidden|隐藏字段设置，通常在linker配置中会追加隐藏字段，或更新模式下主键也会使用隐藏字段模式（此处定义的属性不会呈现在界面中）。
+|segment|表单分段。
+|synonym|同义语义，该语义同样是前端标准配置，可针对表单中的表单进行重命名，如上述配置中，原来的 "处理人工号" 被修改成了 "交接人工号" 。
+|action|表单行为。
+|====
+
+===== 表单分段
+
+表单分段主要用于构造工单复杂布局，通常节点级的 `TICKET` 只提供扩展单字段，此处列举表单分段的布局和左右值常用结构。
+
+整体布局如下（开工单、处理工单、历史工单）：
+
+image:zwf-form-place.png[0,1024]
+
+现阶段流程引擎没有对接动态表单引擎（`UI_FORM`），属于非自由型表单设计，所以只能按照现阶段规则在每个占位符区域填充表单的标准化字段，其中 `TICKET` 中填写的就是后端的 `TICKET` 扩展单部分表单字段，示例中可以看到在开单配置中我们设置了如下：
+
+[source,json]
+----
+    "ASSIGNMENT": "ASSIGN_SINGLE"
+----
+
+那么 `ASSIGN_SINGLE` 右值的表单信息会被填充到图中黄色列的 `ASSIGNMENT` 占位符上形成分段和标准表单拼合到一起。现阶段支持的分段右值参考下表：
+
+[options="header"]
+|====
+|值|含义
+|`OPEN_USER` | （简化版，3字段）建单人面板，包括建单人的工号、姓名、所属部门。
+|`OPEN_USER_FULL` | （完整版，6字段）建单人面板，包括建单人的工号、姓名、所属部门。
+|`OPEN_VIEWER` | 建单人只读信息查看。
+|`END_STANDARD` | 标准关单面板，包括关闭代码、关联链接、解决方案。
+|`RUN_APPROVE` | 标准审批面板，包括审批结果（通过、拒绝、驳回）、审批说明。
+|`RUN_PROCESS` | 标准处理面板，只填写处理说明即可。
+|`RUN_USER` | 当前处理人面板，包括处理人的工号、姓名、所属部门。
+|`ASSIGN_NEXT` | 下一处理人（仅包含标题模式）。
+|`ASSIGN_SINGLE_ESCALATION` | 可选择带有领导的是否升级可选升级审批面板，escalate部分。
+|`ASSIGN_SINGLE` | （简化版，3字段）标准下一处理人面板，可设置唯一下一处理人。
+|`ASSIGN_SINGLE_FULL` | （完整版，6字段）标准下一处理人面板，可设置唯一下一处理人。
+|====
+
+再提供几个表单分段的示例：
+
+_出差申请草稿表单_
+
+[source,json]
+----
+{
+    "segment":{
+        "TICKET": [
+            []
+        ],
+        "ASSIGNMENT": "ASSIGN_SINGLE",
+        "RUN_USER": "RUN_USER",
+        "END_CLOSE": "END_STANDARD"
+    }
+}
+----
+
+_出差申请审批表单_
+
+[source,json]
+----
+{
+    "segment":{
+        "TICKET": [
+            []
+        ],
+        "ASSIGNMENT": "ASSIGN_SINGLE",
+        "RUN_USER": "RUN_USER",
+        "RUN_TICKET": "RUN_APPROVE",
+        "END_CLOSE": "END_STANDARD"
+    }
+}
+----
+
+[CAUTION]
+====
+表单分段目的只是为了标准化流程处理过程中的表单半自由结构，它依旧没有逃离表单设计器的范畴，也就是说，如果开发中心表单设计器处理完成后，此处的表单可以使用自由表单，而不是目前这种半自由表单，这种半自由表单的设计原因在于：
+
+- 项目周期比较赶，没有时间空间先开发表单设计器，再来完善全自由型表单连接。
+- 半结构化表单对于大部分流程系统而言已经足够形成产品模板（适用性已经很高了），且节省了您设计表单的成本。
+- 虽然扩展模式不是热部署，但足够针对各种标准化流程实现快速实施。
+====
+
+===== 表单行为
+
+表单部分最后要讲解的是表单行为，即当前表单中对应的流程操作事件。参考标准化操作表：
+
+[options="header"]
+|====
+|操作ID|文字|含义
+|`$opOpen` | 提交 | 提交按钮、包含审批、拒绝、驳回等意见面板处理。
+|`$opSaving` | 暂存 | 存草稿、暂存按钮。
+|`$opTransfer` | 转单 | 转单、重新派工按钮。
+|`$opClose` | 关闭 | 关闭表单专用按钮。
+|`$opCancel` | 撤销 | 取消工单按钮。
+|`$opReset` | 重置 | 重置当前工单。
+|`$opBack` | 返回 | 返回前一页。
+|====
+
+下边代码段是 *出差申请* 审批单的表单行为定义，详细阅读并理解此配置的内容：
+
+[source,json]
+----
+{
+    "action": {
+        "$opCancel": {
+            "validation": {
+                "closeCode": [
+                    "required,对不起，撤销时必须选择关闭代码。"
+                ]
+            },
+            "data": {
+                "phase": "CANCELED"
+            }
+        },
+        "$opClose": {
+            "validation": {
+                "closeCode": [
+                    "required,对不起，关闭流程必须选择关闭代码。"
+                ]
+            },
+            "data": {
+                "phase": "FINISHED"
+            }
+        },
+        "$opTransfer": {
+            "validation": {
+                "toUser": [
+                    "required,对不起，您未指定\"处理人\"，转单必须指定处理人。"
+                ]
+            }
+        },
+        "$opOpen": {
+            "validation": {
+                "toUser": [
+                    "required,对不起，您未指定\"处理人\"，必须指定下一处理人。"
+                ],
+                "confirmedOk": [
+                    "required,对不起，请选择您的处理意见，审批时处理意见不可为空！"
+                ]
+            },
+            "indicator": "confirmedOk",
+            "data": {
+                "YES": {
+                    "confirmed": true,
+                    "phase": "ADMIT",
+                    "commentApproval": "FORM:confirmedDesc"
+                },
+                "NO": {
+                    "confirmed": false,
+                    "phase": "REJECTED",
+                    "commentReject": "FORM:confirmedDesc"
+                },
+                "BACK": {
+                    "confirmed": false,
+                    "phase": "REDO",
+                    "commentReject": "FORM:confirmedDesc"
+                }
+            }
+        }
+    }
+}
+----
+
+上述片段配置中您可以看到每个行为都是使用 `ID = {}` 的结构执行配置（ `ID` 遵循Zero UI前端命名规范 ），其中:
+
+- validation: 提供了点击该按钮的验证规则，验证规则针对每个属性可以包含多项，提交时依次触发，此处的验证规则和前端配置的 `optionConfig.rules` 不同，此处验证规则是提交时验证，并非输入时验证。
+- data: 提供了点击按钮之后执行的数据默认赋值行为（通常针对不呈现在界面的流程驱动字段，比如设置 `phase` ），设置流程流转数据，以及流程驱动相关附加数据等。
+
+最后以 `$opOpen` 为例讲解事件定义，它的配置片段如下：
+
+[source,json]
+----
+{
+            "validation": {
+                "toUser": [
+                    "required,对不起，您未指定\"处理人\"，必须指定下一处理人。"
+                ],
+                "confirmedOk": [
+                    "required,对不起，请选择您的处理意见，审批时处理意见不可为空！"
+                ]
+            },
+            "indicator": "confirmedOk",
+            "data": {
+                "YES": {
+                    "confirmed": true,
+                    "phase": "ADMIT",
+                    "commentApproval": "FORM:confirmedDesc"
+                },
+                "NO": {
+                    "confirmed": false,
+                    "phase": "REJECTED",
+                    "commentReject": "FORM:confirmedDesc"
+                },
+                "BACK": {
+                    "confirmed": false,
+                    "phase": "REDO",
+                    "commentReject": "FORM:confirmedDesc"
+                }
+            }
+}
+----
+
+从上述配置可知：
+
+1. 表单中有下一处理人属性 `toUser`，提交时会验证下一处理人是否设置。
+2. 表单中包含一个选择处理意见的面板属性 `confirmedOk`，根据 `confirmedOk` 的值（通过、拒绝、驳回），您可以看到设置的不同值信息：
++
+--
+[options="header",title="表单赋值表"]
+|====
+|confirmOK|YES（通过）|NO（拒绝）|BACK（驳回）
+|confirmed| true | false | false
+|phase| ADMIT | REJECTED | REDO
+|commentApproval| 表单属性：confirmedDesc ||
+|commentReject||表单属性：comfiredDesc|表单属性：confirmedDesc
+|====
+--
+
+这就是上述行为配置针对表单提交的含义，Zero流程引擎中还包含复杂行为模式，下一章节讲解网格派工时我们进一步来理解。

@@ -1,0 +1,7 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/database/S_PATH/UI_CONFIG.json",
+    "$comment": "用于权限配置过程中对数据的定义",
+    "title": "数据配置",
+    "type": "object"
+}

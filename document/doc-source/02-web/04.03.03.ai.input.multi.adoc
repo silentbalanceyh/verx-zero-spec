@@ -1,0 +1,35 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiInputArray`
+
+- 此渲染器有别名 `aiInputMulti`，旧版使用 `aiInputMulti`，以后所有开发中新版推荐使用 `aiInputArray`（原组件名）。
+
+多选项输入模式，此字段渲染使用了 `web` 库中的 `<InputArray/>` 组件，此组件可以帮助开发人员实现多行文本输入，且产生 `[]` 的表单值。配置如下：
+
+[source,json]
+----
+{
+    "metadata": "dependValue,条件字段值,24,,aiInputMulti",
+    "optionJsx.styleInput": {
+        "width": "30%"
+    },
+    "optionJsx.depend.enabled": {
+        "dependType": [
+            "DATUM"
+        ]
+    }
+}
+----
+
+此处不深究 `optionJsx.depend` 的 **依赖和影响** 配置，这个组件中会包含一个操作按钮，您可以点击这个按钮动态追加输入文本行，每行文本会生成一个 Array 的项，最终生成形如：
+
+[source,json]
+----
+[
+    "文本行一的文字",
+    "文本行二的文字"
+]
+----
+

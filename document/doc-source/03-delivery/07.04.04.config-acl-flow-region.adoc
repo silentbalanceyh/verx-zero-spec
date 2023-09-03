@@ -1,0 +1,95 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+:sectlinks:
+:linkattrs:
+
+==== 数据域 / 访问者
+
+数据域功能在Zero框架中是使用 *插件* 方式启用的，若不启用数据域功能，那么视图功能将不复存在，所以插件位于 `zero-rbac` 项目中，属于Zero Extension框架部分的内容。数据域功能的开启一般在项目配置文件：`vertx-dock.yml` 中，配置片段如下：
+
+[source,yaml]
+----
+# 「扩展组件」-----------------------------------------------------------------------
+extension:
+  region:
+    component: io.vertx.mod.rbac.extension.DataRegion
+    config:
+      prefix: /api/
+----
+
+===== 截断检查
+
+[CAUTION]
+====
+数据域的功能要根据实际需求来指定，在Zero框架中它属于一个类似 `Around` 模式的AOP操作，众所周知AOP操作中如果执行代码过多有可能会引起性能问题，所以为了在需求和性能间找个折中点，系统根据配置和请求数据启用或禁用数据域功能。
+====
+
+====== 配置检查
+
+1. 正如上述配置提到，启用DataRegion的第一个条件就是配置了 `/prefix`。
+2. 其次HttpMethod方法必须是下边几个值：
++
+--
+- GET
+- POST
+- OPTIONS
+--
+3. 最后系统会检查请求路径是否以配置路径开始，如上述配置中像 `/oauth/login, /oauth/authorize, /oauth/token` 都不满足以 `/api/` 为前缀。
+
+====== 输入检查
+
+数据域是和安全视图配合操作的，若前边资源请求流程中无法读取到视图信息，那么数据域功能就会直接跳过不执行。输入检查是基于 `DataBound` 对象转换的JSON对象（输入 `matrix`）：
+
+[source,java]
+----
+boolean isRegion(final JsonObject matrix)
+----
+
+它的结构可参考 link:#__SEC_CACHE_LOGIN[用户登录缓存,window="_blank"]，参考下边的输入检查表格，按顺序检查：
+
+[options="header"]
+|====
+|规则|结果
+|matrix为空 | 禁用数据域
+|matrix中projection有值 | 启用数据域
+|matrix中credit有值 | 启用数据域
+|matrix中rows有值 | 启用数据域
+|matrix中criteria有值 | 启用数据域
+|matrix中seeker有值 | 根据视图数据的存在与否启用和禁用数据域，无视图数据禁用
+|其他|上述规则都不满足，直接禁用数据域
+|====
+
+===== Before流程
+
+Before流程主要做三件事：
+
+- 访问者流程：若启用了访问者流程则重新提取视图资源信息修改 `matrix`。
+- projection修改（先知）：根据最终视图数据修改projection。
+- criteria修改（先知）：根据最终视图数据修改criteria。
+
+完整流程图如下：
+
+image:zbac-region-before.png[,900]
+
+===== After流程
+
+After流程主要做四件事：
+
+- 访问者流程：若启用了访问者流程则重新提取视图资源信息修改 `matrix`。
+- record过滤：处理单数据记录的过滤信息。
+- rows过滤：针对集合数据集执行行筛选。
+- collection过滤：针对集合执行列过滤。
+
+image:zbac-region-after.png[,900]
+
+===== 响应特殊数据
+
+数据域经过了上述流程之后会对响应数据执行最终更改，在响应数据中会追加如下属性执行特殊操作：
+
+[options="header"]
+|====
+|属性|含义
+|`__acl` | 基于查询语法的ACL控制，主要针对表单记录操作的ACL响应限制。
+|`__qr` | 基于查询语法的视图控制，返回 `__qr` 级核心操作，存储了当前视图中定义的查询条件（只针对视图，不针对访问者）。
+|====

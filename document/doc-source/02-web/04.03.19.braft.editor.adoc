@@ -1,0 +1,19 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiBraftEditor`
+
+富文本编辑器，提供了可支持 HTML 格式的编辑器功能，配置如：
+
+[source,json]
+----
+[
+    "content,公告内容,18,,aiBraftEditor"
+]
+----
+
+编辑器如：
+
+image:exp-input-brafteditor.png[0,720]
+

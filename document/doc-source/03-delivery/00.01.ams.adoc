@@ -1,0 +1,193 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 元数据规范
+
+==== 功能支持表
+
+新版Zero从 `vertx-co` 项目中分裂出一个新项目 `vertx-ams`，全称为 `Agreed Metadata Specification`（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，它支持的功能点参考下表：
+
+[options="header",cols="20,80"]
+|====
+|功能|说明
+|逆向注解 a|提供新注解，针对特殊的功能实现元数据分析（代码分析代码的模式）：
+
+- 开发注解，定义部分私有成员辅助开发，可使用代码和脚本对项目本身执行分析。
+- 连接注解，定义和 ams 项目相关的工具调用，以标记代码。
+- 缓存注解，可对Cc架构执行缓存注解。
+|通用数据结构|提供部分通用数据结构定义，不带任何业务色彩，纯功能支持型内容。
+|异常架构 a|提供任何项目都可使用的异常规划，可加载不同资源文件实现扩展异常定义，动参和继承相结合，实现项级的完整异常体系，完整抽象层异常体系如下：
+
+[source,bash]
+----
+java.lang.Throwable
+
+  -- java.lang.Exception
+        # 编译时顶级抽象异常
+     -- io.horizon.exception.ProgramException      
+           # （Fatal类）容器内部配置检查异常
+        -- io.horizon.exception.io.horizon.exception 
+        
+     -- java.lang.RuntimeException
+           # 运行时顶级抽象异常
+        -- io.horizon.exception.AbstractException    
+              # 容器内部扫描合规性检查异常
+           -- io.horizon.exception.InternalException   
+              # 容器启动异常
+           -- io.horizon.exception.BootingException     
+              # 容器运行时Web异常（可呈现异常信息到前端）
+           -- io.horizon.exception.WebException         
+----
+|函数包 a|提供 *类* 级别的函数顶层包 `HFn`（Java语法糖），实现工具独立规划和分析，且在函数包中引入增强的防御式、文学式编程范式，以更优雅的方式处理JVM级别的异常，且扩展 *函数接口* 让Java可支持 lambda 中的检查异常抛出机制。
+
+- 扩展Throwable的函数式接口
+- 扩展纯执行器函数式接口
+- 扩展Exception的函数式接口
+- 针对业务ProgramException / InternalException实现快速抛出
+- 支持带异常日志的函数式调用
+- *二选一* 快速分支性函数接口常用功能方法
+|规范 a|提供 *建模、数据结构、组件* 三种规范接口定义，整个系统中不提供实现，实现依赖您想要引入的该包的项目。
+
+- 应用、租户概念定义
+- 模型相关定义（元模型抽象定义）
+- 数据库配置定义
+|工具包 a|提供 *类* 级别的工具顶层包 `HaS`，实现工具独立调用，工具支持：
+
+- 彩色Console日志
+- 对象比对、值比对
+- 加密/解密模块（MD5、RSA、公私钥非对称、Base64等）
+- 集合运算（添加、基础、聚集、查找、拉平、反序、分组、映射、移除等）
+- 环境变量加载
+- 异常快速构造
+- String / JsonObject / JsonArray和其他数据结构的相互转换
+- IO目录、文件读取、不同格式文件读取（包括jar内部资源文件）、以及大文件（>10G）算法
+- 判断性原子函数
+- 专用 lambda 模式的集合迭代
+- *建模* 抽象工具类
+- 网络检查专用功能包
+- 日期/时间 格式化、转换、解析包
+- 随机数、字符串、验证码生成功能包
+- 安全值读写
+- 常用反射包（单件、实例、池化、SPI级核心反射）
+|UCA架构 a|全称为 User Component Architecture，用户自定义组件架构，规范中支持的自定义组件如：
+
+- CC缓存架构：Cloud Cache，支持内存缓存、异步缓存、线程缓存，全局统一管理缓存
+- 比对组件：可针对Java语言中的强类型执行通用比对，差异性比对、等价性比对
+- 转换组件：特殊数据结构之间的相互转换功能函数
+- 加解密组件：公私钥非对称加解密专用组件，内部支持HED实现敏感数据加解密功能
+- 日志组件：基础日志、扩展日志专用组件，提供可扩展日志结构，外可连ELK平台
+- 本地文件组件：提供本地文件类似 `mkdir / rm` 等常用命令的文件操作
+- 网络组件：IPv4和IPv6专用网络检查功能包
+|====
+
+[CAUTION]
+====
+`vertx-ams` 的设计主要是重新抽象了 Zero 核心框架底层的功能包，用于跨框架执行，理论上只能在 Vert.x 框架中使用，若和Spring做集成，则可直接引入 `vertx-core` 的依赖包作为额外的依赖包之后直接在Spring中使用。
+====
+
+==== 框架对接
+
+`vertx-ams` 中的异常架构本身是基于SPI执行扩展，若要对接新框架如Spring，则需要实现基础资源关联部分的SPI，才可以和 `vertx-ams` 完整对接，否则 *可配置* 异常架构无法在新框架中发挥作用，本章主要讲解对接步骤以及注意事项，有了本章基础之后，您可以完全隔离 Zero 框架在任何支持 Vert.x 的结构中直接使用此规范。
+
+===== 资源文件
+
+新框架对接中基本要求如：必须提供异常资源文件连接，如 Zero 中使用 `vertx-error.yml` 资源文件做绑定，您可以在新的框架如 Spring 中参考 `spring-up` 项目中的配置，使用可国际化的 `application-error.yml` 资源文件做绑定内容。SPI实现过程中并没有强制要求您从文件路径中加载资源，只是要求从返回的数据结构中（JsonObject类型）实现两个核心的数据结构
+
+- 异常代码/系统信息表
+- 异常代码/业务信息表（可选，根据业务需求定义）
+
+这两个信息表在Zero框架中位于 `vertx-error.yml / vertx-readable.yml` 两个资源文件中，您可以在自己对接其他框架时，采用其他实现手段来完成，不影响整体结构。以下是 Zero 框架中的异常信息表的范例：
+
+_vertx-error.yml_
+
+[source,yaml]
+----
+# 20001 - 29999
+# Thirt part error for different integration
+E20001: (401) - Qiy interface of "/iqiyi/authorize" met errors, code = {0}, message = {1}
+E20002: (401) - Qiy token record does not contain "access_token", client_id = {0}
+
+E80203: "(449) - (RBAC) The user `{0}` could not be found in database"
+E80204: "(401) - (RBAC) The user''s ( username = {0} ) password that you provided is wrong"
+----
+
+_vertx-readable.yml_
+
+[source,yaml]
+----
+# 登录异常
+80204: "对不起，用户名和密码错误！"
+80203: "对不起，找不到您提供的用户信息！"
+----
+
+[TIP]
+====
+上述结构取决于 `io.horizon.spi.HorizonIo` 接口下的实现逻辑，Zero中的实现逻辑因为历史原因，两个文件的基础 *键* 命名并没有维持一致，一个是 `EXXXXX` 一个是 `XXXXX`，但相同的异常代码实现了错误表的绑定，这一点是相对实用的。
+====
+
+===== HorizonIo
+
+若要对接框架，您只需要提供SPI接口 `io.horizon.spi.HorizonIo` 接口的相关实现，该接口的定义如下：
+
+[source,java]
+----
+package io.horizon.spi;
+
+import io.vertx.core.json.JsonObject;
+
+/**
+ * 资源文件加载专用SPI模式
+ * - 日志器：HLogger 是高阶实现，Annal 为Zero默认实现
+ * - 资源加载器：
+ * --- spring 中加载 application-error.yml
+ * --- vertx zero 中加载 vertx-error.yml
+ * - 最终实现完整加载流程
+ * 该组件SPI为底层资源加载组件，用于如下作用
+ * 1. 对接不同的 Annal 扩展组件，实现日志器的替换扩展流程。
+ * 2. 对接错误信息的资源提取流程，提取错误信息专用，构造成一个JsonObject包含所有资源类错误信息定义。
+ *
+ * @author lang : 2023/4/28
+ */
+public interface HorizonIo {
+    /**
+     * 资源加载，加载对应的异常资源文件，内部实现可自定义
+     *
+     * @return {@link JsonObject}
+     */
+    JsonObject ofError();
+
+    /**
+     * 资源加载，加载对应的异常资源文件，和 ofError() 可成对出现
+     * 该方法返回的内容可直接提取可读部分，用于前端展示
+     *
+     * @return {@link JsonObject}
+     */
+    JsonObject ofFailure();
+
+    /**
+     * 日志获取器，可读取扩展日志类型，实例时基于 Class<?>
+     *
+     * @return {@link io.horizon.specification.uca.HLogger}
+     */
+    default Class<?> ofLogger() {
+        return null;
+    }
+}
+----
+
+上述接口实现过程中，解释一下：
+
+1. _ofError_ 用于返回 *异常代码/系统信息表*
++
+--
+格式如：`EXXXXX = xxxxx`
+--
+2. _ofFailure_ 用于返回 *异常代码/业务信息表*
++
+--
+格式如：`XXXXX = xxxxx`
+--
+3. _ofLogger_ 用于返回 `io.horizon.specification.uca.HLogger` 实现类名，反射替换原始日志记录器（若不替换则使用默认的 `slf4j` 接口。
+
+上述实现完成之后，您可以在 `/META-INF/services/io.horizon.spi.HorizonIo` 中追加默认SPI的实现类，在自己的项目中直接对接异常架构，如此您的系统就可以享受 `vertx-ams` 带来的完整的可配置异常架构和函数模型，若您使用的是 Zero 框架，则不需要做任何对接，默认的 `vertx-co` 中已经包含了和 Zero 相关的所有实现。
+

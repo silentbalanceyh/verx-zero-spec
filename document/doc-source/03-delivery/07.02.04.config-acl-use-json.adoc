@@ -1,0 +1,247 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+==== 配置步骤
+
+到这里，所有和Zero权限框架相关的内容就已经讲完了，本章节主要讲解配置步骤，开发人员可参考此章节配置上述所有内容。
+
+===== 权限基础配置
+
+权限基础配置在于配置用户是否有权限访问某个资源。
+
+1. 根据：`S_USER / S_ROLE / S_GROUP / S_PERMISSION` 设置账号到权限的路径数据信息。
+2. 开发自定义接口如：`/api/xxx/order`，并且将此资源接口信息录入到 `S_RESOURCE` 表和 `S_ACTION` 表中，并将 `S_ACTION` 记录挂在某个 `S_PERMISSION` 权限之下。
+
++
+--
+    - `S_RESOURCE` 中针对Profile进行资源需求配置：`MODE_ROLE / MODE_GROUP / MODE_TREE`，确保用户最终计算出来的权限集在对应的Profile之中（参考：仅配置 `MODE_ROLE = UNION`）。
+    - `S_ACTION` 中配置的 `LEVEL` 一定要大于 `S_RESOURCE` 中定义的操作级别。
+--
+
+3. 将上述配置通过 `Loader` 导入系统中，重启容器生效（后续使用管理端则不需要重启）。
+
+操作级别的内部定义：
+
+[options="header"]
+|====
+|值|符号|含义
+|0|READONLY|只读级别，最小等级。
+|1|READ|标准读取，通常是单记录读取。
+|2|READ_INTEGRATION|集成读取，通常会开放接口读取。
+|3|READ_EXPORT|从数据库中批量导出时所需。
+|4|ADD|创建和批量创建级别。
+|5|ADD_IMPORT|导入专用级别。
+|6|ADD_INTEGRATION|集成创建，通常会开放接口创建。
+|7|ADD_META|元数据创建接口，创建配置专用。
+|8|EDIT_APPROVE|审批确认更新接口，部分字段更新。
+|9|EDIT|标准编辑，更新和批量更新级别。
+|10|EDIT_INTEGRATION|集成更新，通常开放接口实现更新逻辑。
+|11|EDIT_META|元数据更新接口，更新配置专用。
+|12|DELETE|标准删除，删除和批量删除级别。
+|13|DELETE_PURGE|清除专用，通常用于数据清空。
+|14|DELETE_META|元数据删除专用，删除配置专用。
+|15|FULL|最高操作级别。
+|====
+
+===== 视图配置
+
+一般静态视图配置都是配置角色级别的视图相关信息，通常不会配置用户级视图。
+
+1. 找到权限基础配置中 `S_RESOURCE` 的主键，填充到 `S_VIEW` 中的 `RESOURCE_ID` 字段中。
+2. 没有特殊说明 `NAME` 和 `POSITION` 都可以直接配置成 `DEFAULT` 默认值。
+3. 在 `OWNER_TYPE` 中配置 `ROLE`，然后找到登录账号对应的角色ID，填充到 `OWNER` 中。
+4. 配置视图的三个核心维度：`ROWS, PROJECTION, CRITERIA`。
+5. 将上述配置的 `S_VIEW` 记录导入到系统中，重启容器生效（后续使用管理端则不需要重启）。
+
+===== 访问者配置
+
+如果牵涉到访问者配置，则遵循如下流程执行：
+
+1. 将资源定义 `S_RESOURCE` 中的资源设置成 *虚拟资源*（ `VIRTUAL = true`）。
+2. 为虚拟资源配置 *访问者语法*，两种配置模式：
+
++
+--
+    - 直接配置 `SEEK_SYNTAX` 字段生成标准化的访问者语法模块。
+    - 配置 `SEEK_CONFIG / SEEK_COMPONENT` 字段生成扩展的访问者语法模块。
+--
+
+3. 配置好之后再根据所需为资源配置访问者信息：`S_VISITANT` 表中追加相关记录。
+
+==== 示例/格式
+
+===== S_VIEW 中的 PROJECTION
+
+`S_VIEW` 表结构中的 PROJECTION 通常是 JsonArray 结构，如：
+
+[source,json]
+----
+[
+    "key",
+    "name",
+    "code",
+    "createdAt",
+    "createdBy"
+]
+----
+
+上述配置会包含两个含义：
+
+- 在读取资源过程中使用了该视图之后，只会读取 *五列* 信息。
+- 读取的 *五列* 会按照配置顺序读取，即列表中的列顺序为：`key, name, code, createdAt, createdBy`。
+
+===== S_VIEW 中的 CRITERIA
+
+`S_VIEW` 表结构中的 CRITERIA 通常是 JsonObject 结构，直接追加查询引擎语法，最终条件和请求条件按 `AND` 操作符合并。
+
+===== S_VIEW 中的 ROWS
+
+`S_ROWS` 表结构中的 ROWS 是一个 JsonObject 结构，会生成 `IN` 查询条件，如：
+
+[source,json]
+----
+{
+    "name" : [ "zero.desktop", "zero.desktop.my", "zero.desktop.my.todo-pending"],
+    "code" : [ "A", "B" ]
+}
+----
+
+[CAUTION]
+====
+您可以将上述配置片段理解成 `QR` 查询引擎的片段语法，如上述代码中如果 `name, code` 对应字段为 `NAME, CODE`，则会生成查询条件：
+
+[source,sql]
+----
+WHERE NAME IN ('zero.destkop', 'zero.desktop.my', 'zero.desktop.my.todo-pending') OR CODE IN ('A', 'B')
+----
+
+根据 `QR` 查询引擎规范，您可以按下边配置将中间连接符配置成 `AND`：
+
+[source,json]
+----
+{
+    "name": ["..."],
+    "code": ["..."],
+    "": true
+}
+----
+
+====
+
+===== S_RESOURCE 中的 SEEK_SYNTAX
+
+`SEEK_SYNTAX` 通常格式如下：
+
+[source,json]
+----
+{
+    "phase": "AFTER",
+    "data": {
+        "type": "RECORD",
+        "viewId": "`${viewId}`",
+        "identifier": "psi.pos"
+    }
+}
+----
+
+上述代码是一个单维度访问者代码，`data` 节点会包含一个 `type` 属性，它和 `phase` 会构成不同的值处理模式，此处若您的数据来自于输入数据，则可使用 "`" 符号执行 JEXL 转换，如上述数据就会根据 `type, viewId, identifier` 计算访问者的 `SEEK_KEY` 来提取访问者信息。
+
+[NOTE]
+====
+上述配置中的 `phase` 和 `data` 节点中的 `type` 最终会生成如下格式的合法值：
+
+[options="header"]
+|====
+|值|phase|type|含义
+|BEFORE_PROJECTION|BEFORE|PROJECTION|前置操作，修改查询引擎参数 projection。
+|BEFORE_CRITERIA|BEFORE|CRITERIA|前置操作，修改查询引擎参数 criteria。
+|AFTER_RECORD|AFTER|RECORD|后置操作，执行记录处理，单数据增删改的记录过滤访问者计算。
+|AFTER_ROWS|AFTER|ROWS|后置操作，多记录，执行行筛选，筛选出集合数据中的某些行数据访问者计算。
+|AFTER_COLLECTION|AFTER|COLLECTION|后置操作，多记录，执行列筛选，过滤部分属性。
+|====
+====
+
+`SEEK_SYNTAX` 的多维格式如下：
+
+[source,json]
+----
+{
+    "phase": "AFTER",
+    "selector": "io.horizon.spi.secure.ConfineKind",
+    "kind": "type",
+    "data": {
+        "ATOM": "`${identifier}/${control}`",
+        "FLOW": "`${workflow}/${node}/DEFAULT`"
+    }
+}
+----
+
+上述代码段中，访问者调用中会使用 `io.horizon.spi.secure.ConfineKind` 完成访问者选择，选择过程根据输入参数 `type` 值执行计算，由于使用了组件，所以执行过程可忽略 `data` 节点的数据信息，最终：
+
+- `type = ATOM` 会生成访问者的 `SEEK_KEY` = `<模型标识符>/<控件ID>`，动态建模可用。
+- `type = FLOW` 会生成访问者的 `SEEK_KEY` = `<工作流名称>/<节点名称>/DEFAULT`，流程引擎专用。
+
+[NOTE]
+====
+您也可以定义自己的 Confine 接口组件配置 `selector` 完成多维数据访问者扩展。Confine接口的定义如下：
+
+[source,java]
+----
+public interface Confine {
+    Future<JsonObject> restrict(JsonObject request, JsonObject syntax);
+}
+----
+
+其中此处的 `syntax` 就是 `SEEK_SYNTAX` 配置的内容，而 `request` 参数对应到前文中 `data` 节点可使用的预设参数（预设参数不包含您在 Http 请求体 `Body` 中传入的参数），预设参数如下：
+
+[options="header"]
+|====
+|参数名|默认值|含义
+|appId|无|多应用模式中，所属应用程序ID，来自请求头：`X-App-Id`。
+|appKey|无|所属应用程序的Key，敏感数据访问专用，来自请求头：`X-App-Key`。
+|sigma|无|统一标识符，来自请求头：`X-Sigma`。
+|language|无|多语言模式中，当前应用的语言信息，来自请求头：`X-Lang`。
+|tenantId|无|多租户模式中，所属租户的ID，来自请求头：`X-Tenant-Id`。
+|resourceId|无|当前请求正在访问的资源信息。
+|viewId|无|当前资源访问者所属视图ID。
+|view|DEFAULT|当前资源访问者访问的视图名称，默认 `DEFAULT`。
+|position|DEFAULT|当前资源访问者访问的视图位置，默认 `DEFAULT`。
+|====
+====
+
+===== S_VISITANT 中的 ACL_
+
+由于访问者表中的 `DM_` 字段格式和 `S_VIEW` 中保持一致，此处不再重复讲解。
+
+- DM_ROW 对应 ROWS
+- DM_QR 对应 CRITERIA
+- DM_COLUMN 对应 PROJECTION
+
+最后简单讲解下 `ACL_` 表单级语法：
+
+[options="header"]
+|====
+|字段|类型|格式和含义
+|ACL_VERGE|JsonObject|一般格式是：`field = JsonObject` 结构，包含依赖字段名和依赖字段相关配置。
+|ACL_VISIBLE|JsonArray|直接是 `[field1, field2, ...]` 结构，包含了可见性字段集，最终会转换成 Set。
+|ACL_VIEW|JsonArray|直接是 `[field1, field2, ...]` 结构，包含了只读字段集，最终会转换成 Set。
+|ACL_VARIETY|JsonObject|Json格式，用于构造 AclView/AclMap专用，执行类型为 DATA。
+|ACL_VOW|JsonObject|Json格式，用于构造 AclView/AclMap专用，执行类型为 REFERENCE。
+|====
+
+最后谈谈响应格式中的的 `\__acl` 字段，这是Zero标准数据规范中的一部分，如果某个接口（包括JsonArray返回的接口）中包含了 `__acl` 则证明该接口包含ACL控制信息，它的格式如下：
+
+[source,json]
+----
+{
+    "access": [],
+    "edition": [],
+    "fields": []
+}
+----
+
+上述格式是初期版本格式，代表：
+
+- fields：当前表单、列表能访问的所有属性集合。
+- access：您可以访问的所有属性集合。
+- edition：您可以编辑的所有属性集合。

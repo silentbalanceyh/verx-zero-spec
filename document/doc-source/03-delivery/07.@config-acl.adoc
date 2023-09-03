@@ -1,0 +1,115 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 安全管理（zero-rbac）
+
+白皮书中的权限管理主要包括：
+
+- 全局配置：zero-rbac常用模块配置以及模块中所支持的功能。
+- 消费端：XBAC模型：基于角色的RBAC（Role）、基于属性的ABAC（Attribute）、基于策略的PBAC（Policy）。
+- 认证/授权流程：再谈Zero中的 `@Wall`、详解 401/403 流程。
+- 管理端：可扩展面板式架构，现阶段版本支持 *菜单管理、流程定制* 两类，您可以扩展自己所需的不同权限管理的结构。
+
+[TIP]
+====
+Zero在线教程中讲解过可插拔模式的认证组件，此处略过认证部分（[source,java]`@Wall` ），本书主要讲解扩展模块中的授权以及 [source,java]`zero-rbac` 模块如何实现企业级需求的复杂授权流程，其中标准化认证采用了 OAuth 规范。
+====
+
+若想要启用Zero Extension中的安全管理，可在您的Maven中追加如下依赖：
+
+[source,xml]
+----
+    <!-- RBAC专用模块 -->
+    <dependency>
+        <groupId>cn.vertxup</groupId>
+        <artifactId>zero-rbac</artifactId>
+        <version>ZERO_VERSION</version> <!-- 版本跟随Zero版本 -->
+    </dependency>
+----
+
+=== 全局配置
+
+include::07.01.01.config-acl-config.adoc[]
+
+=== 消费端
+
+==== XBAC模型
+
+Zero中的基本权限主体模型如下：
+
+image::zarch-perm.png[,1280]
+
+上图中的核心概念如下：
+
+[options="header"]
+|====
+|实体表|概念|含义
+|S_USER|用户|登录系统专用账号信息表。
+|S_ROLE|角色|和账号关联的角色信息表。
+|S_GROUP|用户组|和账号关联的用户组信息表。
+|S_PERMISSION|权限|和角色相关联的权限记录表。
+|S_PERM_SET|权限集|服务于权限定义的权限集合表，主要用于管理端构造权限集合实现批量授权。
+|S_ACTION|操作|隶属于权限记录的操作集合，操作最终会绑定到对应的操作主体上。
+|====
+
+[TIP]
+====
+* 所有关联表（[source,bash]`R_` 前缀）目前都是多对多结构，一个用户可关联多个角色，一个用户可关联多个用户组，一个用户组关联多个角色，一个角色关联多个权限记录，一个权限记录包含多个 *安全操作*。
+* 用户组支持继承结构，包括父组和子组的概念，权限计算过程中，不同算法在父子级结构中发挥的作用会有所区别。
+* 角色和用户组关联过程中支持优先级，即用户在关联角色和用户组时存在 *第一角色、第一用户组* 的概念。
+
+常用的基本配置中，只要资源所需操作级别和基础算法模型计算的最终权限路径和用户所拥有的权限路径是通的，那么就可以实现基础权限的认证，这部分内容在完成本章节所有讲解之后会有更深入的说明。
+====
+
+安全操作 `S_ACTION` 对端关联到资源表 `S_RESOURCE` 和资源形成1对1的绑定，资源中定义的就是访问资源的基本要求，而S_ACTION中计算出来的结果就是登录账号所拥有的资源访问资格，当资源访问资格满足了资源基本要求时就认证通过，证明当前账号有权限访问该资源。但是、但是、但是——此处只是解决了账号：*能不能* 的问题，在资源访问之后还会有两张专用的数据表来执行 *访问多少* 的问题，这是Zero中数据域的实现原理，在后续的 *N维安全视图* 中加以说明。
+
+include::07.02.01.config-acl-use-profile.adoc[]
+include::07.02.02.config-acl-use-view.adoc[]
+include::07.02.03.config-acl-use-visitor.adoc[]
+include::07.02.04.config-acl-use-json.adoc[]
+
+=== 认证流程
+
+include::07.03.01.config-acl-flow-4xx.adoc[]
+
+=== 授权流程
+
+[TIP]
+====
+前一章节提到了标准的登录流程，本章开始讲解 Zero Extension框架中的授权流程，授权流程基于第一章的消费端，同时还会包含和安全缓存相关的内容，本章意在将整个底层数据和原理级内容给您讲清楚，如此您就可以根据实际所需拓展开发相关功能了。
+====
+
+include::07.04.01.config-acl-flow-403.adoc[]
+include::07.04.02.config-acl-flow-rest.adoc[]
+include::07.04.03.config-acl-flow-diff.adoc[]
+include::07.04.04.config-acl-flow-region.adoc[]
+
+=== 管理端
+
+==== 设计原则
+
+前文讨论了Zero权限框架中的 *消费端*，本章节开始讨论权限框架的 *管理端*，管理端的主要目的是为您定制所需要的核心配置数据，并且通过交互式界面直接为用户执行权限、视图、访问者的授权工作，管理端入口在Zero Extension框架中有三个：
+
+- 角色管理 -> 权限设置
+- 权限设置 -> 角色授权 -> 选择某个角色
+- 权限设置 -> 用户特权（现阶段版本还未放出来）
+
+管理端的主体是 *角色*，所以管理端的所有操作都是角色级的，只是在设计过程中管理端遵循如下设计原则：
+
+1. 管理端界面使用 `S_PACKET / S_PATH` 进行配置，由于所有管理端都只作用于权限、视图、访问者，所以管理模式可以统一。
+2. 管理界面分 *维度管理* 和 *配置管理*，维度管理通常用于定义：按什么方式管理，而配置管理则着眼于管理什么。
+3. 管理配置可直接扩展，对整个权限管理部分而言，多一种管理界面只是多了一条 `S_PACKET` 数据配置记录（前端可直接解析实现完整管理模式）。
+4. 现阶段开放的仅：*菜单管理* 和 *流程管理* 两部分内容。
+
+[TIP]
+====
+由于管理端的配置相对更加复杂，所以本文以现阶段已经配置好的 *菜单管理* 和 *流程管理* 为例讲解管理端的配置细节。
+====
+
+include::07.05.01.config-acl-admin-region.adoc[]
+include::07.05.02.config-acl-admin-api.adoc[]
+include::07.05.03.config-acl-admin-apid.adoc[]
+include::07.05.04.config-acl-admin-apiv.adoc[]
+include::07.05.05.config-acl-admin-pre.adoc[]
+include::07.05.06.config-acl-admin-init.adoc[]
+include::07.05.07.config-acl-admin-child.adoc[]

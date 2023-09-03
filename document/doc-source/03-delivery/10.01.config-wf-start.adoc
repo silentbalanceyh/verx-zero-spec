@@ -1,0 +1,206 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 工作流基础
+
+==== 启用工作流
+
+若要在您的Zero应用中启用工作流，您需要在 `yml` 配置中追加如下片段：
+
+[source,yaml]
+----
+## 工作流配置
+workflow:
+  name: ND-WORKFLOW-ENGINE
+  builtIn:
+    - workflow/workflow-erp.xlsx          # 办公类流程
+  resource:
+    - process.oa.assignment               # 工作交接流程
+    - process.oa.training                 # 培训管理流程
+    - process.oa.trip                     # 出差申请流程
+    - process.oa.vacation                 # 休假申请流程
+    - process.vendor.assessment           # 三方员工考核流程
+    - process.vendor.check-in             # 三方员工入场流程
+    - process.vendor.check-out            # 三方员工离场流程
+    - process.vendor.hour                 # 工时补签流程
+  database:
+    driverClassName: "com.mysql.cj.jdbc.Driver"
+    username: xc
+    password: g77KhUYXACWmnFyOuAPZ8sC6H90JF7mwc....
+    instance: DB_ND_WF
+    port: 3306
+    hostname: "ox.engine.cn"
+    jdbcUrl: "jdbc:mysql://${hostname}:${port}/${instance}?....
+----
+
+Zero会直接检查您的 `yml` 文件中是否包含了 `workflow` 节点，一旦包含则表示您告诉系统启用了工作流引擎：
+
+[options="header"]
+|====
+|节点|含义
+|name|当前工作流引擎的名称，连接云端做多应用多引擎协同时它代表当前应用工作流引擎的唯一标识。
+|builtIn|模块化架构之后，每个模块中的 `src/main/resources/workflow` 目录下的工作流定义数据导入只能在此处设置，若直接是启动器级的流程定义可忽略此配置。
+|resource|工作流名称目录，此处配置的工作流会在 *整个环境* 中包含 `workflow/<name>` 的工作流配置目录，且模块化架构下按需导入的流程才配置到 `resource` 中，不配置在该节点中的模块级流程会自动忽略，Zero框架会自动检查目录下是否存在 `workflow.bpmn` 文件来计算是否需要发布该流程。
+|database|工作流引擎使用的数据库配置，Camunda数据库规范。
+|====
+
+工作流引擎会开第二数据库用于处理工作流信息，该数据库中的表结构是标准的 Camunda 工作流引擎数据库，可直接使用 Camunda 的 Web 控制台访问、监控、修改数据库中的数据。
+
+[CAUTION]
+====
+Zero为了追踪工作流节点相关信息，对工作流的BPMN文件做过更改，简单说：使用 Camunda Modeler 工具设计的BPMN文件和最终发布到数据库中的BPMN文件不一样，Zero在流程中的每一条线上追加了监听器（ `io.vertx.mod.workflow.plugin.FlowSequenceListener` ），可直接监听流程变化并对流程记录做相关更改，在 `bpmn.js` 中能高亮流程执行过程就是基于此改动。
+====
+
+==== 基本规范
+
+请参考 link:#__SPEC_DATA_PATH[目录规范, window="_blank"] 作为基本信息理解启动器级和模块级的基础目录规范，工作流部分只遵循 *启动器级* 的目录规范，简单说此处的目录如 `workflow/` 表示启动器项目和模块项目在开发环境中（Development）都遵循 `src/main/resources` 下的工作流配置目录。
+
+工作流配置部分不考虑模块化操作，只要流程命名不重复，它遵循 *启动器级* 的目录规范，此处不考虑模块化操作的含义并非配置文件不放在模块中，而是不走 `initialize.yml / initialize.json` 结构处理配置文件的导入，您可以理解成工作流引擎的流程发布有自成体系的 *模块化架构*，而它独立的模块化架构的配置文件路径和 *启动器* 对齐，依旧会从 `workflow/` 中加载配置文件，只是模块中流程需和 `builtIn / resource` 协同工作。
+
+工作流配置过程中的基本规范如下：
+
+[options="header"]
+|====
+|规范名|详细说明
+|目录规范 a|
+- 所有工作流定义（元数据）的Excel配置文件存放于 `workflow/` 目录下，并在启用工作流时进行配置、导入、发布：
++
+--
+- 启动器级：启动器级的Excel配置文件基于数据导入规则，可直接放在 `init/oob` 目录下，而单个工作流的配置文件依旧放在 `workflow/` 目录下。
+- 模块级：模块级的Excel配置文件不会自动被导入到数据库中，只能通过工作流的 `builtIn` 属性指定工作流元数据信息，通常该文件会放到模块级的 `workflow/` 根目录下。
+--
+|流程命名 a|
+通常流程使用 `process` 前缀进行命名，最终格式为 `process.<module>.<workflow>` 的格式，如下图：
+image:zwf-code.png[0,400]
+
+该名称会填充两个字段 `code` 和 `definitionKey`，这两个字段在现阶段版本中的值是一致的，但二者作用和使用场景有所区别。
+|关联配置 |所有工单的关联配置位于 `workflow/linkage` 目录之下，由于该目录未以 `process` 作前缀，流程解析发布组件会忽略该目录，`linkage` 配置可在任意模块中进行，但全局需维持文件名的唯一性，若是您自定义的关联配置推荐追加您应用前缀到文件名中防止重复。
+|特殊文件名 a|
+- 所有流程定义的 BPMN 文件固定文件名 `workflow.bpmn`，即您的目录下必须包含流程图定义的BPMN文件：`workflow/<name>/workflow.bpmn`。
+- 所有流程历史表单命名固定文件名 `workflow.history.json`，即您的目录下必须包含历史工单定义的表单配置文件：`workflow/<name>/workflow.history.json`，当然若您移除查看历史工单的菜单，该配置可省略。
+|表单文件名 a|
+为了区分各自不同表单文件，表单文件名会带上 *流程关键字* 前缀，和节点配合形成：
+
+- BPMN的表单名为 `<process.keyword>.<node>.form` 格式。
+- JSON的表单名（Zero专用表单配置）为 `<process.keyword>.<node>.form.json` 格式（BPMN表单 + `.json` 后缀）格式。
+|====
+
+==== 流程图规范
+
+Camunda流程图的基本规范如下：
+
+[options="header"]
+|====
+|规范名|详细说明
+|流程节点|流程节点命名全部以 `e.` 前缀，在整个流程图中不重复。
+|流程线|流程线命名全部以 `t.` 前缀，在整个流程图中不重复。
+|分支节点|分支节点以流程节点名带上 `.d` 后缀，在整个流程图中不重复。
+|====
+
+[TIP]
+====
+不同文件前后缀的含义：
+
+- `e` 前缀，e - Event，参考 Camunda 中的定义，节点皆事件。
+- `t` 前缀，t - Transaction，主要分自动和手动两种，现阶段只支持手动转移。
+- `d` 后缀，d - Decision，分支决策节点，注：*分支决策节点不一定是二分分支，Zero支持多分支*。
+====
+
+1. Modeler工具中节点ID设置：
++
+image:zwf-node-id.png[0, 800]
+2. Modeler工具中节点类型设置：
++
+image:zwf-node-type.png[0,800]
+
+3. Modeler工具中绑定表单在如下位置（先选中节点，然后在表单中设置）：
++
+image:zwf-flow-form.png[0,800]
+
++
+--
+在表单绑定过程，现在的版本中以下两个字段必须遵循规范：
+
+[options="header"]
+|====
+|属性|值
+|Type| `Embedded or External Task Forms`（当前版本中必须使用此固定值）。
+|Form key| 按 Camunda 规范使用前缀：`camunda-forms:deployment`，后跟表单名。如此处是 `trip.draft.form` 则表示和 `workflow.bpmn` 同级目录下一定会有一个Camunda表单定义文件 `trip.draft.form`。
+|====
+--
+
+==== 范例：出差申请
+
+下边以出差申请流程为例：
+
+image:zwf-flow.png[0,1024]
+
+[CAUTION]
+====
+流程图中 `E` 标记为 *非分支* 节点，`T` 标记为 *转移线*，`D` 标记为 *分支* 节点，现阶段的版本中，所有节点走的是手工流程，中间节点只能选择 Camunda 中的 `User Task` 类型，选中之后节点左上角会有一个 *用户图标*
+
+_之后章节我们会回顾讲解该例子，此处只演示 *命名规范*，不讨论配置和表单配置细节，包括流程引擎高级功能都不在此处讨论_。
+====
+
+流程图的详细说明：
+
+1. 上述流程图中开始节点名称为 `e.start`，结束节点名称为 `e.end`（约定，您也可以变更，变更之后配置文件中也需要随之变更），最终每个非分支节点命名如下表：
+
++
+[options="header"]
+|====
+|标记|节点文字|节点ID|Camunda类型
+|E1|开始| `e.start` | Start Event 
+|E2|新建员工出差申请单| `e.draft` | User Task
+|E3|工作交接内容确认| `e.approve` | User Task
+|E4|领导审批| `e.admit` | User Task
+|E5|结束| `e.end` | End Event
+|====
+
+2. 分支节点通常为某个节点（ `e.xx` ）的下一个节点，所以分支节点命名直接在节点之后追加 `.d` 后缀，上述示例中分支节点最终命名如下：
+
++
+[options="header"]
+|====
+|标记|节点ID
+|D1| `e.start.d`
+|D2| `e.approve.d`
+|D3| `e.admit.d`
+|====
+
+3. 转移线通常使用（ `t.` ）前缀，而且转移线命名中会标注哪个节点往哪个节点转移：
+
++
+[options="header"]
+|====
+|标记（文字）|线ID|开始节点|结束节点
+|T1| `t.start-d` | `e.start` image:i-run.png[0,22] | `e.start.d`
+|T2（暂存）| `t.start-draft` | `e.start` | `e.draft`
+|T3（直接提交）| `t.start-approve` | `e.start` | `e.approve`
+|T4| `t.draft-approve` | `e.draft` | `e.approve`
+|T5| `t.approve-d` | `e.approve` | `e.approve.d`
+|T6（确认）| `t.approve-admit` | `e.approve` | `e.admit`
+|T7| `t.admit-d` | `e.admit` | `e.admit.d`
+|T8（确认）| `t.admit-end` | `e.admit` | `e.end` image:task-t-tpl.png[0,22]
+|T9（审批未通过）| `t.admit-draft` | `e.admit` | `e.draft`
+|T10（审批未通过）| `t.approve-draft` |  `e.approve` | `e.draft`
+|====
+
+仔细对照流程图上的标记和命名表，最终可总结成以下简化规则：
+
+1. 节点类：
++
+--
+1. 主节点：`e.<name>` 前缀命名。
+2. 分支节点：`e.<name>.d` 前缀和后缀共同命名。
+3. 开始/结束节点：`e.start / e.end` 命名。
+--
+
+2. 转移线类：
++
+--
+1. 下一节点是分支节点：`e.<name>-d` 命名。
+2. 下一节点是非分支节点：`e.<name.from>-<name.to>` 命名。
+--
+
+_若您想要顺利使用Zero Extension中的工作流引擎，上边所有规则以及每一个细节都要彻底理解，且按照固定规范进行约定命名，否则您将无法直接重用现存的很多标准化配置。_

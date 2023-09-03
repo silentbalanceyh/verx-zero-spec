@@ -1,0 +1,127 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 项目管理（保留）
+
+==== 任务管理
+
+任务管理统一使用登录 *VPN* 之后的管理平台，本章节主要针对项目管理过程中任务管理进行说明，此处任务管理为一个示例，目前很少使用，但项目管理部分可参考。
+
+===== 任务类型（Type）
+
+任务类型参考下表
+
+
+[options="header",cols="20,10,70"]
+|====
+|类型|分类|说明
+|image:task-t-pkg.png[PKG,16] 包 / 开发|包任务|核心开发包，所有开发类任务放在此分类中
+|image:task-t.png[RFC,16] 待办 / 开发任务|单任务|常用开发类专用任务，功能模块，新任务都为此任务相关
+|image:task-bug.png[BUG,16] 待办 / BUG修复|单任务|「*主要问题表*」BUG修复，测试过程中问题提交到此任务中，创建成修复任务
+|image:task-rfc.png[RFC,16] 待办 / RFC变更部署|单任务|变更修复，新模块升级，新功能开发，主要面向生产环境的核心任务
+|image:task-t-ops.png[OPS,16] 待办 / 脚本开发|单任务|运维脚本、数据导入导出所有运维类相关任务
+|image:task-risk.png[RISK,16] 包 / 评估验证|包任务|POC分析和技术探索专用评估验证包，所有评估类包任务全部放到该分类中
+|image:task-t-explorer.png[EXPLORER,16] 待办 / POC技术验证|单任务|探索型任务，未知结果的POC，技术评估和关键技术攻关
+|image:task-t-personal.png[PERSONAL,16] 待办 / 培训&学习|单任务|通常是个人任务，包括个人Demo、培训，以及发放的成长型推进任务
+|image:task-tc.png[TC,16] 包 / 测试|包任务|UAT测试、功能测试、性能测试任务专用包任务
+|image:task-tc-unit.png[UNIT,16] 待办 / 测试任务|单任务|配合开发任务的测试任务，包括单元测试、UAT测试、集成测试等
+|image:task-rel.png[REL,16] 包 / 部署上线|包任务|生产测试环境整体部署专用任务
+|image:task-sys-req.png[SYSREQ,16] 平台 / 需求分析|标准文档|平台级开发需求说明书
+|image:task-sys-tc.png[SYSTC,16] 平台 / 测试用力|标准文档|平台集测试说明书
+|image:task-app-req.png[APPREQ,16] 应用 / 需求分析|标准文档|应用模块开发需求说明书
+|image:task-app-tc.png[APPTC,16] 应用 / 测试用力|标准文档|应用模块测试说明书
+|image:task-t-tpl.png[TPL,16] @任务 / TPL模板|@@|模板任务，发放给所有人的模板任务
+|====
+
+===== 任务基本
+
+1. 所有带有 *@* 符号的任务为广播任务，广播任务表示每个人必须执行和完成的任务（自建任务模式）
+
++
+--
+[options="header",cols="25,75"]
+|====
+|属性|默认值
+|Type|image:task-t-tpl.png[TPL,16] Task Tpl
+|Categories|@SELF TASK
+|Title|通常使用@TPL前缀
+|Severity|Must Have
+|Priority|Highest
+|====
+--
+
+2. 任务标题基本命名规范
+
++
+--
+- 2.1.只有广播任务使用 *@* 符号前缀。
+- 2.2.应用级任务可不使用应用前缀，但在分类过程中需标注所属应用相关信息。
+- 2.3.任务标题中的数字带单位表示该任务的预估时间。
+- 2.4.个人任务全部使用 *@PST* 前缀，个人任务可不填写任何时间相关信息。
+--
+
+3. 分类前缀参考：
+
++
+--
+[options="header",cols="25,75"]
+|====
+|前缀|含义
+|BUG|BUG修复类任务
+|DAT|数据导入导出类任务
+|MOD|功能开发、模块开发类任务
+|TST|测试任务
+|@PST|个人培训类任务
+|@TPL|发放的模板任务
+|====
+--
+
+4. 所有任务最终会有一个期望，表示该任务的完成目标。
+
+==== BUG管理
+
+BUG管理主要牵涉开发模式，整体规范如下：
+
+1. 所有公共模块的问题提交到：<https://gitee.com/silentbalanceyh/scaffold-zero/issues> 中
+2. 各自应用现存的所有BUG放到自己公司的企业库中。
+
+===== 模板说明
+
+BUG问题模板如下：
+
+image:zpm-issue-tpl.png[0,960]
+
+1. 重现步骤有截图最好带上截图提交
+2. 问题集中，主要牵涉：
++
+--
+   - 启用安全模块之后的账号信息提供
+   - 前端界面入口
+   - 牵涉到 *模型* 部分的提供模型的分类和统一标识符
+--
+3. 其他的文本部分随意。
+
+===== 标签
+
+image:zpm-issue-label.png[0,800]
+
+问题标签按Zero核心产品线进行分类，除 *任务* 和 *培训* 以外，其他内容最好都加上标签方便解决。
+
+[options="header"]
+|====
+|标签|关联站点|描述
+|zero-framework | <http://www.vertxup.cn> |核心框架问题
+|zero-extension | 同上 |扩展框架问题
+|zero-cloud | <http://www.vertx-cloud.cn> |云原生工具箱问题
+|zero-ui | <http://www.vertx-ui.cn> |前端框架问题
+|zero-ai | <http://www.vertx-ai.cn> |自动化脚本问题
+|====
+
+===== Polarion联动
+
+Polarion会记录所有任务信息，而Gitee只局限于开发和机器人系统，所以基本准则如：
+
+1. 任何任务细节（包括截图、步骤）不出现在 Polarion 中，直接在Gitee中提交相关Issue。
+2. 应用级的 Issue 提交到各自的私库，对外不公开，虽然 Polarion 可以看到相关链接，但只有有权限的人员可以访问。
+3. Gitee上任何Issue都需在 Polarion 中做好记录，直接使用外置链接关联。
+

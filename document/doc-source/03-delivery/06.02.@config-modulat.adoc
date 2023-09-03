@@ -1,0 +1,23 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 模块化（zero-berrery）
+
+模块化配置是从 Zero `0.9` 开始的核心功能，现阶段所有 Zero Extension 中的模块都已经按照Zero规范模块化了，基于模块化操作您可以很方便扩展相关功能到系统中，并且可以很方便对模块进行License授权、启用、禁用、安装、卸载等各种操作，到达所见即所得的热部署效果。
+
+若想要启用Zero Extension中的模块化配置，可在您的Maven中追加如下依赖：
+
+[source,xml]
+----
+    <!-- 模块化专用 -->
+    <dependency>
+        <groupId>cn.vertxup</groupId>
+        <artifactId>zero-battery</artifactId>
+        <version>ZERO_VERSION</version> <!-- 版本跟随Zero版本 -->
+    </dependency>
+----
+
+include::06.02.01.config-modulat-route.adoc[]
+include::06.02.02.config-modulat-ai.adoc[]
+include::06.02.03.config-modulat-setting.adoc[]
+

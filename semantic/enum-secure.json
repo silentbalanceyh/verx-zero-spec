@@ -1,0 +1,31 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/semantic/enum-secure.json",
+    "__package__": {
+        "ScDim": "io.aeon.eon.em",
+        "ScUi": "io.aeon.eon.em"
+    },
+    "$defs": {
+        "ScDim": {
+            "type": "string",
+            "description": "维度分类, NONE:无, FLAT:列表, TREE:树型, FOREST:森林",
+            "enum": [
+                "NONE",
+                "FLAT",
+                "TREE",
+                "FOREST"
+            ]
+        },
+        "ScUi": {
+            "type": "string",
+            "description": "数据分类，NONE:无, WEB:静态专用, DAO:静态接口, ATOM:动态接口, DEFINE:用户自定义",
+            "enum": [
+                "NONE",
+                "WEB",
+                "DAO",
+                "ATOM",
+                "DEFINE"
+            ]
+        }
+    }
+}

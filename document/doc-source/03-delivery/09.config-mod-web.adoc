@@ -1,0 +1,4 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 动态界面（zero-ui）

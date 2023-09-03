@@ -1,0 +1,184 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 验证规则
+
+验证规则主要针对 `optionConfig.rules` 的配置部分的配置生效，您可以直接配置各种有用的验证器。参考配置：
+
+[source,json]
+----
+{
+    "optionConfig.rules": [
+        "required,请输入仓库名称，名称不可为空！"
+    ]
+}
+----
+
+上述配置是最常用的配置，此处的规则中也可以直接使用 `AntD` 的默认验证器配置，由于默认验证器配置在官方文档中存在，所以就不在这里重复，本章主要讲解部分常用的 **自定义验证器**。
+
+====
+下边验证器都是自定义扩展验证器，所以标题中的值等价于 `validator=<title>`。
+====
+
+==== existing
+
+存在性验证专用配置（高频验证器）。参考配置：
+
+[source,json]
+----
+{
+    "validator": "existing",
+    "message": "对不起，支行名称重复！",
+    "config": {
+        "uri": "/api/bank/existing",
+        "method": "POST",
+        "params": {
+            "sigma": "PROP:app.sigma"
+        }
+    }
+}
+----
+
+==== uri
+
+远程延迟验证，更广义的 Ajax 验证，可实现各种 **不可思议** 的验证方式，开发人员阅读源代码自行理解。
+
+==== filename
+
+合法文件名验证。参考配置：
+
+[source,json]
+----
+{
+    "validator": "filename",
+    "message": "对不起，目录名包含特殊字符，请检查！"
+}
+----
+
+==== required
+
+必填验证，此验证器和最早示例中的默认 `required` 有所区别，此验证器属于增强型，可检查 `Array`，`Object` 等复杂数据结构。
+
+[source,json]
+----
+{
+    "validator": "required",
+    "message": "对不起，订单项不可为空，请添加订单项！"
+}
+----
+
+==== mix
+
+最小值验证器（增强型）。参考配置：
+
+[source,json]
+----
+{
+    "validator": "min",
+    "config": {
+        "min": 0
+    },
+    "message": "早餐券不能为负数！"
+}
+----
+
+==== max
+
+最大值验证器（增强型）。
+
+==== range
+
+范围验证器。参考配置：
+
+[source,json]
+----
+{
+    "validator": "range",
+    "config": {
+        "min": 0,
+        "max": 8
+    },
+    "message": "超预订数量只能在合理的 0 ~ 8 的范围！"
+}
+----
+
+==== currency
+
+货币验证器。参考配置：
+
+[source,json]
+----
+{
+    "validator": "currency",
+    "message": "对不起，价格不能为负"
+}
+----
+
+==== after
+
+在目标时间之后
+
+[source,json]
+----
+{
+    "validator": "after",
+    "message": "离店时间必须晚于到店时间！",
+    "config": {
+        "to": "arriveTime"
+    }
+}
+----
+
+==== before
+
+在目标时间之前
+
+==== less
+
+增强型小于某值
+
+[source,json]
+----
+{
+    "validator": "less",
+    "message": "拆分金额必须小于原始金额！",
+    "config": {
+        "to": "amount"
+    }
+}
+----
+
+==== lessOr
+
+增强型小于等于某值
+
+==== great
+
+增强型大于某值
+
+==== greatOr
+
+增强型大于等于某值
+
+==== same / equal
+
+相同值验证
+
+[source,json]
+----
+{
+    "validator": "same",
+    "message": "两次输入密码不一致！",
+    "config": {
+        "to": "npassword"
+    },
+    "condition": [
+        "to.length >= 8"
+    ]
+}
+----
+
+==== diff
+
+不同值验证

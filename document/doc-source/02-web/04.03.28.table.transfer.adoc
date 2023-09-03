@@ -1,0 +1,109 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiTableTransfer`
+
+表格穿梭框，更为复杂的穿梭框组件，配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "items,选择商品,24,,aiTableTransfer",
+        "optionJsx.config.datum": "source=hotel.commodity,key=key,label=code",
+        "optionJsx.config.tree": "text=:name（:code）,parent=parentId",
+        "optionJsx.config.filter": [
+            "code",
+            "name",
+            "helpCode"
+        ],
+        "optionJsx.config.search": {
+            "placeholder": "商品编码/名称/助记码"
+        },
+        "optionJsx.config.checkable": "leaf",
+        "optionJsx.config.initialize": {
+            "payTermId": "termId",
+            "quantity": "NUMBER:1"
+        },
+        "optionJsx.config.table": {
+            "columns": [
+                {
+                    "dataIndex": "key",
+                    "title": "操作",
+                    "$config": {
+                        "text": "删除",
+                        "confirm": "确认从选中项中移除该项目？"
+                    }
+                },
+                "name,商品名称",
+                {
+                    "metadata": "payTermId,账单项,ROW",
+                    "$config": {
+                        "field": "aiTreeSelect",
+                        "jsx": {
+                            "style": {
+                                "width": "160px"
+                            },
+                            "config": {
+                                "datum": "source=term.all,key=key,label=name",
+                                "tree": "text=label,parent=parentId",
+                                "selection": "mode=LEAF,field=isLeaf"
+                            }
+                        }
+                    }
+                },
+                "code,代码",
+                "unit,单位",
+                {
+                    "metadata": "quantity,数量,ROW",
+                    "$config": {
+                        "field": "aiInputNumber",
+                        "jsx": {
+                            "min": 1
+                        }
+                    }
+                },
+                {
+                    "metadata": "price,单价,CURRENCY"
+                },
+                {
+                    "metadata": "amount,金额,TOTAL",
+                    "$config": {
+                        "currency": "￥",
+                        "op": "M",
+                        "field": [
+                            "quantity",
+                            "price"
+                        ]
+                    }
+                },
+                {
+                    "metadata": "helpCode,助记码"
+                }
+            ]
+        }
+    }
+]
+----
+
+表格穿梭框如下：
+
+image:exp-input-tabletransfer.png[0,800]
+
+===== 特殊属性
+
+配置属性表：
+
+[options="header",cols="3,7"]
+|====
+|属性路径|含义
+|`optionJsx.config.datum`|左侧构造树型结构的基础数据源，此处从字典数据中加载和读取。
+|`optionJsx.config.tree`|左侧树的构造配置，符合 Zero UI 中的标准树型配置结构。
+|`optionJsx.config.filter`|左侧过滤栏（可直接过滤树结构，主要是过滤子节点）。
+|`optionJsx.config.search`|左侧搜索框相关配置，`<Input.Search/>` 的所有属性都生效。
+|`optionJsx.config.checkable`|左侧树的选择模式，`leaf` 表示只能选择子节点。
+|`optionJsx.config.initialize`|从左侧 **树记录** 转换到右侧表格记录时的字段映射转换关系，每次初始化时的数据提取映射配置。
+|`optionJsx.config.table`|右侧列表配置，配置右侧的表格列等相关信息。
+|====
+

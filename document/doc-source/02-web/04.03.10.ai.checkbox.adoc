@@ -1,0 +1,56 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiCheckbox` (A)
+
+对应 `AntD` 中的 `<CheckBox.Group/>` 组件 或 `<Switch/>` 开关组件，一般情况下二选一的模式是最常用的。
+
+两种模式之间的切换依赖 `optionJsx.mode` 属性，若此属性设置为 `SWITCH` 的值切换到 **开关** 模式，反之若使用 `CHECKBOX`（默认值不用填写）则切换到 **勾选** 模式。
+
+===== 启用/禁用
+
+此组件最常用的一种模式是单个 `CheckBox` 的勾选：
+
+[source,json]
+----
+[
+    {
+        "metadata": "active,启用,14,,aiCheckbox",
+        "optionConfig": {
+            "valuePropName": "checked"
+        }
+    }
+]
+----
+
+上述模式几乎在每个表单中都存在，用于设置 **启用/禁用** 相关状态。
+
+===== 开关配置
+
+除开上述的 **勾选** 之外，此组件还支持 **开关** 模式，配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "isHidden,是否隐藏,8,,aiCheckbox",
+        "optionJsx": {
+            "mode": "SWITCH",
+            "checkedChildren": "隐藏按钮",
+            "unCheckedChildren": "显示按钮"
+        },
+        "optionConfig": {
+            "valuePropName": "checked"
+        }
+    }
+]
+----
+
+===== 多选配置
+
+多选配置和 `aiSelect / aiRadio` 设置选项一样，此处就不重复讲解了，设置下边属性可开启多选：
+
+- `optionJsx.config.items`
+- `optionJsx.config.datum`
+

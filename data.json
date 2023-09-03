@@ -1,0 +1,157 @@
+{
+    "_config": {
+        "expired": {
+            "table": {
+                "className": "web-table",
+                "bordered": true,
+                "pagination": false,
+                "scroll": {
+                    "x": "max-content"
+                },
+                "columns": [
+                    "orderSerial,订单号",
+                    "serial,排房编号",
+                    {
+                        "metadata": "leader,是否团队,LOGICAL",
+                        "$mapping": {
+                            "true": "是",
+                            "false": "否"
+                        }
+                    },
+                    "user,联系人/领队,RENDERS",
+                    "phone,联系电话",
+                    {
+                        "metadata": "roomTypeId,房间类型,DATUM",
+                        "$datum": "source=room.type,value=key,display=name"
+                    },
+                    "roomNumber,房号",
+                    {
+                        "metadata": "arriveTime,计划到店,DATE",
+                        "$format": "YYYY年MM月DD日 HH:mm"
+                    },
+                    {
+                        "metadata": "leaveTime,计划离店,DATE",
+                        "$format": "YYYY年MM月DD日 HH:mm"
+                    }
+                ]
+            },
+            "tab": "未及时入住",
+            "action": [
+                {
+                    "text": "取消入住",
+                    "confirm": "该操作将会取消已排房未入住的订单信息，释放房间资源，请线下确认客人的确不会到来，再执行该操作。确认取消？",
+                    "success": "恭喜，您选择的入住/排房记录已成功取消！",
+                    "executor": "rxSchedule"
+                }
+            ]
+        },
+        "waiting": {
+            "table": {
+                "className": "web-table",
+                "bordered": true,
+                "pagination": false,
+                "scroll": {
+                    "x": "max-content"
+                },
+                "columns": [
+                    "orderSerial,订单号",
+                    "serial,订单项编号",
+                    {
+                        "metadata": "status,订单状态,DATUM",
+                        "$datum": "source=order.status,value=code,display=name"
+                    },
+                    {
+                        "metadata": "arriveTime,计划到店,DATE",
+                        "$format": "YYYY年MM月DD日 HH:mm"
+                    },
+                    {
+                        "metadata": "leader,是否团队,LOGICAL",
+                        "$mapping": {
+                            "true": "是",
+                            "false": "否"
+                        }
+                    },
+                    "user,联系人/领队,RENDERS",
+                    "phone,联系电话",
+                    {
+                        "metadata": "roomTypeId,房间类型,DATUM",
+                        "$datum": "source=room.type,value=key,display=name"
+                    },
+                    {
+                        "metadata": "roomCounter,数量",
+                        "$expr": ":value间"
+                    },
+                    {
+                        "metadata": "leaveTime,计划离店,DATE",
+                        "$format": "YYYY年MM月DD日 HH:mm"
+                    }
+                ]
+            },
+            "tab": "今日未排房",
+            "action": [
+                {
+                    "text": "取消订单",
+                    "confirm": "该操作会直接取消订单项中的相关预定信息，确认执行取消？",
+                    "success": "恭喜，您选择的订单项已成功取消！",
+                    "executor": "rxOrderItem"
+                }
+            ]
+        },
+        "today": {
+            "table": {
+                "className": "web-table",
+                "bordered": true,
+                "pagination": false,
+                "scroll": {
+                    "x": "max-content"
+                },
+                "columns": [
+                    "orderSerial,订单号",
+                    "serial,订单项编号",
+                    {
+                        "metadata": "leader,是否团队,LOGICAL",
+                        "$mapping": {
+                            "true": "是",
+                            "false": "否"
+                        }
+                    },
+                    "user,联系人/领队,RENDERS",
+                    "phone,联系电话",
+                    {
+                        "metadata": "roomTypeId,房间类型,DATUM",
+                        "$datum": "source=room.type,value=key,display=name"
+                    },
+                    {
+                        "metadata": "roomCounter,数量",
+                        "$expr": ":value间"
+                    },
+                    {
+                        "metadata": "arriveTime,计划到店,DATE",
+                        "$format": "YYYY年MM月DD日 HH:mm"
+                    },
+                    {
+                        "metadata": "leaveTime,计划离店,DATE",
+                        "$format": "YYYY年MM月DD日 HH:mm"
+                    }
+                ]
+            },
+            "tab": "明日计划入住",
+            "action": [
+                {
+                    "text": "取消订单",
+                    "confirm": "该操作会直接取消订单，切该订单不会参与明日排房，确认执行取消？",
+                    "success": "恭喜，您选择的订单项已成功取消！",
+                    "executor": "rxOrder"
+                }
+            ]
+        }
+    },
+    "_alert": {
+        "message": "订单夜审",
+        "description": [
+            "未及时入住：系统默认会保留\"未及时入住\"的订单，您可以在夜审过后继续办理入住，或在本界面`取消入住`。",
+            "明日计划入住：如果原计划不变，直接点击\"下一步\"，若客人明日不再入住，请在本界面`取消订单`；明日计划入住中不包含已排过房的订单，排过房的订单无法在系统中执行取消。",
+            "未排房：如果订单未排房，订单夜审完成后系统会自动保留该订单，明日继续排房，除非您在本界面`取消订单`。"
+        ]
+    }
+}

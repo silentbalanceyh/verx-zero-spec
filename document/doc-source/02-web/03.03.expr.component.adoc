@@ -1,0 +1,919 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 组件解析器
+
+本章节讲解 **组件解析器**，组件解析器位于 **原子解析器** 之上，它的解析通常根据场景有所区别，不同场景下 **索引** 对应的属性名不同。
+
+==== 窗口解析器
+
+Zero UI中的窗口解析器主要分如下三种：
+
+1. 弹出窗口，对应 `AntD` 中的 `<Modal/>` 组件。
+2. 抽屉窗口，对应 `AntD` 中的 `<Drawer/>` 组件。
+3. 浮游窗口，对应 `AntD` 中的 `<Popover/>` 组件。
+
+===== 窗口连接
+
+Zero UI中的窗口连接是一种比较 **怪异** 的模式，这种模式拥有历史原因：
+
+[WARNING]
+====
+H5中现阶段已经支持表单内 `<form/>` 的不同方式的提交按钮 `<button/>、<input/>`，同时也可以直接支持表单外的组件来提交（Segment模式），但Zero UI最早开发的时候，表单外的提交模式还没成型和落地，所以使用了比较原生态的一种 **协变** 做法来处理窗口连接。
+====
+
+它的原理图如下：
+
+image:exp-app-cid.jpg[0,800]
+
+1. 窗口外和窗口内部表单会形成一个父子级结构，二者使用了不同的 `React` 组件来完成组装。
+2. 外窗口有两个核心变量（位于 `state` 中）：
++
+--
+- `$visible`：控制窗口的显示和隐藏，若触发函数 `rxClose` 则会直接关闭窗口，将此状态值设置成 `false`。
+- `$submitting`：控制窗口外层按钮的 **防重复提交**，点击提交按钮之后不论是 `Ok` 还是 `Cancel` 在窗口级都会处于加载状态。
+--
+3. 提交按钮主要分两层：
++
+--
+- 内层为表单内渲染的提交按钮（`display = none`），该提交按钮带 id 属性（如 `id=$opSave`），此按钮虽然对用户不可见，但属于 **被连接点**。
+- 外层为窗口中的渲染按钮，一般是确认，属于 **连接触发点**，它内置会直接调用 `Ux.connectId("$opSave")` 执行代码触发内置按钮的点击事件。
+- 上述两个按钮之间的交互就是本章的 **窗口连接**。
+--
+4. 最后 `rxClose` 函数作为窗口关闭函数会从父组件（窗口）传入到子组件（表单）中，当表单提交完成后，可直接触发关闭，此时还会重设 **防重复提交** 状态。
+
+===== 弹出窗口
+
+弹出窗口属性的定义如下：
+
+[source,js]
+----
+    [
+        "title",
+        "okText",
+        "cancelText",
+        "visible",
+        "width",
+        "maskClosable",
+        "onOk",
+        "component"
+    ]
+----
+
+消费示例如下：
+
+[source,json]
+----
+{
+    "_window": "配置信息,选择,关闭,false,800,true,$opSaveApi"
+}
+----
+
+上述消费的配置最终会解析成如下：
+
+[source,js]
+----
+{
+    "title": "配置信息",
+    "okText": "选择",
+    "cancelText": "关闭",
+    "visible": false,
+    "width": 800,
+    "maskClosable": true,
+    "onOk": () => Ux.connectId("$opSaveApi"),
+    "component": null
+}
+----
+
+上述配置中的基础定义遵循 `AntD` 组件中的 `<Modal/>` 属性信息，详细属性可参考官方文档进行解读。由于 `AntD` 新版本使用了 `open` 代替 `visible` 属性，为了保证整个框架向前兼容型，所以此处依旧使用 `visible` 属性，Zero UI框架会自动执行转换。此处的 `visible` 属性需要如下解读：
+
+- 上述 `visible` 只是一个初始状态，通常弹出框的默认状态是 `visible = false` 的，但有会有类似 **通知板** 的情况（默认就是打开状态）；实际执行过程中 `visible` 通常会和窗口组件的 `$visible` 状态值绑定到一起，并结合 `rxClose` 的关闭函数实现完整的窗口闭环。
+- `onOk` 在此处配置的是连接点的 `id`，前文已经讲过 **窗口连接** 相关知识点，此处的 `onOk` 最终会解析成一个 **触发函数**。
+
+弹出窗口完整的属性表如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`title`|当前窗口的标题显示文字，一般由外层配置。
+|1|`okText`|确认按钮显示的文字，若没有配置则省略 **确认按钮**，某些场景下弹出窗口不依赖提交，直接提供关闭按钮即可。
+|2|`cancelText`|取消按钮文字，若只有单独按钮可以考虑修正成 **关闭**。
+|3|`visible`|窗口默认状态是显示还是隐藏。
+|4|`width`|窗口的宽度，宽度值一般是以 `px` 像素为单位，实际执行过程中也可以使用 `xx%` 的格式，该值会注入 CSS 的属性中去。
+|5|`maskClosable`|点击遮罩效果时是否允许关闭，默认一般点击遮罩不允许关闭（直接使用 `$visible` 控制），若设置成 true 则点击时可关闭窗口。
+|6|`onOk`|连接点的按钮 `id`，通常设置成 `<Button id="xxx"/>`，此处的 `xxx` 则是 id 值。
+|7|`component`|默认 null，一般子元素会在编程过程中直接传入，就不会启用 `component` 属性了，若从 **编程模式** 切换到 **配置模式**，此属性就是必须的，表示内置子组件的组件名称。
+|====
+
+[TIP]
+====
+编程过程中您可以使用下边代码执行 **纯解析** 流程：
+
+[source,js]
+----
+import Ux from 'ux';
+
+// expression格式：
+// 1. 字符串格式：配置信息,选择,关闭,false,800,true,$opSaveApi
+// 2. 标准格式：{}
+const config = Ux.aiExprWindow(expression)
+----
+====
+
+===== 抽屉窗口
+
+抽屉窗口的属性定义如下：
+
+[source,js]
+----
+    [
+        "title",
+        "placement",
+        "width",
+        "closable",
+        "maskClosable",
+        "visible"
+    ]
+----
+
+消费示例如下：
+
+[source,json]
+----
+{
+    "window.extra.view": "视图管理,right,400,true,false",
+}
+----
+
+上述消费的配置最终会解析成如下：
+
+[source,js]
+----
+{
+    "title": "视图管理",
+    "placement": "right",
+    "width": 400,
+    "closable": true,
+    "maskClosable": false,
+    "visible": false
+}
+----
+
+和 **窗口配置** 有区别的点在于抽屉窗口配置没有 **确认** 按钮，只包含了关闭按钮；其中还有一点在于 **抽屉窗口** 不存在窗口连接的功能，其内部不用调用 `Ux.connectId` 的API来同步两个不同按钮的状态。
+
+抽屉窗口完整的属性表如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`title`|窗口标题。
+|1|`placement`|抽屉方向，主要包含`top, bottom, left, right`四个值。
+|2|`width`|抽屉窗口的宽度，一般`left, right`使用，如果`top, bottom`则该值表示高度。
+|3|`closable`|是否支持`关闭`功能。
+|4|`maskClosable`|点击遮罩是否允许关闭。
+|5|`visible`|该窗口默认显示值。
+|====
+
+[TIP]
+====
+编程过程中您可以使用下边代码执行 **纯解析** 流程：
+
+[source,js]
+----
+import Ux from 'ux';
+
+// expression格式：
+// 1. 字符串格式：视图管理,right,400,true,false
+// 2. 标准格式：{}
+const config = Ux.aiExprDrawer(expression);    
+----
+====
+
+===== 浮游窗口
+
+浮游窗口的属性定义如下：
+
+[source,js]
+----
+    [
+        "title",
+        "placement",
+        "width",
+        "closable",
+        "visible"
+    ]
+----
+
+消费示例如下：
+
+[source,json]
+----
+{
+    "window.extra.column": "请选择您要显示的列,leftTop,640,true"
+}
+----
+
+最终解析结果如下：
+
+[source,json]
+----
+{
+    "title": "请选择您要显示的列",
+    "placement": "leftTop",
+    "width": 640,
+    "closable": true,
+    "visible": false
+}
+----
+
+浮游窗口的完整属性表如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|title|窗口标题。
+|1|placement|浮游方向，有八个：`leftTop, left, leftBottom, bottom, rightBottom, right, rightTop, top`。
+|2|width|浮游窗口的宽度。
+|3|closable|是否支持`关闭`功能。
+|5|visible|该窗口默认显示值。
+|====
+
+[TIP]
+====
+编程过程中您可以使用下边代码执行 **纯解析** 流程：
+
+[source,js]
+----
+import Ux from 'ux';
+
+// expression格式：
+// 1. 字符串格式：请选择您要显示的列,leftTop,640,true
+// 2. 标准格式：{}
+const config = Ux.aiExprPopover(expression);     
+----
+====
+
+==== Ajax解析器
+
+Ajax解析器是为了针对后端特殊场景执行请求核心解析，其中包括：
+
+1. QR 查询引擎语法专用解析
+2. 参数解析（Qr参数、普通参数、Magic参数）
+3. 字典 / 分类 专用解析器
+
+Ajax的属性定义如下：
+
+[source,js]
+----
+    [
+        "method",
+        "uri",
+        "params.pager.page",
+        "params.pager.size",
+        "$KV$"
+    ]
+----
+
+该解析主要是针对 QR 查询引擎语法，配置部分写入如下：
+
+[source,json]
+----
+{
+    "metadata": "POST,/api/user/search,1,10,sorter=updatedAt`DESC",
+}
+----
+
+上述配置被解析之后会生成如下完整配置部分：
+
+[source,json]
+----
+{
+    "method": "POST",
+    "uri": "/api/user/search",
+    "params":{
+        "pager": {
+            "page": 1,
+            "size": 10
+        },
+        "sorter": [
+            "updatedAt,DESC"
+        ]
+    }
+}
+----
+
+Ajax的完整属性如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`method`|Ajax使用的HTTP方法。
+|1|`uri`|Ajax调用的远程URI路径。
+|2|`params.pager.page`|分页功能中的页码，从`1`开始。
+|3|`params.pager.size`|分页功能中的每页记录数，默认`10`。
+|4|`$KV$`|专用键值对处理。
+|====
+
+==== 字段解析器（表单）
+
+表单字段解析器属于 **高频** 解析器，且 `$KV$` 中的内容比较丰富，参考 **原子解析器** 查看 **表单** 类的属性信息，表单解析器的属性定义如下：
+
+[source,js]
+----
+    [
+        "field",
+        "optionItem.label",
+        "span",
+        "optionJsx.style.width",
+        "render",
+        "$KV$"
+    ]
+----
+
+在某些复杂场景中，通常会使用 `metadata` 来定义解析表达式（如添加验证规则、添加窗口配置等），表单解析器在此处就不举例了（源代码中这部分内容比较多），提供一个表单字段解析的示例：
+
+[source,json]
+----
+{
+    "metadata": "companyId,所属公司,,,aiTreeSelect,placeholder=（请选择所属公司）",
+    "optionJsx.config.datum": "source=resource.companys,value=key,label=name",
+    "optionJsx.config.tree": "text=name,parent=companyId",
+    "optionJsx.config.selection": "mode=FULL",
+    "optionConfig.rules": [
+        "required,请选择员工所属的公司！"
+    ]
+}
+----
+
+表单字段的完整属性如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`field`|表单对应字段名。
+|1|`optionItem.label`|表单字段前边的标题。
+|2|`span`|当前表单字段在Grid布局中宽度，最大宽度为24（善用 `AntD` 中的 `Grid` 布局），默认根据列的不同可设置。
+|3|`optionJsx.style.width`|当前表单的相对宽度，一般为百分比。
+|4|`$render`|该表单调用的渲染API，用于渲染不同组件专用。
+|5|`$KV$`|专用键值对处理。
+|====
+
+[TIP]
+====
+此处的顺序比较讲究，在某些大表单模式下，通常一个属性只需要使用 `name,名称` 这种最简化的格式即可（此时 `span` 可根据标准布局计算，所以后续内容都可以不用设置）。
+====
+
+==== 列解析器（列表）
+
+列解析一般用于列表定义（使用了 `AntD` 中的 `<Table/>` 标签），此处可支持各种不同的列渲染，列解析器的属性定义如下：
+
+[source,js]
+----
+    [
+        "dataIndex",
+        "title",
+        "$render",
+        "sorter",
+        "$KV$"
+    ]
+----
+
+列解析器的消费示例如下：
+
+[source,json]
+----
+    "columns": [
+        "name,权限名称",
+        "code,权限编码"
+    ]
+----
+
+此处解析的属性结果就不枚举了，列的完整属性如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`dataIndex`|绑定的记录对应的属性名。
+|1|`title`|当前列的列标题。
+|2|`$render`|列的渲染类型，该类型在列表章节详细解析。
+|3|`sorter`|是否打开列排序，如果打开则列中会启用排序功能。
+|4|`$KV$`|专用键值对处理。
+|====
+
+==== 按钮解析器
+
+按钮解析理论上只应该只有一种，由于 **历史原因**，此解析器如今已经拓展成如下四种：
+
+- 连接按钮
+- 提交按钮
+- 组件按钮
+- 命令按钮（特殊面板）
+
+===== 连接按钮
+
+前文提到了 **窗口连接** 的基础概念，**连接触发按钮** 会单纯调用 `Ux.connectId` 去触发另外一个按钮点击事件。
+
+连接按钮的属性定义如下：
+
+[source,js]
+----
+    [
+        "key",
+        "text",
+        "connectId",
+        "type",
+        "icon",
+        "disabledKey",
+        "$KV$"
+    ]
+----
+
+一般这种按钮会位于外层组件中，如：
+
+1. `Tab` 页签的 `tabBarExtraContent` 中按钮连接内容（children）中的隐藏按钮，旧版使用 `<TabPanel/>`，新版则直接使用 `items` 属性代替。
+2. `Card` 左右顶部按钮连接内部（children）中的隐藏按钮。
+
+连接按钮由于需要 **连接点** 和 **连接触发** 两处的按钮双向状态同步，所以此处还需要同步 **防重复提交**，点击之后处于 `loading` 的状态，以下是 `Card` 中的部分片段：
+
+[source,json]
+----
+    "_page": {
+        "title": "新建申请",
+        "left": [
+            "btnOrderSave,提交,$opCreate,primary",
+            "btnOrderReset,重置,$opReset,default"
+        ]
+    }
+----
+
+上述按钮的最终解析结果如下：
+
+[source,json]
+----
+{
+    "key": "btnOrderSave",
+    "text": "提交",
+    "connectId": "$opCreate",
+    "type": "primary",
+    "icon": null,
+    "disabledKey": null,
+    "$KV$": null
+}
+----
+
+连接按钮的完整属性如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`key`|当前按钮的`key`值（React专用）。
+|1|`text`|当前按钮显示的文字信息。
+|2|`connectId`|被连接的隐藏按钮的id。
+|3|`type`|该按钮的类型，对应Ant Design中的`<Button/>`对应的`type`属性。
+|4|`icon`|该按钮显示的图标信息，对应`icon`属性。
+|5|`disabledKey`|该配置为一个遗留配置，用来控制按钮在什么场景中被动态禁用。
+|6|`$KV$`|专用键值对处理。
+|====
+
+===== 提交按钮
+
+提交按钮通常位于表单配置中，属于表单 **内部专用** 按钮，它和 `AntD` 直接产生绑定作用，实现表单的快速提交，简化开发人员开发提交函数。
+
+提交按钮的属性定义如下：
+
+[source,js]
+----
+    [
+        "key",
+        "text",
+        "event",
+        "type",
+        "className",
+        "icon",
+        "$KV$"
+    ]
+----
+
+其中最核心的配置是 `event`，它既可用于 **编程模式** 也可用于 **配置模式**，通常表单中的提交按钮配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "$button",
+        "hidden": true,
+        "optionJsx.extension": [
+            "$opAdd,添加,SUBMIT,primary",
+            "$opReset,重置,RESET"
+        ]
+    }
+]
+----
+
+上述片段中以 `$opAdd` 为例，解析的最终结果如：
+
+[source,json]
+----
+{
+    "key": "$opAdd",
+    "text": "添加",
+    "event": "SUBMIT",
+    "type": "primary",
+    "className": null,
+    "icon": null,
+    "$KV$": null
+}
+----
+
+提交按钮的完整属性如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`key`|当前按钮的`key`值（React专用），表单中绑定触发函数也是依赖该key做函数名。
+|1|`text`|当前按钮显示的文字信息。
+|2|`event`|当前表单实现的标准化事件的名称，如`SUBMIT`或`RESET`等。
+|3|`type`|该按钮的类型，对应Ant Design中的`<Button/>`对应的`type`属性。
+|4|`className`|Zero中定义了不同颜色和风格的按钮专用className，该配置主要用于风格切换。
+|5|`icon`|该按钮显示的图标信息，对应`icon`属性。
+|6|`$KV$`|专用键值对处理。
+|====
+
+===== 组件按钮
+
+组件按钮是Zero UI中的自定义组件 `<DialogMenu/> / <DialogButton/>` 专用，这两种组件可实现 **按钮/菜单** 内嵌子组件模式，点击模式下的弹框或窗口，和窗口配置配合之后，实现很复杂的交互模式。
+
+组件按钮的属性定义如下：
+
+[source,js]
+----
+    [
+        "key",
+        "text",
+        "type",
+        "icon",
+        "confirm",
+        "$KV$"
+    ]
+----
+
+组件按钮的消费配置如下：
+
+[source,json]
+----
+{
+    "button": "itemCancel,撤销,,undo,若执行撤销，则这单据全部会变成无效，确认？,className=ux-spec"
+}
+----
+
+上述配置最终会解析成：
+
+[source,json]
+----
+{
+    "key": "itemCancel",
+    "text": "撤销",
+    "type": null,   // 此处会使用 default 做默认值
+    "icon": "undo",
+    "confirm": "若执行撤销，则这单据全部会变成无效，确认？",
+    "$KV$": "className=ux-spec"
+}
+----
+
+组件按钮的完整属性如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`key`|当前按钮的`key`值（React专用），表单中绑定触发函数也是依赖该key做函数名。
+|1|`text`|当前按钮显示的文字信息。
+|2|`type`|该按钮的类型，对应Ant Design中的`<Button/>`对应的`type`属性。
+|3|`icon`|该按钮显示的图标信息，对应`icon`属性。
+|4|`confirm`|该按钮是否启用确认/取消的提示浮游窗口功能，打开选项后设置成浮游提示文字。
+|5|`$KV$`|专用键值对处理。
+|====
+
+[TIP]
+====
+上述配置中需要针对 `confirm` 进行特殊说明，这个属性会影响最终的 JSX 输出，通常是使用在 **删除** 按钮中。
+
+[source,html]
+----
+// 不带 confirm 的操作
+<Button onClick={fnEvent}/>
+
+// 带 confirm 的操作
+<Popconfirm title={confirm} onConfirm={fnEvent}>
+    <Button/>
+</Popconfirm>
+----
+====
+
+===== 命令按钮
+
+命令按钮主要在 G6 的绘图板中使用，属于 **专用按钮**，这种按钮也可以扩展到其他场景，这种按钮的特殊点在于其内部触发模式不遵循 React 的基础原理，而是使用 H5 的模式在触发。
+
+[source,js]
+----
+    [
+        "key",              // 事件专用 key，依靠这个绑定
+        "text",             // 显示文字
+        "className",        // 风格处理
+        "confirm",          // confirm 窗口
+        "confirmPosition",  // confirm 位置
+        "icon",             // 图标信息
+        "tooltip",          // tooltip 打开（打开过后文字放到 tooltip中）
+        "$KV$"
+    ]
+----
+
+命令按钮解析配置属于 **高级用法**，主要操作为 `Ux` 中三个核心API：
+
+- `opExtra`，右上角附加命令按钮渲染专用。
+- `opLink`，链接命令按钮专用。
+- `opCommand`，标准命令按钮专用。
+
+命令按钮不用绑定 `onClick` 函数，全部是外层传入内层触发，如下边配置
+
+[source,json]
+----
+"_commands": [
+    "$opAutoSave,,ux-spec,确认打开？,left,undo"
+]
+----
+
+上述按钮最终会解析成：
+
+[source,json]
+----
+{
+    "key": "$opAutoSave",
+    "text": null,
+    "className": "ux-spec",
+    "confirm": "确认打开？",
+    "confirmPosition": "left",
+    "icon": "undo",
+    "tooltip": null,
+    "$KV$": null
+}
+----
+
+命令按钮的完整属性如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`key`|当前按钮的`key`值（React专用），表单中绑定触发函数也是依赖该key做函数名。
+|1|`text`|当前按钮显示的文字信息。
+|2|`className`|Zero中定义了不同颜色和风格的按钮专用className，该配置主要用于风格切换。
+|3|`confirm`|该按钮是否启用确认/取消的提示浮游窗口功能，打开选项后设置成浮游提示文字。
+|4|`confirmPosition`|浮游窗口的位置，该配置仅存在于命令模式的按钮。
+|5|`icon`|该按钮显示的图标信息，对应`icon`属性。
+|6|`tooltip`|该配置用于命令模式只配置图标型按钮（不显示文字），tooltip为鼠标移动到按钮上的提示文字。
+|7|`$KV$`|专用键值对处理。
+|====
+
+==== 项解析
+
+项解析存在于各种 **复杂组件** 内部，主要用于简化小规模的组件开发，如：
+
+1. 图标完整风格解析 `<Icon/>`，带色彩、大小、种类。
+2. 数据源过滤条件解析，自动过滤功能。
+3. 下拉、多选、单选项解析
+
+===== 图标解析
+
+图标写法在 Zero UI 中可以简化，由于 **历史原因** 出现过几次比较大的变动，这些配置主要用于小图标修饰，标准配置定义如下：
+
+[source,js]
+----
+    [
+        "text",
+        "icon",
+        "iconStyle.fontSize",
+        "iconStyle.color",
+        "style.color",
+        "$KV$"
+    ]
+----
+
+上述内容对应的源代码如：
+
+[source,html]
+----
+<span>
+    <Icon/>
+    &nbsp;&nbsp;
+    {文字部分}
+</span>
+----
+
+消费示例如下：
+
+[source,json]
+----
+    "$mapping": {
+        "Pending": "未结算,exclamation-circle,16,#0a7bed",
+        "Finished": "已结算,check-circle,16,#268941",
+        "InValid": "无效,stop,16,#e22015"
+    }
+----
+
+上述示例最终会解析成如下配置：
+
+[source,json]
+----
+{
+    "text": "未结算",
+    "icon": "exclamation-circle",
+    "iconStyle": {
+        "fontSize": 16,
+        "color": "#0a7bed"
+    },
+    "style":{
+        "color": null
+    }
+}
+----
+
+图标解析的完整属性如下：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|text|标签显示的文字。
+|1|icon|图标类型，对应`<Icon/>`中的`type`属性。
+|2|iconStyle.fontSize|控制图标大小。
+|3|iconStyle.color|控制图标颜色。
+|4|style.color|控制文字颜色。
+|5|`$KV$`|专用键值对处理。
+|====
+
+===== 过滤条件
+
+[NOTE]
+====
+Zero UI中的组件有 **字典关联** 模式，这种模式通常会在页面初始化时从服务端远程读取字典所有信息作为核心数据源，再结合字典配置（`DATUM`）来实现下拉的值和呈现文字的对应效果，数据源配置过程中的基础操作条件如：
+
+- 纯静态配置，如上边提到的 `$mapping` 节点，在JSON中直接堆选项相关信息。
+- 动态数据源，使用 `DATUM` 模式的配置配置远程数据字典
+
+而过滤条件就是为数据源过滤量身打造，如一个下拉完整数据源中包含了 `30` 个选项，您可以配置一个默认的过滤器，筛选部分选项出来构造此下拉。
+====
+
+数据源配合下拉的属性定义如下：
+
+[source,js]
+----
+    [
+        "source",
+        "field",
+        "type",
+        "cond"
+    ]
+----
+
+上述配置信息的消费片段如：
+
+[source,js]
+----
+/*
+ * source = form 表示条件值的来源是 form 的 comment 字段，
+ * type = integer 则表示整数类型，类型有三
+ * - integer：整数
+ * - decimal：浮点数
+ * - 默认其他类型，如字符串
+ * 最终构成的查询条件为：
+ * condField = form中的整数字段comment
+ **/
+form,comment,integer,condField
+----
+
+过滤条件配置比较特殊，不会生成最终解析的JSON格式，而是使用JS中的 `Function` 替代，它的完整属性表如：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`source`|标识条件字段的值来源，可以是form，可以是state，可以是props。
+|1|`field`|标识来源处的某个字段名。
+|2|`type`|对于整数和浮点型必须做转换和设置，Zero Ui中所有判断都是`===`的三等号模式。
+|3|`cond`|从字典中提取数据时的条件字段，最终形成`cond = value`进行过滤。
+|====
+
+===== 选项解析
+
+选项解析主要服务于 **单选、多选、下拉** 组件，它用来描述每一个固定的项的绑定信息（通常下拉会包含值、文字两部分），选项的属性定义如下：
+
+[source,js]
+----
+    [
+        "key",
+        "label",
+        "style"
+    ]
+----
+
+上述定义使用的范围比较广泛，也可以手工调用API来实现解析（快速解析项），配置消费段形如：
+
+[source,json]
+----
+    "optionJsx.config.items": [
+        "STANDARD,标准",
+        "VALID,无效"
+    ]
+----
+
+上述消费段会被解析成如下结果：
+
+[source,json]
+----
+    "items": [
+        {
+            "key": "STANDARD",
+            "label": "标准",
+            "value": "STANDARD",
+        },
+        {
+            "key": "VALID",
+            "label": "无效",
+            "value": "VALID"
+        }
+    ]
+----
+
+选项解析的完整属性如：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`key`|选项键值，React专用。
+|1|`label`|选项呈现的文字信息（支持表达式格式）。
+|2|`style`|该选项的风格：文字颜色、大小等（保留，以前用过，现在很少用）。
+|====
+
+===== 容器项解析
+
+容器想解析主要针对 `<Tab/>` 组件，属性定义如：
+
+[source,js]
+----
+    [
+        "tab",
+        "key",
+        "icon",
+        "$KV$"
+    ]
+----
+
+当您使用多个页签来实现页签容器的配置时，则可直接配置对应的页签项而避免复杂配置：
+
+[source,js]
+----
+    // 不拉平模式
+    "_tabs": {
+        "defaultActiveKey": "keyPending",
+        "type": "card",
+        "items": [
+            "等待处理,keyPending",
+            "处理完成,keyFinished"
+        ]
+    }
+    
+    // 完全拉平模式（更简洁）
+    "_tabs": {
+        "defaultActiveKey": "keyPending",
+        "type": "card",
+        "items": "等待处理,keyPending;处理完成,keyFinished"
+    }
+----
+
+最终解析结果如下：
+
+[source,json]
+----
+{
+    "items": [
+        {
+            "tab": "等待处理",
+            "key": "keyPending"
+        },
+        {
+            "tab": "处理完成",
+            "key": "keyFinished"
+        }
+    ]
+}
+----
+
+容器项的完整属性如：
+
+[options="header",cols="2,2,6"]
+|====
+|索引|属性|含义
+|0|`tab`|页签上显示的文字信息。
+|1|`key`|页签的键值，React专用。
+|2|`icon`|页签对应的图标。
+|3|`$KV$`|专用键值对处理。
+|====
+

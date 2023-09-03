@@ -1,0 +1,61 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+:sectlinks:
+:linkattrs:
+
+==== 账号登录初始化
+
+前文提到的三个接口调用，只能证明当前账号通过了系统的安全认证（401流程），登录成功之后，系统将会为登录账号初始化所有登录信息，本章详解初始化账号的系统级流程。
+
+[CAUTION]
+====
+正常来说，Vert.x的Web应用中 `vertx-web.session` 是用来保存会话数据专用的会话键，但在之前某个版本使用过程中，由于配置错误导致我们自己的系统没有办法适配该会话，无法维持状态，最后引起的反作用就是太依赖它的会话机制进行编码，为了解决这种问题，最终 Zero 重新设计了一套会话管理模式（定义了 `habitus` 属性），既可以然兼容 `vertx-web.session` 信息，又可以自己直接从会话中提取状态数据和相关业务数据。
+====
+
+===== 令牌生成流程
+
+生成令牌过程中，根据 *消费端* 提到的数据结构，系统会为每个登录账号生成如下数据：
+
+[source,json]
+----
+{
+    "user": "xxx",
+    "habitus": "xxx",
+    "session": "xxx",
+    "role": [],
+    "group": []
+}
+----
+
+[options="header"]
+|====
+|属性|含义
+|user|用户主键（登录过程中使用的 `clientId` 值）
+|habitus|128位随机字符串，为了解决 401/403 过程中系统为会话账号重新生成 session 问题而量身打造的业务级 session key
+|session|从 Vert.x 中读取的会话ID，数据来自 `vertx-web.session`
+|role|数组结构、和当前账号绑定的角色信息
+|group|数组结构，且在 `zero-rbac` 中启用了用户组功能时会追加
+|====
+
+获取了登录账号的上述信息之后，系统会提取 `user, session, habitus` 三个属性生成访问令牌 `access_token`（即访问令牌中只包含这三个属性信息），再根据访问令牌生成刷新令牌 `refresh_token`，以及根据配置计算出令牌过期时间，最终将访问令牌持久化到数据库中，持久化的目的是保证用户在异常管理浏览器或其他非正规操作时，依旧有一个时限内可使用的访问令牌。
+
+===== 登录会话初始化
+
+令牌生成完成后，系统将会调用 `ScUser` 类中的静态方法初始化 link:#__SEC_CACHE_LOGIN[用户登录缓存,window="_blank"]，ScUser类是Zero为账号封装过的核心用户类，此处不讲解该类的一些成员方法（如视图、Profile访问、用户主键提取），但下边几个高频方法可以给开发带来很大的福利。
+
+[options="header"]
+|====
+|方法签名|返回值|含义
+|`user()` | `String` |读取当前登录用户主键
+|`user(String)` | `ScUser` |设置当前登录用户主键
+|`logout(String)` | `Future<Boolea>` |将传入 habitus 会话的账号从系统注销
+|`login(JsonObject)` | `Future<ScUser>` |登录初始化，本章节的核心调用函数
+|`login(String)` | `ScUser` |使用 habitus 会话ID从环境中获取登录用户信息。
+|`login(User)` | `ScUser` |使用 Vert.x 中的安全对象 User 从环境中获取登录用户信息。
+|====
+
+[CAUTION]
+====
+从安全性考虑，开发人员如果只有用户主键是无法从环境中拿到 ScUser 信息的，必须采用框架内置的方式从环境中获取 User 对象（User对象是被 Vert.x 安全框架托管的），使用该对象可直接获取到 ScUser 相关信息。
+====

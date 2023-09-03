@@ -1,0 +1,167 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiDialogEditor`
+
+子记录编辑器，此组件主要用于编辑某个记录的自己录专用，如：`订单 / 订单项` 的编辑模式，且这个组件应该算是 Zero UI 中最复杂的组件，很多时候要配合容器配置来进行深度定制。参考配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "permissions,,24,,aiDialogEditor",
+        "optionConfig.rules": [
+            {
+                "validator": "required",
+                "message": "对不起，权限集中包含的权限不可为空！"
+            }
+        ],
+        "optionJsx.config": {
+            "form": {
+                "window": 0.16,
+                "columns": 2,
+                "ui": [
+                    [
+                        {
+                            "metadata": "resourceType,资源分类,14,,aiSelect,placeholder=选择资源类型",
+                            "optionJsx.config.datum": "source=resource.type,value=code,label=name",
+                            "optionJsx.depend.impact": {
+                                "reset": [
+                                    "identifier",
+                                    "modelKey"
+                                ]
+                            },
+                            "optionConfig.rules": [
+                                "required,请选择资源分类！"
+                            ]
+                        },
+                        {
+                            "metadata": "modelKey,关联模型,10",
+                            "optionConfig.rules": [
+                                "required,请选择该分类下的关联模型！"
+                            ]
+                        }
+                    ],
+                    [
+                        "identifier,模型ID,18,,,readOnly=true"
+                    ],
+                    [
+                        {
+                            "metadata": "sourcePermission,选择现有权限,24",
+                            "optionJsx.config": {
+                                "titles": [
+                                    "可选择的权限列表",
+                                    "引用权限详情"
+                                ],
+                                "record": {
+                                    "title": "（未选择引用权限）",
+                                    "selected": "已选择",
+                                    "data": {
+                                        "name": "权限名称",
+                                        "code": "权限代码",
+                                        "identifier": "所属模型"
+                                    }
+                                },
+                                "table": {
+                                    "columns": [
+                                        {
+                                            "dataIndex": "name",
+                                            "title": "权限名称"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    [
+                        {
+                            "metadata": "name,权限名称,14",
+                            "optionConfig.rules": [
+                                "required,请填写权限名称！"
+                            ]
+                        },
+                        {
+                            "metadata": "code,权限编码,10,,,placeholder=推荐以 perm 开头的系统助记码",
+                            "optionConfig.rules": [
+                                "required,请填写权限编码！"
+                            ]
+                        }
+                    ],
+                    [
+                        "comment,权限备注,18,,aiTextArea,rows=5"
+                    ],
+                    [
+                        {
+                            "metadata": "$button",
+                            "hidden": true,
+                            "optionJsx.extension": [
+                                "$opSavePerm,保存,SAVE_ROW,primary",
+                                "$opReset,重置,RESET"
+                            ],
+                            "span": 24
+                        }
+                    ]
+                ],
+                "hidden": [
+                    "key"
+                ]
+            },
+            "dialog": "权限设置,保存,关闭,false,1150,true,$opSavePerm",
+            "op": {
+                "add": "$opShowPerm"
+            },
+            "table": {
+                "limitation": 12,
+                "columns": [
+                    {
+                        "title": "操作",
+                        "dataIndex": "key",
+                        "fixed": "left",
+                        "$render": "EXECUTOR",
+                        "$option": [
+                            {
+                                "text": "编辑",
+                                "executor": "fnEdit"
+                            },
+                            "divider",
+                            {
+                                "text": "移除",
+                                "executor": "fnDelete",
+                                "confirm": "该操作会从此权限集中移除权限信息，将权限转换成`自由权限`，确认移除？"
+                            }
+                        ]
+                    },
+                    "name,权限名称",
+                    "code,权限编码",
+                    "identifier,模型标识"
+                ]
+            }
+        }
+    }
+]
+----
+
+这个组件实际是一个综合组件，它的 **交互式** 本体就是一个列表组件，所以会有类似 `table` 的配置出现，而点击 **添加/编辑** 时它的子组件是一个表单 `<Form/>`，所以此处又会包含 `form` 节点的配置，除去这两部分的配置之后，剩余的配置部分就很容易理解了。
+
+子记录编辑器如下：
+
+image:exp-input-dialogeditor.png[0,800]
+
+===== 特殊配置
+
+配置属性表：
+
+[options="header",cols="3,7"]
+|====
+|属性路径|含义
+|`optionJsx.config.form`|子组件表单配置（遵循表单配置格式）。
+|`optionJsx.config.dialog`|弹出窗口相关配置。
+|`optionJsx.config.op`|添加按钮或附加按钮专用配置（表格右上角）。
+|`optionJsx.config.table`|交互式组件表单配置（遵循列表配置格式）。
+|====
+
+[CAUTION]
+====
+`DialogEditor` 主要用于子记录编辑，配合新的 `zero-crud` 部分，基本到最后可以 **零代码** 的模式实现子记录管理功能，这种场景仅在 `1:N` 的场景中生效（中后台管理系统中很常见），即管理的主对象和子对象是：`1:N` 的关联关系，在底层是两张实体表。
+====

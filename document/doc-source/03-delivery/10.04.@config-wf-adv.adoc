@@ -1,0 +1,34 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 配置详解
+
+流程引擎最后一个章节负责细节解析，给您讲解实施配置过程的步骤信息（Camunda设计流程在前边示例中已经提供，此处不再讲解 `workflow.bpmn` 文件的设计）。
+
+==== Camunda部分
+
+include::10.04.01.config-wf-adv-camunda.adoc[]
+
+==== UI配置
+
+Zero中的UI配置主要针对 `W_FLOW` 表中的 `UI_` 字段执行详细配置，该配置会影响界面呈现。
+
+include::10.04.02.config-wf-adv-ui.adoc[]
+
+==== 流转配置
+
+Zero中的流转配置主要针对 `?_CONFIG` 类型的字段，该配置隶属组件级，主要影响组件行为，这些组件配合 Camunda 流程引擎负责 *驱动流程*。
+
+include::10.04.03.config-wf-adv-transfer.adoc[]
+
+==== 表单配置
+
+Zero中的表单配置属于静态配置，现阶段版本不会导入到数据库中，是根据流程图中绑定的表单文件 `.form` 执行的扩展，后续开放动态表单配置后，此部分内容可实现所见即所得的动态化。
+
+
+include::10.04.04.config-wf-adv-form.adoc[]
+
+
+==== 网格派工
+
+include::10.04.05.config-wf-adv-grid.adoc[]

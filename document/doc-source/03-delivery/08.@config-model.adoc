@@ -1,0 +1,42 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 建模（含EMF）
+
+Zero Extension扩展框架中支持如下模型内容：
+
+[options="header"]
+|====
+|建模方式|模型类型|含义
+|静态 image:m-hybird.png[0,22] |单表直接模型| 基于 Liquibase 配置和表绑定的直接静态数据模型，模型和表 1:1。
+|静态 image:m-hybird.png[0,22] |多表Join模型| 同样基于 Liquibase 配置和多表绑定的Join静态数据模型，模型和表：1:N。
+|静态 image:m-hybird.png[0,22] |子母模型| 基于 Liquibase 配置和表绑定的字母表模型接口，Join过程直接 1:N，注意和Join模型区分。
+|动态 image:m-atom.png[0,22] |单表直接模型| `type = DIRECT` 基于 `zero-atom` 配置的单表直接绑定的动态模型，模型和表 1:1。
+|动态 image:m-atom.png[0,22] |多表直接模型| `type = JOIN` 基于 `zero-atom` 配置的多表Join动态数据模型，模型和表：1:N。
+|动态 image:m-atom.png[0,22] |只读模型| `type = VIEW` 基于 `zero-atom` 配置的单多表视图模型（不可写入），模型和表同时支持：1:1, 1:N。
+|动态 image:m-atom.png[0,22] |采集模型| `type = COLLECTION` 基于 `zero-atom` 配置的采集模型（可微量写入）。
+|混合 image:m-mix.png[0,22] |静态和动态混合| 静态模型 + 动态模型。
+|====
+
+
+若要启用Zero Extension中的动态建模，可在您的Maven中追加如下依赖：
+
+[source,xml]
+----
+    <!-- 动态建模模块专用 -->
+    <dependency>
+        <groupId>cn.vertxup</groupId>
+        <artifactId>zero-atom</artifactId>
+        <version>ZERO_VERSION</version> <!-- 版本跟随Zero版本 -->
+    </dependency>
+----
+
+[CAUTION]
+====
+Zero核心框架本身是基于静态模型而构造，所以静态模型无需引入任何依赖项就可实现，`Ux.Jooq / Ux.Join` 都是针对静态模型的API处理，而动态建模是一个扩展模块，所以动态建模需要引入额外的依赖项才可完成。
+====
+
+include::08.01.config-model-hybird.adoc[]
+include::08.02.config-model-atom.adoc[]
+include::08.03.config-model-load.adoc[]
+

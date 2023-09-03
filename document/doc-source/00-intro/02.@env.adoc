@@ -1,0 +1,38 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 自动化创建
+
+==== Zero Ai安装
+
+[TIP]
+====
+初始化工程之前先安装 link:http://www.vertxai.cn[Zero Ai工具,window="_blank"]，该工具提供了不同初始化工程的命令，可一键生成模板。
+[source,bash]
+----
+$ sudo npm install -g vertx-ai
+----
+初始化完成之后既可执行工程初始化命令分别初始化：*后端、前端、后端插件*（现阶段只支持三种类型）。
+====
+
+include::02.01.env-setup.adoc[]
+include::02.03.env-data.adoc[]
+include::02.04.env-database.adoc[]
+include::02.05.env-loading.adoc[]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,60 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/see/web-option.json",
+    "$defs": {
+        "common":{
+            "type":"object",
+            "description":"常用选项 Option 专用，对应前端：下拉、多选、单选选项",
+            "properties": {
+                "key": {
+                    "type": "string",
+                    "description": "选项主键"
+                },
+                "label": {
+                    "type": "string",
+                    "description": "选项呈现文本"
+                },
+                "value": {
+                    "type": "string",
+                    "description": "选项值（默认同key）"
+                }
+            },
+            "required":[
+                "key", "label"
+            ],
+            "additionalProperties":false
+        },
+        "datum":{
+            "type": "object",
+            "description": "字典选项 Datum 专用，对应前端：字典名、值字段、显示字段",
+            "properties": {
+                "source": {
+                    "type": "string",
+                    "description": "字典名称"
+                },
+                "value": {
+                    "type": "string",
+                    "description": "值字段",
+                    "default": "key"
+                },
+                "key": {
+                    "type": "string",
+                    "description": "唯一键字段",
+                    "default": "key"
+                },
+                "label": {
+                    "type": "string",
+                    "description": "「表单」显示字段"
+                },
+                "display":{
+                    "type": "string",
+                    "description": "「列表」显示字段"
+                }
+            },
+            "required": [
+                "source"
+            ],
+            "additionalProperties":false
+        }
+    }
+}

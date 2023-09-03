@@ -1,0 +1,38 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiInputNumber` (A)
+
+对应 `AntD` 中的 `<InputNumber/>` 组件，用于 **数值** 录入。配置如下：
+
+[source,json]
+----
+[
+    "layoutLeft,输入框宽度,,100%,aiInputNumber,min=1,max=24",
+    "layoutRight,选择框宽度,,100%,aiInputNumber,min=1,max=24"
+]
+----
+
+===== 特殊配置
+
+此组件会多一个配置 `optionJsx.numeric`，其数据结构如下：
+
+[source,json]
+----
+{
+    "percent": "是否执行百分比计算",
+    "unit": "单位信息",
+    "unitPosition": "单位位置"
+}
+----
+
+配置属性表：
+
+[options="header",cols="4,6"]
+|====
+|属性路径|含义
+|`optionJsx.numeric.percent`|布尔值，若此值为 true 则数值会转换成带有 `%` 符号的数据。
+|`optionJsx.numeric.unit`|数值单位，用于表示当前数值携带的计量单位相关信息。
+|`optionJsx.numeric.unitPosition`|布尔值，若为 true，格式为 `{value} {unit}`，若为 false，格式为 `{unit} {value}`。
+|====

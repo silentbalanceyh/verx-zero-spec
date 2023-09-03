@@ -1,0 +1,244 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiAction`
+
+前文已经带着开发人员了解了 Zero UI 中所有标准表单交互式组件，本章详细讲解提交按钮的配置，提交按钮在 Zero UI 中十分特殊，先看一段参考配置：
+
+[source,json]
+----
+[
+    {
+        "metadata": "$button",
+        "hidden": true,
+        "optionJsx.extension": [
+            "$opSave,保存,SUBMIT,primary",
+            "$opDelete,删除,KEY",
+            "$opReset,重置,RESET"
+        ],
+        "span": 24
+    }
+]
+----
+
+在上述配置中，您可以看到几个比较特殊的属性：
+
+- `metadata / field`属性：由于历史原因，此处的值必须是一个固定值 `$button`，只有这个值可以被 Zero UI 捕捉到并注入提交按钮的行为。
+- `hidden` 属性：在 **属性解析器** 章节您已经了解了 Zero UI 中的窗口连接模式：
++
+--
+- 若此按钮不作为 **连接点** 按钮，而是直接作为可呈现的提交按钮对待，那么 `hidden = false` 或不设置。
+- 若此按钮作为 **连接点** 按钮对待，那么通常会设置 `hidden = true` 将按钮隐藏，若您想要查看防重复提交过程，可以考虑此处 `hidden = false` 做调试。
+--
+- `span` 属性：如果按钮隐藏，此处设置什么值都无碍。
+
+参考如下片段体会两种配置的区别（个人密码修改页）
+
+[source,json]
+----
+[
+    {
+        "metadata": "$button,,14",
+        "optionJsx.extension": [
+            "$opPassword,更改密码,SUBMIT,primary",
+            "$opReset,重置,RESET"
+        ]
+    }
+]
+----
+
+====
+由于按钮部分有可能存在多个按钮，所以第二占位符 `optionItem.label` 配置没有任何实际作用。
+====
+
+===== 按钮配置
+
+提交按钮在表单的骨架代码中一般如下：
+
+[source,html]
+----
+    <ExForm {...form} $height={"300px"} $op={Op.actions}/>
+----
+
+操作部分代码如：
+
+[source,js]
+----
+import Ex from 'ex';
+import Ux from "ux";
+
+const $opPassword = (reference) => (params) => {
+    const user = Ux.isLogged();
+    const opassword=Ux.encryptMD5( params['opassword']);
+    if(opassword !== user.password){
+        return Ux.ajaxDialog(reference, {
+            key: "passwordError", /* 专用窗口对应的key */
+        });
+    }
+    const request = Ux.valueRequest(params);
+    request.password = params['npassword'];
+    return Ex.I.password(request)/* 更新密码回调处理 */
+        .then(data => Ux.ajaxDialog(reference, {
+            data, /* 响应数据 */
+            key: "password", /* 专用窗口对应的key */
+        }))
+        /* closed 参数这里不显示 */
+        .then(() => Ex.Op.$opLogout(reference));
+};
+export default {
+    actions: {
+        $opPassword
+    }
+}
+----
+
+注意此处的配置行：
+[source,bash]
+----
+"$opPassword,更改密码,SUBMIT,primary"
+----
+
+这些内容对应的按钮配置如下：
+
+[options="header",cols="1,2,7"]
+|====
+|索引|属性名|含义
+|0|`key`|如果作为 **连接点**，此处的 `key` 还可以作为客户端 `id` 直接被连接（隐藏按钮时的触发点），若作为直接按钮则表示按钮的 `key`。
+|1|`text`|按钮中的文字，此文字会作为 `<Button>xxxx</Button>` 显示在按钮上，若 `hidden = true` 时可直接忽略。
+|2|`event` a|事件名称，事件名称在按钮中属于重点配置
+
+- 基于服务端配置时（ `zero-ui` ），`event` 可作为事件名来挂载标准化行为。
+- 客户端开发时，`event` 直接指定事件名和相关行为来挂载对应的提交行为。
+|3|`type`|按钮类型，对应 `AntD` 中的 `<Button/>` 按钮的类型，如：`primary, default, denger`。
+|4|`className`|按钮的 CSS 风格设置（可自定义风格，如 `ux_red, ux_green` 这种全局色）。
+|5|`icon`|按钮上的图标，可支持 **图标表达式**。
+|6|`$KV$`|**原子解析属性** 部分，您可以直接设置扩展属性。
+|====
+
+===== 带回调配置
+
+表单的回调配置在早期的版本中都是位于 `UI.json` 中的根节点 `_modal` 中，而新版本中的窗口函数可以直接配置在 `_form` 内部实现内部的 **闭合** 回调。参考流程配置表单如下：
+
+[source,json]
+----
+{
+    "_form": {
+        "modal": {
+            "success": {
+                "open": "您好，您的流程申请已成功提交，申请单号 :serial，请等待审批。",
+                "draft": "您好，您的流程申请已成功保存为草稿！单号为 :serial。"
+            }
+        },
+        "ui": [
+            [
+                {
+                    "metadata": "$button",
+                    "optionJsx.grouped": true,
+                    "optionItem.label": "流程操作",
+                    "optionJsx.extension": [
+                        "$opStart,提交,SUBMIT,primary,,upload,closable=true,callback=open",
+                        "$opDraft,暂存,SUBMIT,,uc_pink,,closable=true,callback=draft",
+                        "$opReset,重置,RESET",
+                        "$opBack,返回,BACK"
+                    ],
+                    "span": 24
+                }
+            ]
+        ]
+    }
+}
+----
+
+上述按钮配置中，您可以在 `$KV$` 部分看到类似 `closable=true,callback=open` 的 **原子解析配置** 扩展，这种扩展会自动在回调完成之后执行自动化行为（零代码模式）。
+
+- `closable`
++
+--
+- 如果这个值为 `true`，则提交之后会调用 `rxClose` 函数触发关闭行为，这种关闭包括：**关闭弹窗、关闭页签、关闭抽屉窗** 等。
+- 如果这个值为 `false`，不做任何关闭操作，仅执行 **表单重置**。
+--
+
+- 上述示例中回调最终配置如下，按钮在提交之后会自动触发回调并完成 **表单操作** 闭环：
++
+--
+[options="header",cols="2,2,3,3"]
+|====
+|按钮ID|事件|回调键|配置路径
+|`$opStart`|SUBMIT|open|`modal/success/open`
+|`$opDraft`|SUBMIT|draft|`modal/success/draft`
+|====
+--
+
+[NOTE]
+====
+还有一种格式是最新版才追加的，为了避免手工设置 `api` 专用（必须使用 `ai sync` 更新到 **最新版**），参考如下：
+
+[source,json]
+----
+{
+    "metadata": "$button",
+    "hidden": true,
+    "optionJsx.extension": [
+        "$opAdd,添加,SUBMIT,primary,,,closable=true,callback=added,api=/api/nm-law",
+        "$opReset,重置,RESET"
+    ],
+    "span": 24
+}
+----
+
+这种格式是 **最新版** 的 Zero Ui 支持的格式，主要目的是通过配置完成所有的表单级操作，但是此处的 `api` 有个限制，HTTP 方法是固定的：
+
+- 添加 - `POST`
+- 保存 - `PUT`
+- 删除 - `DELETE`
+
+这样配置之后，在 `smartList` 这个级别就可以省略如下配置：
+
+[source,js]
+----
+{
+    Form: {
+        name: "FormLaw"
+        /*
+            旧版本中必须提供 A / S / D 这三个值才能驱动发送远程请求
+            A - Add - POST方法
+            S - Save - PUT方法
+            D - Delete - DELETE方法
+            新版本可以配在 `$button` 中实现
+        yoOp: {
+            A: "/api/mn-law",
+            S: "/api/mn-law/:key",
+            D: "/api/mn-law/:key"
+        }
+        */
+    }
+}
+----
+====
+
+===== 关于 event
+
+按钮事件主要分为两部分：**服务端**（配置型）和 **客户端**（开发型）。
+
+[options="header",cols="2,8",title="服务端事件"]
+|====
+|事件值|含义
+|`event.filter`|过滤表单专用提交事件，提交的数据一般作为查询条件，使用在 **高级搜索** 中。
+|`event.add`|添加表单专用事件。
+|`event.edit`|编辑表单保存时专用事件。
+|`event.delete`|编辑表单删除时专用事件。
+|====
+
+[options="header",cols="2,8",title="客户端事件"]
+|====
+|事件值|含义
+|`SUBMIT`|标准的表单提交，一般在事件函数中开发 Ajax 远程接口请求。
+|`SUBMIT_REDUX`|（旧模式）触发 `Redux` 提交流程，回调之前和之后会触发 `Redux` 的防重复提交流程。
+|`SUBMIT_DIALOG`|窗口表单提交，在弹出窗的 **表单** 中触发提交，执行完成之后关闭弹窗。
+|`SAVE_ROW`|此事件一般用于子表单提交，类似 `DialogEditor` 中添加子记录时专用做法，提交完成之后会保存（添加/更新）子记录相关信息。
+|`BACK`|「不需函数」返回专用，触发 `react-router` 中的返回页面专用函数。
+|`RESET`|「不需函数」重置表单专用，提交完成之后重置表单。
+|`KEY`|只带记录 `key / id` 的表单提交，如 **删除**（只提供 `key` 就可以实现记录的删除）。
+|====
+

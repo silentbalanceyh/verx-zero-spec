@@ -1,0 +1,157 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 前端结构
+
+==== 模块化
+
+Zero UI中处理模块弃用了相对路径模式，整个导入过程直接使用模块导入的方式，类似：
+
+[source,js]
+----
+import Ux from 'ux';
+----
+
+一来方便做重构、二来方便做整体迁移，模块定义位于项目中的 `config/modules.js` 中，您可以从源代码中看到目前规划的模块所有信息，模块主要如下：
+
+1. 内部模块：做Zero UI和Zero Extension框架研发才会使用的模块，必须是按调用层次执行导入（下层模块不可导入上层模块）。
+2. 外部模块：这部分模块才是开发人员可以使用的模块，如 `Ux, Ex, Sk, Ui` 等。
+
+Zero UI中的完整模块参考下表（只有内部模块按排序执行，外部模块不遵循文件名排序规则）：
+
+[options="header",cols="15,15,15,55"]
+|====
+|模块名|类型|路径|含义
+|app|image:i-config-t.png[,20] 自定义模块| `src/app` |应用级自定义模块专用存放目录。
+|mock|image:i-config-t.png[,20] 自定义模块| `src/app@mock` |纯前端运行的Mock模拟数据专用目录。
+|plugin|image:i-config-t.png[,20] 自定义模块| `src/app@plugin` |应用级插件专用存放目录。
+|entity|image:m-mix.png[,20] 外部模块| `src/entity@em` |Zero 数据模型外部专用模块。
+|web|image:m-mix.png[,20] 外部模块| `src/economy` |（标准组件）Zero UI组件外部专用模块。
+|oi|image:m-mix.png[,20] 外部模块| `src/extension/eclat` |（配置组件）Zero UI配置化专用组件目录。
+|ei|image:m-mix.png[,20] 外部模块| `src/extension/ecosystem` |（扩展组件）Zero UI扩展组件专用目录。
+|ex|image:m-mix.png[,20] 外部模块| `src/extension/library` |扩展工具库
+|ui|image:m-mix.png[,20] 外部模块| `src/ui` |快速开发库
+|ux|image:m-mix.png[,20] 外部模块| `src/ux` |标准工具库
+|environment|image:m-mix.png[,20] 内部模块| `src/environment` |环境专用模块，用于存储当前系统环境中的全局配置信息。
+|lang|image:m-mix.png[,20] 内部模块| `src/cab` |资源目录专用模块。
+|zei|image:i-config.png[,20] 内部模块| `src/unfold` |内部扩展呈现库，Zero Extension Interface。
+|zep|image:i-config.png[,20] 内部模块| `src/upper` |内部扩展处理库，Zero Extension Processor。
+|zet|image:i-config.png[,20] 内部模块| `src/utter` |内部扩展工具库，Zero Extension Toolkit。
+|zero|image:i-config.png[,20] 内部模块| `src/zero` |对接层（复杂组件），Zero（Aeon Interface）。
+|zs|image:i-config.png[,20] 内部模块| `src/zest@web` |子系统层（交互式组件），Zero Subsystem。
+|zi|image:i-config.png[,20] 内部模块| `src/zion` |交互式组件接口抽象层，Zero Interface。
+|zmr|image:i-config.png[,20] 内部模块| `src/zither@em` |查询模型层，Zero Model Qr Engine。
+|zo|image:i-config.png[,20] 内部模块| `src/zodiac` |组件起源层（从这层开始有组件概念），Zero Origin Component。
+|zme|image:i-config.png[,20] 内部模块| `src/zoe@em` |环境模型层，Zero Model for Environment。
+|zone|image:i-config.png[,20] 内部模块| `src/zone` |环境区域底座，Zero Zone。
+|skin|image:m-mix.png[,20] 内部模块| `src/skin` |皮肤管理器，最底层的多风格样式导入。
+|style|image:m-mix.png[,20] 内部模块| `src/style` |样式管理器。
+|====
+
+好了，问题来了，整个框架这么多模块，那么作为开发人员应该如何使用呢？上述模块除了 `z` 前缀的模块遵循上下层的排序（排在上边的调用下边），其他模块不遵循该法则（历史原因），所以整体从上往下的层级关系如下：
+
+[source,bash]
+----
+ui              # import Ui from 'ui';
+ei / oi         # 由于很多时候都采用API模式，所以这两个库一般开发过程中很少用
+ex              # import Ex from 'ex';
+ zei
+ zep
+ zet
+plugin          # import Plugin from 'plugin';
+ux              # import Ux from 'ux';
+ zero
+entity          # import {xxx} from 'entity';
+ zs
+web             # import {xxx} from 'web';
+ zi
+environment     # import {xxx} from 'environment';
+ zmr
+ zo
+ zme
+ zone
+skin            # import Sk from 'skin';
+style           # @import "~style/index";   # SCSS 模式
+----
+
+上述结构就是整体的调用结构，排序从上往下，开发人员只需要关注行内有注释的部分，您可以按表格中的图标来区分，此处提供开发人员使用模块的黄金法则：
+
+[options="header",cols="1,1,1,7"]
+|====
+|模块|更改|使用|含义
+|image:i-config-t.png[,20]| o | o |自定义模块，自由修改。
+|image:m-mix.png[,20] | x | o |开发人员可直接使用 `import` 方式导入的模块，不推荐更改。
+|image:i-config.png[,20]| x | x |开发人员不可以直接 `import` ，所有的API都归并到 `Ux / Ex` 中了。
+|====
+
+[CAUTION]
+====
+因为历史原因，其实开发人员真正在开发过程中通常只会使用 `Ux / Ex` 完成所有的任务，所以直接使用这两个库就可以满足 95% 以上的开发需求了，很多时候不需要太多特殊代码，而我们每个目录中的文件除了当前文件夹下边的 `import` 语句，单个文件不会导入到目录之外的位置，如下：
+
+[source,js]
+----
+import React from 'react';
+import Sk from "skin";
+import __ from "./Cab.module.scss";
+import Ux from "ux";
+import {ProCard, StatisticCard} from "@ant-design/pro-components";
+import Op from './Op'
+import {Popover} from "antd"
+import reservation from './images/reservation.png';
+import hotel from './images/hotel.png';
+import order from './images/order.png';
+import room from './images/room.png';
+import checkin from './images/checkin.png';
+----
+
+从代码片段就可以知道这种方式的结构最大的好处，就是可以将整个目录中的内容完整移动到另外的目录下执行，这样重构就变得特别容易了。
+
+====
+
+最后说一句，您也可以修改 `config/modules.js` 扩展自己想要的模块，只要不破坏本章中提到的整体调用结构即可。
+
+==== 应用结构
+
+前文提到了 `app` 前缀的部分，是开发人员的自定义模块，除开这部分内容以及前边介绍的模块化之外，您的代码目录中应该还剩下：
+
+* container：模板专用目录
+* components：页面专用目录
+
+二者的完整结构如下：
+
+image:zui-tpl.png[0,960]
+
+一个前端站点的页面主要包含两部分：模板页和内容页，模板页位于 `container` 中，内容页则位于 `components` 中，最终形成的结构如上图所示。内容页和模板的关联关系有两种定义方法：
+
+[options="header",cols="20,80"]
+|====
+|定义方式|含义
+|全局路由表 a|直接在 `src/route.json` 文件中定义，内容如：
+
+[source,json]
+----
+{
+    "defined": "_module_page",
+    "special": {
+        "_login_index": [
+            "_login_index"
+        ]
+    }
+}
+----
+
+这种方式是最早的方式，整体设计的确很方便区分不同页面对应的模板，但过于集中化，这种模式只需要在 `Cab.json` 中配置 `ns` 即可。
+
+|页面路由表 a|直接在 `Cab.json` 中定义 `tpl` 属性，内容如下：
+
+[source,json]
+----
+{
+    "ns": "components/login/index",
+    "tpl": "_login_index"
+}
+----
+
+这种方式是新模式，缺点是除开默认页面以外，可能其他所有页面都需要定义 `tpl` 才可以被识别。
+|====
+

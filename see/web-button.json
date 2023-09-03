@@ -1,0 +1,33 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/see/web-button.json",
+    "$defs": {
+        "common": {
+            "type": "object",
+            "description": "基本按钮对象，对应 &lt;Button/&gt; 标签前端",
+            "properties": {
+                "text": {
+                    "type": "string",
+                    "description": "按钮文字"
+                },
+                "icon": {
+                    "type": "string",
+                    "description": "按钮图标"
+                },
+                "type": {
+                    "type": "string",
+                    "enum": [
+                        "primary",
+                        "default",
+                        "danger"
+                    ],
+                    "description": "Ant Design按钮类型"
+                }
+            },
+            "required":[
+                "text"
+            ],
+            "additionalProperties":false
+        }
+    }
+}

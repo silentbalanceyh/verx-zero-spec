@@ -1,0 +1,31 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiUserSelector`
+
+用户选择器，内置封装了 `ListSelector`，和当前 Zero Extension 中的员工模块配合，实现用户信息的选择功能。配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "acceptedName,当前处理人,8,,aiUserSelector,readOnly=true,placeholder=（谁将会审批该工单）",
+        "optionJsx.config": {
+            "linker": {
+                "key": "acceptedBy",
+                "realname": "acceptedName"
+            },
+            "user": "处理人"
+        },
+        "optionJsx.allowClear": true
+    }
+]
+----
+
+从上述配置可以知道选择配置比 `ListSelector` 大大简化，用户选择器如下：
+
+image:exp-user-selector.png[0,800]
+
+此组件和 `ListSelector` 组件唯一的区别就是弹出框的内容差异，所以推荐使用此组件做 **员工/人员选择**。
+

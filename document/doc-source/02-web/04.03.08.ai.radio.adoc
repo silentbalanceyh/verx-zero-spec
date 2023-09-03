@@ -1,0 +1,68 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiRadio` (A)
+
+对应 `AntD` 中的 `<Radio.Group/>` 组件，您可直接设置单选框信息，其配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "method,HTTP方法,12,,aiRadio",
+        "optionJsx.config.items": [
+            "GET,GET方法",
+            "POST,POST查询"
+        ]
+    }
+]
+----
+
+===== 选项说明
+
+选项在 Zero UI 中主要使用在 `aiRadio, aiSelect, aiCheckbox` 三种最常见的 **选择组件** 中，这三种组件在 **配置选项** 时其用法一样：
+
+1. 静态配置，静态配置如示例中设置的，直接配置 `optionJsx.config.items` 属性，此属性是一个 `[]` 结构，数字的每一个元素可直接解析成一个选项，如上述示例中会直接解析成：
++
+--
+[source,json]
+----
+[
+    {
+        "key": "GET",
+        "value": "GET",
+        "label": "GET方法"
+    },
+    {
+        "key": "POST",
+        "value": "POST",
+        "label": "POST查询"
+    }
+]
+----
+--
+
+2. 动态配置，动态配置一般会使用字典配置 `optionJsx.config.datum` 属性，此属性通常会书写成 `String` 的字符串格式：
+
++
+--
+[source,json]
+----
+{
+    "metadata": "category,组类型,14,,aiRadio",
+    "optionJsx.config.datum": "source=ajax.groups.type,value=code,label=name",
+    "optionJsx.config.datumSort": {
+        "field": "sort",
+        "asc": true
+    }
+}
+----
+
+上述配置中，`datum` 配置了字典作选项的基本信息，而且还配置了额外的 `datumSort` 来处理选项的排序问题。一般情况选项会按照字典默认读取的顺序排列，若读取远程接口没有在服务端执行排序，那么就可以启用此处的 `datumSort` 属性按某个属性进行选项的排序。
+--
+
+单选框如下：
+
+image:exp-input-radio.png[0,600]
+

@@ -1,0 +1,58 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 配置文件
+
+==== 再谈 lime
+
+[TIP]
+====
+`lime` 这个单词最早是来源于 *粘性物质*，想的是软和柔，后来发现貌似翻译的问题，这种说法不是很多，所以后来就扩展成了 `Light Integration Modulat Environment`（轻量模块化集成环境），所以Zero中很多单词本意和扩展出来的含义都是后期追加上去的，主要是方便开发人员记忆。
+====
+
+Zero的标准配置文件（ `vertx.yml` ）通常如下：
+
+[source,yaml]
+----
+zero:
+  lime: excel, secure, shell, deployment, detect, dock
+  vertx:
+    instance:
+      - name: zero-hotel
+        options:        # 该节点对应 VertxOptions，此处不多讲
+          maxEventLoopExecuteTime: 1200_000_000_000 
+          maxWorkerExecuteTime: 1200_000_000_000
+          eventLoopPoolSize: 128
+          workerPoolSize: 256
+          internalBlockingPoolSize: 64
+----
+
+lime节点在此处会直接到您的配置路径中去搜索对应的文件，如上述配置中会检索您的 `vertx.yml` 同级目录中是否包含如下文件：
+
+- `vertx-excel.yml`
+- `vertx-secure.yml`
+- `vertx-shell.yml`
+- `vertx-deployment.yml`
+- `vertx-detect.yml`
+- `vertx-dock.yml`
+
+这些文件若未找到，那么这个 lime 节点就会失效。
+
+image:zcfg-lime.png[0,960]
+
+[CAUTION]
+====
+内置节点不需要执行 lime 操作，这个是最初设计留下来的后遗症，理论上讲所有的配置节点统一走 lime 架构是最好的，但由于该节点后于容器层配置诞生，所以最终导致的结果就是内置配置和lime需要分离，那么开发人员可能会困惑，哪些配置需要 lime，哪些配置不需要呢？
+====
+
+==== 完整配置结构
+
+答案其实已经在脚手架项目 `vertx.yml` 文件的注释中了，我们俯瞰一下整个配置结构，参考下边拓扑图（基于Zero标准规范）：
+
+image:zcfg-yml.png[0,1024]
+
+此处针对上述结构做一些特殊说明：
+
+1. 有双份的配置文件会包含 *内置配置* 和 *运行配置*，二者的优先级以运行配置为主，它会覆盖内置配置。
+2. 左上部分的固定化标准文件就是前文提到的 *不需要* 处理成 `lime` 扩展的配置文件。
+3. `lime` 部分的所有配置最终会合并成一份完整的JSON，上图中绿色部分就是合并之后的配置节点。

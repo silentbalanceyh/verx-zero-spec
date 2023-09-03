@@ -1,0 +1,183 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 配置详解
+
+目前为止，所有 `zero-crud` 讲解的都是外围的配置，本章开始讲解基于模型的基础配置：
+
+- `src/main/resources/plugin/crud/module` 中文件内容（启动器级）。
+- `src/main/resources/plugin/<module>/oob/module/crud/` 中文件内容（模块级）。
+
+[CAUTION]
+====
+这部分配置和 link:#__CONFIG_MODEL_HYBRID[静态建模, window="_blank"] 息息相关，因为静态建模针对单个静态模型的基础配置是直接引用本章的实体定义内容。
+====
+
+==== 数据库定义
+
+数据库定义是 `crud` 模型部分最基础的定义，它描述了当前模型在底层应该存储在数据库中什么位置（通常是单表映射定义）：
+
+[source,json]
+----
+{
+    "name": "resource",
+    "daoCls": "cn.vertxup.rbac.domain.tables.daos.SResourceDao",
+    "field": {
+        "unique": [
+            [
+                "code",
+                "sigma"
+            ]
+        ]
+    }
+}
+----
+
+如上述定义片段，最简易的数据库定义只需要上述三部分：
+
+1. `name`：注意区分模型的 `identifier` 和 `name` 的差异：
++
+--
+- `identifier` 是模型全局统一标识符，具有全局唯一性，通常在定义时使用文件名表示 `identifier`，如上述片段存储于 `sec.resource.json` 文件中，此处 `sec.resource` 就是统一标识符。
+- `name` 主要用于标准接口中替换 `:actor`，根据定义，一个 `identifier` 理论上可以包含多个 `name`，但由于使用了文件名绑定，所以现阶段版本只支持 1:1 关系。
+--
+
+2. `daoCls`：此处该值表示使用 liquibase 生成代码之后的数据库访问 Dao 类名，有了这个名称后，Zero 框架会自动分析它所关联的其他所有类。
+
+[NOTE]
+====
+
+除了上述配置之外，您也可以不按照命名约定的方式定义（即抛弃系统自动运算，而使用自定义内容）。
+
+[source,json]
+----
+{
+    "name": "resource",
+    "table": "S_RESOURCE",
+    "daoCls": "cn.vertxup.rbac.domain.tables.daos.SResourceDao",
+    "pojoCls": "cn.vertxup.rbac.domain.tables.pojos.SResource",
+    "pojo": "POJO文件名称",
+    "field": {
+        "unique": [
+            [
+                "code",
+                "sigma"
+            ]
+        ]
+    }
+}
+----
+
+- 在 `0.8` 版本之前只能使用上边这种全格式，而 `0.9` 可使用简化模式自动计算。
+- 推荐使用自动计算的方式，一是因为遵循 liquibase 的代码生成规范，二是配置片段要简化很多。
+- 一般配置中只会更改 `name`。
+- `pojo` 是Zero核心框架中提供的基础映射层，它可以让您的输入数据和属性不同名，基于映射规则实现字段的重命名操作：简单讲可能您的前端输入数据为 `userName`，而转换之后存储在后端为 `name` 属性，这个动作可以直接依靠 `pojo` 关联的映射配置文件来处理（ `pojo/*.yml` ）。
+====
+
+==== 属性
+
+上述片段中我们定义了 `field` 的信息，它用于描述一个模型上的特殊属性信息，先看一个示例：
+
+[source,json]
+----
+{
+    "field": {
+        "key": "key",
+        "numbers": {
+            "code": "NUM.CUSTOMER"
+        },
+        "unique": [
+            [
+                "code",
+                "sigma"
+            ]
+        ],
+        "created": {
+            "by": "createdBy",
+            "at": "createdAt"
+        },
+        "updated": {
+            "by": "updatedBy",
+            "at": "updatedAt"
+        },
+        "object": [
+            "metadata"
+        ],
+        "array": [
+            "roomAttrs"
+        ],
+        "attachment": [
+            {
+                "field": "attribute name",
+                "condition": {
+                     "field1": "value expr 1",
+                     "field2": "value expr 2"
+                }
+            }
+        ]
+    }
+}
+----
+
+上述片段定义了模型中的特殊属性集内容，除 `unique` 以外，其他属性新版都不需单独配置：
+
+[options="header"]
+|====
+|属性名|默认值|含义
+|key|`"key"` |定义当前模型主键信息，配合 React 前端所以使用了 `key`，现阶段的版本不支持复合组件（两字段以上）。
+|unique| 无 |二维数组，定义了当前模型的标识规则组，如上述示例中定义了一组标识规则，此标识规则关联两个属性 `code` 和 `sigma`，表示当前模型关联数据记录按 `code` 和 `sigma` 这一组标识规则标识唯一记录，属于现阶段针对资源的唯一业务标识规则。最后说明一点标识规则可存在多种。
+|created / updated| （如示例）|这两个属性定义了当前记录中的 `auditor` 字段，用于描述：创建人、创建时间、更新人、更新时间 四个维度的核心 `auditor` 数据。
+|object| [] |此属性描述了当前模型中哪些属性是 JsonObject 结构，即属性本身的数据结构为 `{}`，这种结构存储时会做字符串序列化。
+|array| [] |此属性描述了当前模型中哪些属性是 JsonArray 结构，即属性本身的数据结构为 `[]`，这种结构存储时会做字符串序列化。
+|attachment| [] |此属性描述了当前模型中哪些属性是附件属性，附件属性在后端存储时会直接关联 `X_ATTACHMENT` 表结构，而不会单独序列化存储，此属性一般是和表单对齐而不是和后端表对齐，简单说表结构中不会存储该属性，而是反向引用存储在 `X_ATTACHMENT` 表中，而 `condition` 就是用于描述该属性中的附件使用何种方式关联到当前模型记录。
+|====
+
+==== 自定义头
+
+Zero核心框架中定义了如下自定义头：
+
+[options="header"]
+|====
+|属性名|自定义头|含义
+|appId|X-App-Id|当前运行应用的主键，存储在 `X_APP` 中的主键（UUID格式）。
+|appKey|X-App-Key|当前运行应用的主键唯一加密标识，用于处理敏感数据连接，`X_APP` 表中的 `APP_KEY` 字段。
+|tenantId|X-Tenant-Id|多租户模式下租户的标识信息，单租户模式下和 `sigma` 可混用。
+|sigma|X-Sigma|统一标识符，该标识符可游离，在不同场景下表示：模块、应用、租户，根据场景而定，可作为核心标识符的协助符。
+|language|X-Lang|当前运行应用的语言环境，由容器运行时环境变量定义，由于该属性不允许用户输入，所以不采用 `Accept-Language` 或 `Content-Language` 头来执行偏好筛选。
+|====
+
+通常自定义头的配置采用如下片段：
+
+[source,json]
+----
+{
+    "headers": {
+        "sigma": "X-Sigma",
+        "...": "..."
+    }
+}
+----
+
+[TIP]
+====
+从配置上可以看到，自定义头只是按照约定的方式输入数据，并没有写死相关数据，不对自定义头做绑定，您也可以随意扩展其他自定义头，此处只是提供了这样的功能。
+====
+
+==== 列连接
+
+前文提到了Zero中的列定义有三种方式，若您的列连接模式使用的是纯前端，那么列连接的配置是不需要配的，但若您想要连接不同的列配置，则此处则需要做变种模式配置：
+
+[source,json]
+----
+{
+    "column": {
+        "identifier": "sec.resource"
+    }
+}
+----
+
+此处的 `identifier` 配置的就是前文提到的列连接中的文件名，如上述配置 `sec.resource`，那么证明此处加载列会从 `plugin/ui/column/sec.resource.json` 文件中读取列配置信息，简单说，列连接内容您可以选择和不同的文件连接而不局限于约定中的 `identifier` 作为文件名连接。若这个配置您没开启，则会使用系统默认规则加载列信息。
+
+
+
+

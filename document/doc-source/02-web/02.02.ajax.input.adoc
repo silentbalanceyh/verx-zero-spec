@@ -1,0 +1,142 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 参数详解
+
+前文讲解了前端专用的Ajax远程通信API，本章针对这些API的参数部分详细讲解，如此，开发人员就了解参数的 **解析 / 配置** 流程了。
+
+==== uri
+
+所有远程通信的第一个参数几乎都是 `uri` 或 `service + uri` 的格式，而 URI 格式处理过程会执行默认逻辑：
+
+1. 若存在 `:param` 的路径参数，那么参数会一式两份，除了路径上的参数会被替换，而 `Query` 查询参数中也会包含，追加 `?param=xxx`。
+2. 所有的查询参数在提交过程中都会执行 `encoding` 的操作执行编码，后端会自动解码，以防止特殊字符、中文、标点的不合法性。
+
+[source,bash]
+----
+# 调用 Ux.ajaxGet("/api/user/:name", {
+#    name: "Lang",
+#    email: "silentbalanceyh@126.com
+# })
+GET /api/user/:name
+# 参数params如下
+{
+    "name": "Lang",
+    "email": "silentbalanceyh@126.com"
+}
+----
+
+由于上边的 `URI` 带有 `:name` 的路径参数，所以此处会直接生成：
+
+[source,bash]
+----
+GET /api/user/Lang?name=Lang&email=....
+----
+
+[CAUTION]
+====
+有几种情况会直接将参数忽略：
+
+- 参数本身是 `null`、`undefined` 的非法值。
+- 参数长度小余 `40` 时会被忽略（参考IBM产品），实际过程中最长的路径参数不外乎UUID格式，由于标准 `UUID` 格式带有中划线所以长度会是 `36`，所以查询参数有一个 `40` 长度的限制。
+
+当然您会觉得 `40` 长度是不是太少了，如果您有一个字符串需要追加在路径参数中，这个参数值最好是不超过 `40` 的，若超过了这个长度您就可以考虑是否可通过 **设计** 去规避这个问题，如直接使用查询参数、或直接使用 Body。
+====
+
+==== 默认参数
+
+默认参数为系统配置的专用参数，若您使用了环境变量 `Z_LANGUAGE`，此参数会自动追加到您的 **请求体** 中（ `language=cn` ），但请求体会包含两种格式：
+
+- 直接请求格式
++
+--
+[source,js]
+----
+Ux.ajaxPost("/api/ui/ops",{control: key, type: "FORM"})
+----
+如上边代码中的直接格式会将 `params` 参数作为 Body 发送到远程，若自动追加就会变成如下 Body 格式：
+
+[source,js]
+----
+{
+    "control": "xxx",
+    "type": "FORM",
+    "language": "cn"
+}
+----
+--
+
+- 间接请求格式
++
+--
+间接请求格式一般使用的是路径参数格式，通常会将路径参数和 Body 区分开，如下：
+
+[source,js]
+----
+Ux.ajaxPost(`${options[__Zn.Opt.AJAX_SEARCH_URI]}?QBE=:qbe`, {
+    qbe: $qbe,
+    $body: query
+});
+----
+
+上述格式中默认参数会自动追加到 `$body` 中而不是根数据结构上。
+--
+
+在部分特殊场景下如 `QR` 参数中，**默认参数** 不会被追加到请求中，以防止默认参数影响查询条件，虽然从 Zero Framework 中的语言部分可值，此条件不影响最终查询，在某些场景下此处的 `language` 参数也起到了限定作用。
+
+==== 禁用关键字
+
+禁用关键字是 Zero Framework 独有的，由于 Zero 包含了查询参数 `Qr` 的数据结构如下：
+
+[source,json]
+----
+{
+    "criteria":{},
+    "pager":{
+        "page": 1,
+        "size": 20
+    },
+    "sorter": [
+        "createdAt,DESC"
+    ],
+    "projection": []
+}
+----
+
+检查查询参数会以上述四个键为最高优先级，若包含了上述键作属性，Zero UI会将此请求判断成为 **查询引擎** 请求，部分前端组件会受到影响，所以在实际请求中需规避 `criteria, projection, sorter, pager` 关键字以防止请求参数混淆。
+
+==== 安全请求
+
+Zero 中的安全请求通常使用 `/api/` 路径，主要支持如下功能：
+
+1. 跨域安全请求
+2. 带 `token` 的标准安全请求
+3. 带 `xsrfToken` 的安全请求
+4. 数字签名功能
+
+跨域安全请求直接在环境变量中配置：
+
+[source,properties]
+----
+Z_CORS_CREDENTIALS=include
+Z_CORS_MODE=cors 
+----
+
+上述环境变量控制了跨域处理中的选项 `options`，对应：
+
+[source,json]
+----
+{
+    "mode": "cors",
+    "credentials": "include"
+}
+----
+
+标准安全格式主要以计算 `Authorization` 的值为主，会根据现阶段的 **安全模式** 执行计算，目前支持 `Basic, Digest, OAuth` 三种，常用的两种如下表：
+
+[options="header",cols="2,2,6"]
+|====
+|模式|token|Authorization格式
+|Basic|xxx|`Basic xxx`|
+|OAuth|xxx|`Bearer xxx`|
+|====

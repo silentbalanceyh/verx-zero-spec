@@ -1,0 +1,14 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/semantic/qr.json",
+    "title": "通用查询条件模板",
+    "$defs": {
+        "search": {
+            "type": "array",
+            "description": "搜索框查询条件专用字段，构造：cond1 or cond2 or ...",
+            "items": {
+                "type": "string"
+            }
+        }
+    }
+}

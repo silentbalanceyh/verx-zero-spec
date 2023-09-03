@@ -1,0 +1,138 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 飞翼零式
+
+=== 时间线
+
+Zero框架整体发展时间轴如下：
+
+image:zero-history.png[0,1024]
+
+现阶段Zero整体结构如下：
+
+[options="header", cols="30,70"]
+|====
+|模块|说明
+|`vertx-zero/vertx-gaia` | *Zero核心框架*，纯封装Vert.x的核心框架，新版包含 *元数据规范* 和 *高阶设计*。
+|`vertx-zero/vertx-ifx` | *Zero Infix架构*，集成不同非业务功能的插件结构：多认证模式、ES、Excel集成模块、Feign客户端、FTP集成模块、GIT集成模块、删除备份模块、爱奇艺客户端、Liquibase插件、Mongo数据访问模块、Neo4J拓扑模块、Redis缓存、DevOps命令行（Shell架构）、SMS阿里云短信模块、Stomp主动提醒模块。
+|`vertx-zero/vertx-pin` | *Zero Extension扩展框架*，多应用/租户/语言配置、动态建模、模块化架构、CRUD引擎、ERP管理、财务管理、拓扑图交互模块、集成服务管理、动态接口/任务系统、地理定位服务、PSI进销存模块、异构模板系统、界面化配置、单应用脚手架、异构数据库插件（MySQL、Oracle）、工作流引擎。
+|`vertx-zero/vertx-semper` | *Zero Aeon Cloud平台*，云原生K8S、Service Mesh支持（Istio）、自动化运维部署、低代码开发中心、智能需求分析平台。
+|`vertx-ui` | *Zero UI* 前端：React / Antd / 微前端模式。
+|`vertx-ai` | *Zero AI* 工具：自动化开发、部署、运维专用脚本。
+|`vertx-zero-cloud` | *Aeon Cloud* 工具箱：自动化云端部署、IaC脚本，云端工具平台。
+|====
+
+=== 设计哲学
+
+[TIP]
+====
+如何打造一个零开发、零测试、零运维的系统？也许未来就来了、也许永远都做不到。
+
+作者吐槽：本章节有打广告的嫌疑！
+====
+
+==== 均衡工作量
+
+> 面相开发、测试、运维的均衡工作量框架。
+
+一个系统从开发到最终上线落地，Zero秉承均衡 **开发、测试、运维** 三大主体角色工作量的核心理念，解决企业在交付项目过程中开发人员只关注于交付的陋习，软件工程本质是以 **工程** 为目的体系化解决方案，根据实战经验，让开发人员把目光聚焦到：**快速交付、工程实战** 上，并非以 **编程** 为中心的战场。从之前项目的经验可以知道，**运开测**是最注重团队模式的三个点，传统开发模式中重**开发**，轻**测试、运维**，很多工程师都抱怨开发不管不顾，到最后形成 **运维、测试、二开** 的灾难（这种形态在大量中小型企业中比比皆是）。
+
+==== 建模为主
+
+> 以建模为主战场的技术框架。
+
+Zero最新版基于 `MBSE` 理论，以**建模**为中心打造稳定、可成长、自管理的系统（已渗透到工业领域）。Zero从最早的版本中 **代码驱动**、到 CMDB 产品的 **配置驱动**、以及最新版的 **数据驱动**，整个过程都在强调一个主题：**建模**。一个完整的系统，模型是设计最复杂的部分，也是抽象层次最高的实现部分，目前Zero已经可以支持多种不同的建模方式（静态建模、混合建模、动态建模），也为企业应用、平台应用、工业应用提供了基础土壤，本教程中所有的开发技能、实战经验都围绕**建模**展开。
+
+==== 成长型系统
+
+> 一个无痛迁移、升级、扩展的柔性框架。
+
+为什么均衡**运开测**三个角色，因为很多时候开发人员缺了一个执念：_所有交付的项目、产品都只是一个过程形态，并非最终形态，那些交付了不再改的系统只是自我安慰罢了。_ 所以 Zero 框架的设计中很重头戏的一部分是面向各种不同的业务需求变化，您可以说它不是一个纯技术框架，但从目前交付的项目看起来，它拥有着面向新需求快速交付实施的基础。不论是内部框架标准化、外部集成标准化，所有的努力实际都在将目前固化的软件模式、设计范式抽象出来形成标准化模块以驱动后续新业务的扩展。
+
+==== 数字化体系
+
+> 以制度、流程、规范、工具为核心的体系化框架。
+
+数字化转型对中小企而言，更多场景并非直接复制大公司的成熟解决方案，而是要基于自身的土壤打造符合企业自身发展的合理的解决方案，如何降低企业在营运过程中的成本，提高管理效率才是真正意义上的体系化解决方案，工具只是其中一部分（包括 Zero 打造的系统也只是整个闭环中的一个阶段）。但是工具要为管理赋能，一些待验证的策略、想法都属于 **在路上** 的状态，那么如何使用一个工具去帮助企业快速、小成本验证这一切，并对企业提出相关整改项，也是Zero的硬核部分，目前Zero在银行、证券领域中的应用就在扮演这样一个角色，配合制度、规范、流程的落地。
+
+
+== 环境要求
+
+[WARNING]
+====
+最新版本中，核心框架的 `vertx-co` 已经将底层规范项目分离成新的 `vertx-ams` 项目，该项目可在任意 Vert.x 相关的项目中使用，全称为 `Agreed Metadata Specification`，意在打造以 *建模 / 工具* 为中心的基础规范项目底座，并使用SPI实现了从 Vert.x 到 Spring 以及其他框架的无缝切换，该项目完整版将在 1.0 正式版本发布中问世，增强了通用性和扩展性，大量开放出来的代码结构和规范都来自于现阶段的 Vert.x/Zero 项目中。
+====
+
+=== 默认HOST
+
+Zero框架中为了方便远程本地协同开发，以及各个团队成员之间协同开发不牵涉配置文件的冲突修改，您可以优先在开发环境（包括生产环境）中配置如下域名映射：
+
+[options="header",cols="20,20,60"]
+|====
+|域名|默认地址|含义
+|`ox.engine.cn` | `127.0.0.1` | 数据库访问专用地址
+|`ox.macrocosm.cn` | `127.0.0.1` | 后端专用地址（目前版本后端地址使用的是 `ox.engine.cn`）
+|`ox.server.cn` | `127.0.0.1` | 前端专用地址
+|`ox.integration.cn` | `127.0.0.1` |（保留）集成配置专用地址
+|====
+
+=== 后端开发
+
+[options="header",cols="15,10,15,60"]
+|====
+|分类|版本|执行命令|用途
+|运行时|17+|java|link:https://www.azul.com/downloads/?version=java-17-lts&package=jdk[下载,window="_blank"]，Java环境
+|运行时|3.2.0|ruby, gem|link:https://www.ruby-lang.org/en/downloads/[下载,window="_blank"]，推荐AsciiDoc使用Ruby方式安装
+|运行时|2.37.1+|git|link:https://git-scm.com/[下载,window="_blank"]，MacOS中XCode自带
+|运行时|6.5|tiup|link:https://docs.pingcap.com/zh/tidb/stable/production-deployment-using-tiup[下载,window="_blank"]，TiDB命令
+|====
+
+=== 前端开发
+
+[options="header",cols="15,10,15,60"]
+|====
+|分类|版本|执行命令|用途
+|运行时|20+|node, npm|link:https://nodejs.org/en/[下载,window="_blank"]，NodeJS环境
+|构建|1.22.19|yarn|(npm)直接安装，前端主构建工具
+|构建|5.75.0|webpack|略
+|框架|5.2.0|-|Ant Design主界面库
+|框架|2.3.54|-|Ant Design Pro企业框架主库
+|框架|4.2.9|-|Ant G2图表库
+|框架|2.3.0|-|Ant G6拓扑图、树图、脑图库
+|框架|11.3.1|-|BPMN工作流前端专用库
+|框架|18.2.0|-|React主框架库
+|框架|6.8.1|-|React-Router专用库
+|框架|16.0.1|-|React Dnd拖拽主库
+|====
+
+[CAUTION]
+====
+运行Zero UI请将Chrome浏览器升级到最新版 `110+` 以确认样式文件生效，根据部署经验，老版本在使用过程中样式会有一定问题。
+====
+
+=== 运维部署
+
+[options="header",cols="15,10,25,50"]
+|====
+|分类|版本|执行命令|用途
+|构建|3.8.x+|mvn|link:https://maven.apache.org/download.cgi[下载,window="_blank"]，Maven环境
+|构建|1.0.0-m4|mvnd|link:https://github.com/apache/maven-mvnd/releases[下载,window="_blank"]，并行Maven环境（自带Maven 4.0）
+|构建|7.6+|gradle|link:https://gradle.org/install/[下载,window="_blank"]，Gradle环境
+|容器：运行时|20.x |docker, docker-compose|link:https://docs.docker.com/get-docker/[下载,window="_blank"]，容器运行时，新版自带K8S单节点集群环境
+|容器：镜像工具|1.8.5|packer|link:https://developer.hashicorp.com/packer/downloads[下载,window="_blank"]，镜像工具，Maven可使用插件直接打包镜像
+|自动部署|2.14.2|ansible|link:https://docs.ansible.com/ansible/latest/installation_guide/index.html[下载,window="_blank"]，应用配置自动部署工具
+|自动部署|1.3.7|terraform|link:https://developer.hashicorp.com/terraform/downloads[下载,window="_blank"]，基础设施自动部署工具
+|====
+
+=== 文档管理
+
+
+[options="header",cols="15,10,15,60"]
+|====
+|分类|版本|执行命令|用途
+|文档|4.0.x|jsdoc|（npm/yarn）JavaScript文档生成
+|文档|1.2.2|live-server|（npm/yarn）文档服务器
+|文档|-|dash|（npm/yarn）标准文档皮肤工具
+|文档|2.0.18|asciidoctor|（gem）AsciiDoc文档生成工具
+|====

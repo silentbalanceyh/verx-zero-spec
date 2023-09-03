@@ -1,0 +1,38 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiSearchInput`
+
+====
+Qr类型的组件只有两个自定义的比较特殊的组件，其他组件的用法可直接参考现有的 **查询表单** 来完善，如 Qr 在输入表单上的更改类似：
+
+- 字段名一般会使用 ``` 符号做分割（符号之后是查询操作符），配置如：
++
+--
+[source,json]
+----
+"name`c,名称,24"
+----
+--
+- 如果是下拉类型的则多数都支持多选模式，包括 `aiRadio / aiCheckbox / aiSelect` 的选项都是支持多选模式的，最终使用 `IN` 操作符。
+
+====
+
+此交互式组件为搜索专用的组件，一般在搜索表单中使用。配置如：
+
+[source,json]
+----
+{
+    "metadata":"contactName,联系人姓名,12,,aiSearchInput",
+    "optionJsx.layout": {
+        "left": 14,
+        "right": 10
+    }
+}
+----
+
+该查询组件如下：
+
+image:exp-qr-input.png[0]
+

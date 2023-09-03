@@ -1,0 +1,74 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiInput` (A)
+
+最简单的文本渲染，对应 `AntD` 中的 `<Input/>` 组件，也是默认值（即不配置也可），配置如下：
+
+[source,json]
+----
+{
+    "metadata":"name,名称,14,,,placeholder=20个中文字符,normalize=text:40",
+    "optionConfig.rules":[
+        "required,请输入名称，名称不可为空！",
+        {
+            "validator": "existing",
+            "message": "对不起，名称重复！",
+            "config": {
+                "uri": "/api/role/existing",
+                "method": "POST",
+                "params": {
+                    "sigma":"PROP:app.sigma"
+                }
+            }
+        }
+    ]
+}
+----
+
+上述代码取自 **角色管理**，先忽略 `optionConfig.rules` 部分的验证规则配置，若去掉验证规则此处的配置有如下写法（注意此处的 `[]` 是第二个维度，并非最上层维度）：
+
+_写法一_
+
+[source,json]
+----
+[
+    "name,名称,14,,,placeholder=20个中文字符,normalize=text:40"
+]
+----
+
+_写法二_
+
+[source,json]
+----
+[
+    {
+        "metadata": "name,名称,14,,,placeholder=20个中文字符,normalize=text:40"
+    }
+]
+----
+
+一般情况若不开启验证规则而 **原子解析器** 又可直接生效的场景中不采用第二种 `metadata` 的写法，第一种写法更省事，且注意所有 `$KV$` 部分必须在定义的表单字段解析器格式之后，从索引 `5` 开始书写 `key=value` 的 **原子解析** 模式。上述配置中若没有后续的 **原子解析** 信息可直接书写成：`"name,名称,14"`。由于 `aiInput` 是默认值，所以此处带 `render` 的写法应该是：`"name,名称,14,,aiInput"`。上述配置最终解析的完整配置如（ **后续配置** 不再开放完整格式，大家自行阅读。）：
+
+[source,json]
+----
+{
+    "field": "name",
+    "optionItem": {
+        "label": "名称"
+    },
+    "optionConfig": {
+        "normalize": "text:40"
+    },
+    "optionJsx": {
+        "placeholder": "20个中文字符"
+    },
+    "span": 14
+}
+----
+
+输入框如下：
+
+image:exp-input.png[0,600]
+

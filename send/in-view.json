@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema",
+    "$id": "http://www.vertx-cloud.cn/send/in-view.json",
+    "$defs": {
+        "by-name": {
+            "type": "object",
+            "description": "视图参数：name + position",
+            "properties": {
+                "name":{
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                }
+            },
+            "required":[
+                "name", "position"
+            ]
+        },
+        "by-view": {
+            "type": "object",
+            "description": "视图参数：view + position",
+            "properties": {
+                "view":{
+                    "type": "string"
+                },
+                "position": {
+                    "type": "string"
+                }
+            },
+            "required":[
+                "view", "position"
+            ]
+        }
+    }
+}

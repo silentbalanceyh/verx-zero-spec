@@ -1,0 +1,305 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+===== UI基础配置
+
+UI基础配置一般存储在 `uiConfig / UI_CONFIG` 属性中，它的格式通常如下：
+
+[source,json]
+----
+{
+    "canvas": {
+        "height": 360
+    },
+    "phase": {
+        "addon": [
+            "BEGIN,处理中:clock-circle,18:#3053EB",
+            "RUNNING,处理中:clock-circle,18:#3053EB",
+            "SUMMARY,等待审批:undo,18:#EE3B3B"
+        ]
+    },
+    "synonym": {
+        "phase": "培训单状态",
+        "title": "培训单标题",
+        "serial": "培训单单号"
+    },
+    "linkage": [
+        "linkageEmployee",
+        "linkageTicket"
+    ]
+}
+----
+
+此处选择的是培训单，并非出差申请单，主要原因是培训流程有针对 `phase` 的新定义（针对工单阶段的扩展），四个属性的详细解释如下：
+
+[options="header"]
+|====
+|属性|说明
+|`canvas` | 画布定义，一般画布定义会根据流程复杂度设置流程图的高度，流程越复杂高度会越大，此设置是为了网页呈现，若不设置该属性，默认流程图在网页中会出现显示不清楚的情况。
+|`phase` | 工单生命周期设置，若要更改标准化工单生命周期，则需使用此处的配置对工单生命周期进行扩展，此处是 *静态扩展*，*动态扩展* 的模式后续版本会追加，动态扩展会根据某个数据源对 `phase` 执行重定义。
+|`synonym` | 同义语义，该配置为Zero UI的标准配置，它存在的主要目的是更改列表和表单的 *标签文字*，且针对某个模型的同一个属性进行文字变更，如 `title` 在培训管理中称为 `培训单标题`，而在出差申请中称为 `申请单标题`，该属性可针对任意工单字段进行文字重定义（如此操作后，工单模型就出现了多种业务形态）。
+|`linkage` | 当前工单的关联配置，可让工单和不同的实体产生关联关系，进而和实体协同执行流程。
+|====
+
+===== UI辅助数据
+
+UI辅助数据配置存储在 `uiAssist / UI_ASSIST` 属性中，它属于前端服务数据标准配置，应用于下拉、选择等多种带有 `key / value / display` 属性的组件：
+
+[source,json]
+----
+{
+    "service.catalog": {
+        "uri": "/api/type/categories/:type",
+        "magic": {
+            "type": "FIX:zero.service.catalog"
+        },
+        "inherit": true
+    },
+    "workflow.cat": {
+        "uri": "/api/type/tabulars/:type",
+        "magic": {
+            "type": "FIX:zero.workflow.cat"
+        },
+        "inherit": true
+    },
+    "lbs.state": {
+        "uri": "/api/state/by/sigma",
+        "inherit": true
+    },
+    "lbs.city": {
+        "uri": "/api/city/by/sigma",
+        "inherit": true
+    },
+    "resource.departments": {
+        "uri": "/api/dept/by/sigma",
+        "inherit": true
+    }
+}
+----
+
+该部分配置您可以在前端 *字典绑定* 中使用，此处就不多做说明，整个辅助数据机制几乎充斥整个Zero UI框架，很多属性都可以直接和字典数据实现完整绑定效果，一般情况下辅助数据会有 *值* 和 *显示文本* 的概念，比如上述配置中定义了省市数据的字典，而工单关联时存储的是主键，类似 UUID 的值，界面呈现效果则如下：
+
+image:zwf-ui-assist.png[0,800]
+
+也就意味着此处会包含辅助数据：
+
+[options="header"]
+|====
+|属性名|值|呈现|来自字典
+|`tripProvince` | UUID | 福建省 | `lbs.state`
+|`tripCity` | UUID | 福州市 | `lbs.city`
+|====
+
+您若去查看表单配置还可以看到如下完整属性设置，省市之间还会有依赖配置，从下边代码段可以知道前端在配置时省市使用了字典绑定的模式，而此处的 `lbs.state` 和 `lbs.city` 辅助数据必须在 `UI_ASSIST` 中定义：
+
+[source,json]
+----
+[
+    {
+        "metadata": "tripProvince,出差省,8,,aiSelect,placeholder=（直辖市/省份）",
+        "optionJsx.config.datum": "source=lbs.state,value=key,label=name",
+        "optionJsx.depend.impact": {
+            "reset": [
+                "tripCity"
+            ]
+        },
+        "optionConfig.rules": [
+            "required,请选择出差直辖市或省份！"
+        ],
+        "optionJsx.allowClear": true
+    },
+    {
+        "metadata": "tripCity,出差市,8,,aiSelect,placeholder=（市辖区/城市）",
+        "optionJsx.config.datum": "source=lbs.city,value=key,label=name",
+        "optionJsx.config.cascade": {
+            "source": "stateId",
+            "target": "FORM:tripProvince"
+        },
+        "optionConfig.rules": [
+            "required,请选择出差市辖区或城市！"
+        ],
+        "optionJsx.allowClear": true
+    }
+]
+----
+
+[TIP]
+====
+辅助数据的存在归根到底有一个核心原因就是数据库中使用了 *代理主键* 的设计，而不是直接使用了 *业务主键*，代理主键在Zero Extension中通常使用 UUID 列，于是很多位置都会包含类似辅助数据的结构设计，底层模型、实体之间产生关联时在 *系统级* 使用代理主键执行。
+====
+
+===== UI关联数据
+
+UI关联数据主要用于配置一个流程表单中下边截图部分（还是出差申请为例）：
+
+image:zwf-form-linkage.png[0,960]
+
+和 `UI_CONFIG` 中配置一致，此处配置了 *关联员工* 和 *关联工单*，关联数据最终访问的是底层的 `X_LINKAGE` 表，对工单而言所有关联对象都是一个 Array 数组结构，关联对象还可以作为工单主实体来使用。上述两个页签在当前流程定义中的 `UI_LINKAGE` 配置为：
+
+[source,json]
+----
+{
+    "linkageAttachment": "workflow/linkage/attachment.json",
+    "linkageTicket": "workflow/linkage/ticket.json",
+    "linkageEmployee": "workflow/linkage/employee.json"
+}
+----
+
+目前版本支持的关联信息如下：
+
+[options="header"]
+|====
+|属性名（页签）|配置文件|定义项目|说明
+|linkageAsset| `workflow/linkage/asset.json` | zero-atom | 关联资产
+|linkageTicket| `workflow/linkage/ticket.json` | zero-wf | 关联工单
+|image:i-config.png[0,22] linkageAttachment| `workflow/linkage/attachment.json` | zero-wf | 关联附件
+|linkageEmployee| `workflow/linkage/employee.json` | zero-erp | 关联员工
+|image:i-bug.png[0,22] linkageContract| `workflow/linkage/contract.json` | zero-erp | 关联合同
+|image:i-bug.png[0,22] linkageProject| `workflow/linkage/project.json` | zero-erp | 关联项目
+|image:i-bug.png[0,22] linkageCustomer| `workflow/linkage/customer.json` | zero-erp | 关联客户
+|====
+
+表格中带 image:i-bug.png[0,22] 的表示已开发，未配置（目前流程需求中没有使用到）。关联信息会在对应实体所在项目中进行关联配置定义，导入时只要定制 `workflow/linkage/` 目录下的文件名就可以导入相关关联页签，所有关联信息中只有附件关联比较特殊——不是以页签的方式呈现在界面上，而是直接呈现在主表单的下方。
+
+[CAUTION]
+====
+关联部分的页签顺序在 `UI_CONFIG` 中按照数组元素的索引位置定义，如上述配置为：
+
+[source,json]
+----
+    "linkage": [
+        "linkageEmployee",
+        "linkageTicket"
+    ]
+----
+
+所以出差申请表单中，关联员工排在第一，而关联工单排在关联员工后边（参考截图）。
+
+`UI_LINKAGE` 具有文件加载功能，类似 Excel 中的 `JSON:` 规则，即上述配置中的 `workflow/linkage/employee.json` 会在实际导入数据过程中发生转义，真正存储在数据库 `UI_LINKAGE` 字段中的内容并非是字符串，而是关联文件的JSON定义内容，这样可以大规模提高关联部分的重用性，根据实际使用看来，同一种关联部分除了文字部分偶尔有所差异，其他内容几乎一模一样，所以这样的配置模式可方便重用，如此您的流程关联配置就不用关注额外的信息而直接引用，若您需要特殊的关联配置，可以按照如下步骤执行：
+
+1. 在您的 `workflow/linkage/` 目录下书写新的关联文件（不能和上述标准化配置的文件名重名）。
+2. 将您的关联部分设置到新文件中。
+
+_目前版本不支持上述标准化以外的关联模式，后续此部分会做成动态字典来满足更多场景的需求，现阶段的关联已经可以满足大量流程应用_。
+
+====
+
+最后以关联工单为例解释 `UI_LINKAGE` 中的内容，同时帮助您理解 `ExLinkage` 组件的核心配置，了解流程中关联部分的配置细节。关联部分除了上述主界面以外，还伴随一个模态窗，如下：
+
+image:zwf-form-linkage-win.png[0,1024]
+
+关联工单的JSON全部配置如下：
+
+[source,json]
+----
+{
+    "config": {
+        "query": {
+            "sourceType": "w.ticket",
+            "targetType": "w.ticket"
+        }
+    },
+    "message": {
+        "window": "选择关联工单",
+        "add": "添加关联工单",
+        "search": "搜索工单：",
+        "tip": "（默认只有`已完成`的工单可以被选择关联，若要关联其他工单，请联系管理员。）",
+        "failure": "请选择您要添加的工单信息，您未选择任何工单！",
+        "success": "您的关联工单信息已成功保存！"
+    },
+    "editor": {
+        "selection": {
+            "phase": [
+                "FINISHED",
+                "CANCELED"
+            ]
+        },
+        "tree": {
+            "type": "zero.service.catalog",
+            "title": "服务目录",
+            "config": {
+                "parent": "parentId",
+                "title": "name",
+                "text": "name",
+                "value": "code"
+            },
+            "condition": "catalog,i"
+        },
+        "initial": {
+            "alias": "工单关联记录",
+            "type": "TICKET",
+            "linkType": "TICKET-TICKET",
+            "sourceType": "w.ticket",
+            "targetType": "w.ticket"
+        },
+        "search": {
+            "condition": [
+                "serial,c",
+                "title,c"
+            ],
+            "placeholder": "单号/标题"
+        },
+        "ajax": {
+            "uri": "/api/up/flow-ticket",
+            "method": "POST"
+        }
+    },
+    "table": {
+        "columns": [
+            {
+                "metadata": "serial,单号"
+            },
+            "title,工单标题",
+            {
+                "metadata": "catalog,类型,DATUM",
+                "$datum": "source=service.catalog,value=code,display=name"
+            },
+            {
+                "metadata": "phase,工单状态,RENDERS",
+                "width": 100
+            },
+            {
+                "metadata": "openBy,制单人,USER",
+                "$config": {
+                    "uri": "/api/user/:key",
+                    "field": "realname",
+                    "icon": "user,#00BF9F"
+                }
+            },
+            {
+                "metadata": "openAt,制单时间,DATE",
+                "$format": "YYYY-MM-DD HH:mm"
+            }
+        ]
+    }
+}
+----
+
+针对上述属性此处做个说明：
+
+[options="header"]
+|====
+|属性|二级属性|含义
+|config|query|查询 `X_LINKAGE` 表的专用条件，使用了：谁关联谁 做类型，此处由于是：工单关联工单，所以 `sourceType = w.ticket, targetType = w.ticket`（ `w.ticket` 是工单模型的统一模型标识符 ）。
+|message||定义文字部分，文字部分参考截图中的文字进行定义，自己去理解。
+|editor|selection|可选择的记录条件，如上述配置中，当关联到其他工单时，其他工单的状态必须是：`FINISHED（已完成）` 或 `CANCELED（已撤销）` ，所以正在运行的工单不能被选中。
+|editor|tree a| 
+
+- 树型结构的数据源，其类型为一个字典类型，`UI_ASSIST` 中构造的辅助数据（ `type` 属性）。
+- 标题文字 `title`，显示在左侧查询条件头部的文字。
+- 树型结构配置（参考 Zero UI 中的树型配置定义部分，`toTreeConfig` 方法 ）。
+- 构造树的查询条件，由于此处采用了服务目录构造查询条件，而服务目录在 `W_TICKET` 中属性为 `catalog`，所以此处构造的查询条件为 `CATALOG IN [?,?,?,...]` 格式。
+|editor|initial|创建新关联时所需的关联表的字段默认值补充，和 `X_LINKAGE` 中的结构对应，近似于前文规则文件中的 `environment.json` 中定义的 `global` 节点的玩法。
+|editor|search|搜索时产生的搜索条件，您可设置多个，和 `ExListComplex` 中的搜索框配置一致。
+|editor|uri|当前表格中搜索数据的远程接口定义，和Zero Ui中的 `ajax` 配置一致，通常使用查询引擎接口（Qr）。
+|table||表格配置，和前端 `ExListComplex` 中表格配置一致。
+|====
+
+[TIP]
+====
+如此配置出来的界面就拥有了极限扩展性，您可以按照您的需求进行定制，书写自己的 `UI_LINKAGE` 规则，简单说，Zero只是提供了一个空壳，内部的内容填充在这个骨架之下您可以自由发挥，这也是Zero的设计目的，数据优先级高于约定、约定优先级高于配置、配置优先级高于抽象代码、抽象代码优先级高于编程，整体按这个思路来完成重用性、扩展性定义，这也是Zero Extension框架的魅力，Extension既表示核心框架的扩展，同样表示具有配置扩展性。
+====
+
+
+
+

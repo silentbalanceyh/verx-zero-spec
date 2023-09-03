@@ -1,0 +1,46 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiProtocol` (A)
+
+对应 `AntD` 中的 `<Input/>` 组件的一个变种，您可以直接录入带协议的URL地址，然后点击 **解析** 按钮，系统会根据 `linker` 的配置将协议拆分之后的数据填充到现有的表单中。
+
+[source,json]
+----
+[
+    {
+        "metadata": "endpoint,FTP地址,16,99%,aiProtocol,placeholder=上传文件的完整路径，可直接使用ftp命令的路径地址。",
+        "optionJsx.config.linker": {
+            "hostname": "hostname",
+            "port": "port",
+            "username": "username",
+            "password": "password",
+            "path": "path"
+        }
+    }
+]
+----
+
+上述配置存在于集成管理处理 `RESTful、FTP` 协议部分，您可以填写如下：
+
+[source,bash]
+----
+http://ox.engine.cn:8081/api/app
+----
+
+上述内容会被直接解析成：
+
+[source,json]
+----
+{
+    "hostname": "ox.engine.cn",
+    "port": 8081,
+    "username": null,
+    "password": null,
+    "path": "/api/app"
+}
+----
+
+由于此处处理的是 `RESTful`，所以 `username` 和 `password` 在此处无法解析，为空，若是 `FTP` 协议或其他协议，此处会解析得到对应的账号以及密码。
+

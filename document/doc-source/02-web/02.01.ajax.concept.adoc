@@ -1,0 +1,187 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== Ajax基础
+
+Zero UI中的Ajax调用一般可以直接使用 `Ux.xxx` 的API，基本使用如下：
+
+[source,js]
+----
+import Ux from 'ux';
+
+// 最终发送请求：GET /app/name/vie.app.zui
+Ux.ajaxGet("/app/name/:name", {name:"vie.app.zui"})
+----
+
+上述代码中直接调用了 `Ux.ajaxGet` 方法发送 `GET` 请求，所有的Ajax类的API主要包含三个大类：
+
+- **请求类**：安全模式 / 非安全模式标准请求。
+- **配置类**：纯异步回调模式（古老的callback方式）。
+- **响应类**：和 Zero UI结合的各种不同响应模式相关。
+
+==== 请求类
+
+请求类 API 主要设计和考虑维度如下：
+
+- 是否执行Spring中带有服务名称（`serviceName`）的微服务模型的API调用。
+- 是否执行安全请求：
++
+--
+[NOTE]
+====
+在 Zero 框架基础规范中，默认 `/` 类型的API是公开类型的API，而带有 `/api` 前缀的API为标准API（即需安全认证的API），若客户端执行 **安全请求**，脚本会根据当前应用的认证模式（`Basic, OAuth, Digest`）为客户端请求生成 `Authorization` 头相关信息；不仅如此 Zero Framework 还支持 **数字签名** 功能，若同时在客户端和服务端启用了数字签名功能，**签名模块** 会自动为每个请求计算 `sig` 参数，默认使用算法 `HMAC-512`（算法可同时在前后端配置）。
+====
+--
+- 上传/下载类的请求都是基于 **安全模式**，其中分为 `GET/POST` 两种不同的API。
+- 请求类的签名统一为 `(uri, params, options)` 或 `(service, uri, params, options)`，而返回值统一为 `Promise`。
+
+参考表格看看 **请求类** API的详细信息：
+
+[options="header",cols="1,1,1,1,6"]
+|====
+|HTTP方法|安全模式|标准|微服务|含义
+|`GET`|是|ajaxGet|microGet|标准GET请求
+|`GET`|是|ajaxDownload||GET下载
+|`GET`||ajaxFetch|microFetch|公开GET请求
+|`GET`||ajaxResource||当前站点资源读取专用API，一般读取当前站点的HTML页做动态加载专用。
+|`POST`|是|ajaxPost|microPost|标准POST请求
+|`POST`|是|ajaxUpload||标准上传请求
+|`POST`|是|ajaxPull||POST下载
+|`POST`||ajaxPush|microPush|公开POST请求
+|`PUT`|是|ajaxPut|microPut|标准PUT请求
+|`DELETE`|是|ajaxDelete|microDelete|标准DELETE请求
+|====
+
+上述的API的常用参数表如下：
+
+[options="header",cols="1,1,7"]
+|====
+|参数名|类型|含义
+|`service`|String|「微服务」专用参数，用于表示服务名。
+|`uri`|String|请求专用路径，可使用类似 `:param` 的路径参数发送请求。
+|`params`|Object|请求参数，通常是 `key=value` 的键值对。
+|`options`|Object|请求头设置，可设置不同请求头（默认会计算部分请求头）。
+|====
+
+==== 配置类
+
+配置类API会根据配置的方法执行分流操作（之前叫做 **回调类**，升级后语义有变化），通常配置类API都以 `async` 做方法前缀，现阶段所有配置类的异步API包含如下：
+
+[options="header",cols="2,8"]
+|====
+|方法|含义
+|`asyncTrue`|该方法通常用于 **检查** 函数，一般是检查数据存在或丢失专用的一个Ajax接口，这种接口只返回 `true / false`，函数签名如 `(config, params, callback)`。
+|`asyncData`|该方法用于执行标准远程请求，远程请求正常则直接执行 `callback` 回调，这种接口自由点，可返回所有满足要求的异步回调，函数签名如 `(config, params, callback, mockData)`。
+|`asyncPromise`|该方法在上述提到的标准函数上执行了 **配置封装**，可支持Ajax的配置模式驱动远程通信请求。
+|`asyncImage`|该方法为图片加载专用方法，图片源可以是某个站点内图片，也可以是远程的二进制流转换的图片（手动 MIME）。
+|`asyncWrap`|该方法为封装专用方法，在原始的Ajax配置类接口中封装了一层，封装类在部分地方起到了防御式效果，所以此方法属于新版正在使用的方法。
+|====
+
+AJAX的标准配置如下（根据HTTP方法执行不同配置）：
+
+[source,js]
+----
+const V_ASYNC_FN = {
+    get: __AJX.ajaxGet,
+    post: __AJX.ajaxPost,
+    put: __AJX.ajaxPut,
+    fetch: __AJX.ajaxFetch,
+    push: __AJX.ajaxPush,
+    delete: __AJX.ajaxDelete
+};
+----
+
+配置类API的两个核心参数此处有所讲究：
+
+- config 参数：
++
+--
+此参数通常格式如：
+
+[source,json]
+----
+{
+    "uri": "xxx",
+    "method": "xxx",
+    "params.criteria": {
+    },
+    "magic": {
+    }
+}
+----
+配置参数中必须说明的是两种不同的取参模式：
+
+- 直接使用 `params` 的方式提取参数，这种模式提取参数只支持 `criteria` 部分的 **输入解析**。
+- 使用 `magic` 的方式提取参数，这种模式会直接对参数执行 **输入解析**，且将解析结果注入到 QR 查询参数部分。
+--
+
+- callback 参数：
++
+--
+callback作为回调配置，支持两种不同的格式：
+
+- Function 格式，直接使用编程的方式传入单结果回调，只传入 `success` 时的回调。
+- Object 格式，这种格式会包含 `success / failure` 两种回调，成功和失败分别走不同的回调。
+--
+
+==== 响应类
+
+响应类API主要用于后期处理，后期和前端界面交互渲染以简化回调效果信息，比如：
+
+1. 提交成功后，显示成功消息（ `message` 类）。
+2. 提交成功后，弹出对话框提示结果（ `Modal` 类）。
+3. 若提交失败，上述两种结果（红色）以失败的方式返回。
+
+响应类API和其他类型不同，部分响应类API包含了 **二阶** 模式，二阶模式一般为 **配置方式** 专用，二阶的 **编程方式** 代码通常如下：
+
+[source,js]
+----
+// 2阶使用如
+const $opConfirm = (todo = {}, ref) => (reference) => (data = {}) => {
+    const request = {key: todo.key, data};
+    return Ex.I.todo(request, true)
+        // 二阶API弹出对话框提示
+        .then(Ux.ajax2Dialog(ref, buildConfig(ref, "confirmed"), true))
+        .then(response => Ex.rx(reference).close(response));
+};
+----
+
+响应类API的清单如下
+
+[options="header",cols="2,2,6"]
+|====
+|1阶函数|2阶函数|含义
+|`ajaxError`| x | 异常回调，解析错误信息专用，异常发生之后会执行 **防重复提交** 的表单还原。
+|`ajaxDialog`|`ajax2Dialog`|正常回调，使用弹出框显示正常执行之后的回调效果。
+|`ajaxMessage`|`ajax2Message`|消息模式，使用 `message` 消息组件执行回调效果，一般是显示一条大约 `1.628` 秒的基本消息。
+|x| `ajax2True`|特殊二阶回调，返回值为 `true / false`，通常做 **存在检查** 或 **丢失检查**。
+|`messageSuccess`||打印成功消息。
+|`messageFailure`||打印失败消息。
+|`messageCatch`||打印严重错误的基本消息。
+|====
+
+最后结合源代码再讲一下回调配置，通常回调配置片段如下：
+
+[source,json]
+----
+"_modal": {
+    "error": {
+        "empty": "对不起，请在权限组中添加权限信息！"
+    },
+    "success": {
+        "added": "恭喜，您已经成功添加了一条权限到当前权限集，您可以继续添加权限或关闭当前窗口！",
+        "saved": "恭喜，您已经成功更新了所选择的权限信息！"
+    }
+}
+----
+
+上述片段中的配置通常位于 `UI.json` 的顶层，您可以直接调用 `Ux.ajaxDialog` 直接解析或提取配置，它有三个 **根值** 
+
+[options="header",cols="2,8"]
+|====
+|根键|含义
+|error|红色异常信息，通常是错误信息，调 `Ux.ajaxError` 可生效。
+|success|绿色成功信息，调 `Ux.ajaxDialog` 可生效。
+|confirm|提示框（ `Yes/No` ），同样调 `Ux.ajaxDialog` 可生效，且 Zero UI 会自动配置窗口函数。
+|====
+
