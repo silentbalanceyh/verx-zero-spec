@@ -668,7 +668,7 @@ _参数表_
 |`field`| 等价于 `EDITOR` 中的 `render` 属性，用于选择**表单选择器**。
 |`jsx`| 等价于 `EDITOR` 中的 `optionJsx` 属性，用于提供当前表单操作组件的配置信息，在表单中等价于 `optionJsx` 属性。
 |`fieldCond`|默认值（ `key` ），条件属性，在执行索引查找时专用的**条件属性**。
-|`fieldKey`|默认值（ `key` ），取值属性，在执行索引查找时专用的**取值属性**。
+|`fieldKey`|（**已废弃**），新版本会直接连接 `format.keyField` 做统一，以防止主键不统一的情况。
 |====
 
 代码中的属性使用
@@ -677,8 +677,8 @@ _参数表_
 ----
 // value = []
 // fieldCond = `key`
-// record.key = record[fieldKey]
-const foundIndex = __Zn.elementIndex(value, fieldCond, record[fieldKey]);
+// record.key = record[format.keyField]
+const foundIndex = __Zn.elementIndex(value, fieldCond, record[format.keyField]);
 ----
 
 ==== `TAG`

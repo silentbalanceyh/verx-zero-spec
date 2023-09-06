@@ -1582,7 +1582,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </tr>
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock"><code>fieldKey</code></p></td>
-<td class="tableblock halign-left valign-top"><p class="tableblock">默认值（ <code>key</code> ），取值属性，在执行索引查找时专用的<strong>取值属性</strong>。</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">（<strong>已废弃</strong>），新版本会直接连接 <code>format.keyField</code> 做统一，以防止主键不统一的情况。</p></td>
 </tr>
 </tbody>
 </table>
@@ -1593,8 +1593,8 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="content">
 <pre class="highlight"><code class="language-js" data-lang="js">// value = []
 // fieldCond = `key`
-// record.key = record[fieldKey]
-const foundIndex = __Zn.elementIndex(value, fieldCond, record[fieldKey]);</code></pre>
+// record.key = record[format.keyField]
+const foundIndex = __Zn.elementIndex(value, fieldCond, record[format.keyField]);</code></pre>
 </div>
 </div>
 </div>
@@ -1703,7 +1703,7 @@ const foundIndex = __Zn.elementIndex(value, fieldCond, record[fieldKey]);</code>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-08-25 16:58:09 +0800
+Last updated 2023-09-06 14:45:23 +0800
 </div>
 </div>
 </body>
