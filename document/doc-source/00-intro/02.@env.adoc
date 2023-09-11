@@ -16,9 +16,10 @@ $ sudo npm install -g vertx-ai
 ====
 
 include::02.01.env-setup.adoc[]
-include::02.03.env-data.adoc[]
-include::02.04.env-database.adoc[]
-include::02.05.env-loading.adoc[]
+include::02.02.env-data.adoc[]
+include::02.03.env-database.adoc[]
+include::02.04.env-loading.adoc[]
+include::02.05.env-office.adoc[]
 
 
 
