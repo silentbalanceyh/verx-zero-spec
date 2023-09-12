@@ -20,9 +20,9 @@ ifndef::imagesdir[:imagesdir: ../images]
 [source,bash]
 ----
  # NPM 模式安装
- npm i @cyntler/react-doc-viewer
+ npm install --save @onlyoffice/document-editor-react
  # YARN 模式安装
- yarn add @cyntler/react-doc-viewer
+ yarn add @onlyoffice/document-editor-react
 ----
 
 这是一个标准化组件，可以直接扔到 `economy` 中去实现，实际在这个项目内您可以看到目录前缀（ `@` 符号之前 ）如下截图：
