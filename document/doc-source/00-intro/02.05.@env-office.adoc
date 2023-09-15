@@ -1,0 +1,193 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 办公协同
+
+Zero Ui中的办公协同，主要针对Office的套件（ `Word, Excel, PPT` ）进行在线的协同浏览/编辑，集成了开源版的 link:https://www.onlyoffice.com/[ONLYOFFICE] 套件，此套件依赖后端运行一个特殊的**文档服务器**，所以本文提供**开发**和**生产场景**下的服务器搭建流程，让开发人员可以完善扩展模块 `zero-is / zero-doc` 的**文档管理**以及**文档阅览**功能。
+
+==== ONLYOFFICE
+
+===== 安装教程
+
+- 参考：link:https://helpcenter.onlyoffice.com/installation.aspx[安装首页]
+- 参考：link:https://helpcenter.onlyoffice.com/installation/docs-community-index.aspx[`Community` 版本安装]
+
+根据您自身操作系统需求选择对应的安装教程：
+
+image:zero-doc-server-install.png[,800]
+
+===== 基本介绍
+
+在搭建**文档服务器**之前先看看 ONLYOFFICE 产品线（ `Community / Enterprise / Developer` 三种版本）：
+
+[options="header", cols="2,8"]
+|====
+|产品名|含义
+|`Docs` |提供平台使用的**文档编辑器**，可以和内置的**文档服务器**集成（本章内容）。
+|`DocSpace` |提供**文档协同**专用的在线办公室，侧重于工具。
+|`Workspace` |工作空间，您可以在这个空间中做项目管理，直接和项目管理强相关的工作区间。
+|`Connectors` |和其他平台集成用的**连接器**。
+|`Apps` |各种不同平台对应的终端。
+|====
+
+ONLYOFFICE 产品线上会包含 `Document Server` 以及 `Community Server` 两个服务端，这两个服务端的区别在于：
+
+- `Document Server`：直接和内置 `Docs` 工具集成专用提供编辑器的服务器，编辑器包括：
++
+--
+- `Document Editor`：编辑 Word 文档专用。
+- `Spreadsheet Editor`：编辑 Excel 文档专用。
+- `Presentation Editor`：编辑 PPT 文档专用。
+- `Form Creator`：表单编辑器。
+- `PDF reader / converter`：PDF阅读器和转换器。
+--
+- `Community Server`：集成专用服务器，提供了 `REST` 的 API 接口。
+
+其他额外的内容参考：link:https://api.onlyoffice.com/[ONLYOFFICE文档中心]。
+
+教程中主要使用第一个开源产品 `ONLYOFFICE Docs`，它是一个开源办公套件，包含了**文本文档（Word）、电子表格（Excel）、演示文稿（PPT）**的编辑器，功能点如下：
+
+- 创建、编辑、查看对应的**文本文档（Word）、电子表格（Excel）、演示文稿（PPT）**。
+- 和其他团队成员协同处理文档。
+- 查看PDF、导入/导出PDF。
+- 将文档转换成 Markdown / HTML 等相关格式。
+- 将课本转化成电子书。
+
+====
+从 `6.4` 版本开始，`Docs` 提供了对 Web 应用程序开放平台接口协议（ `WOPI` ）的支持（一种 REST 协议），用于将您的应用程序和在线办公室集成，它允许您打开存储在服务器上的文件、编辑、保存它们。
+
+它支持的所有格式包括：`DOC, DOCX, ODT, RTF, TXT, PDF, HTML, EPUB, XPS, DjVu, XLS, XLSX, ODS, CSV, PPT, PPTX, ODP`。
+====
+
+include::02.05.01.installing.adoc[]
+
+==== 验证结果
+
+===== 基本环境
+
+1. 修复配置，若您的配置有问题，可使用如下命令修复：
++
+--
+
+image:zero-doc-e-dpkg.png[,800]
+
+[source,bash]
+----
+sudo dpkg --configure -a
+# 下边是输出
+Setting up onlyoffice-documentserver (7.4.1-36) ...
+Generating AllFonts.js, please wait...Done
+Generating presentation themes, please wait...Done
+Generating js caches, please wait...Done
+Installing plugins, please wait...
+# 最后一个步骤十分慢，需要等待很久才可以
+----
+--
+
+2. 浏览器打开：link:http://ox.office.cn:5600[] 地址，您可以看到如下界面，就基本证明：
++
+--
+image:zero-doc-ui.png[,900]
+--
+
+====
+如此您就可以在前端使用 `Document Server` 了，高级配置可参考官方教程。
+====
+
+===== 诊断/调试
+
+由于修改了配置之后您需要将整个服务重启才可以生效，本章节提供 ONLYOFFICE 的基本命令辅助**诊断/调试**。
+
+1. 直接进入 `/var/log/onlyoffice/documentserver` 目录，此目录结构如下：
++
+--
+[options="header", cols="3,7"]
+|====
+|文件 |含义
+|`converter/out.log` |Docs Converter 输出日志
+|`converter/err.log` |Docs Converter 错误日志
+|`docservice/out.log` |Docs Docservice 输出日志
+|`docservice/err.log` |Docs Docservice 错误日志
+|`metrics/out.log` |Docs Metrics 输出日志
+|`metrics/err.log` |Docs Metrics 错误日志
+|`nginx.error.log` |Nginx 错误日志
+|====
+-- 
+2. 您可以使用如下命令查看后台服务的状态，默认情况只会安装 `Converter / Docservice / Metrics` 三个服务：
++
+--
+[source,bash]
+----
+# 所有 ONLYOFFICE 安装完成之后的服务都带有 ds- 前缀
+systemctl status ds-*
+----
+
+image:zero-doc-service.png[,800]
+--
+
+3. 有了上述服务名称之后，您就可以直接使用下边的命令重启服务（大部分场景只需要重启 `ds-docservice` 服务即可）：
++
+--
+[source,bash]
+----
+sudo systemctl restart ds-metrics       # Metrics
+sudo systemctl restart ds-docservice    # Docservice
+sudo systemctl restart ds-converter     # Converter
+
+# 参考官方提示
+# RPM / DEB 软件包的重启
+systemctl restart ds-*
+# Docker 安装方式的重启
+supervisorctl restart all
+----
+--
+
+除开上述的内容之外，您还需验证当前文档服务是否可用，按照主界面的操作执行：
+
+[source,bash]
+----
+# 启动Example服务
+sudo systemctl start ds-example
+# 随机启动设置
+sudo systemctl enable ds-example
+----
+
+1. 问题一：点击进入主界面，创建一份新文档并且打开：
++
+--
+image:zero-doc-ejwt.png[]
+
+_原因一：由于此处您需编辑/上传文档到 Docs 服务器中，若 JWT 未打开则会碰到上述问题，直接编辑配置文件 `/etc/onlyoffice/documentserver/local.json`，并重启服务。_
+
+[source,json]
+----
+{
+    "...": "...",
+    "enable": {
+        "request": {
+            "inbox": true,
+            "outbox": true
+        },
+        "browser": true
+    }
+}
+----
+--
+
+====
+其他问题遇到了就慢慢收录，参考：link:https://api.onlyoffice.com/editors/troubleshooting[Troubleshooting]。
+====
+
+若您进入 `ds-example`，就可以看到如下两个界面：
+
+_文档列表_
+
+image:zero-doc-em1.png[,800]
+
+_文档编辑_
+
+image:zero-doc-em2.png[,800]
+
+> 上述界面证明您的 Document Server 是配置完成了的！
+
+

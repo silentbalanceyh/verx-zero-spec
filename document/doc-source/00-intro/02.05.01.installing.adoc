@@ -1,0 +1,571 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+
+==== Docker安装
+
+[TIP]
+====
+Docker默认指定了 Google DNS 服务器，若您无法从互联网访问，则您需要修改Docker的DNS设置保证您可以访问镜像服务器，如常见的Linux的配置位于 `/etc/default/docker` 文件中，有几种方法可以解决这个问题：
+
+_命令方式_
+
+在启动命令中使用 `docker_OPTS="--dns 8.8.8.8"` 参数。
+
+_基于 RPM 的系统_：
+
+1. 创建配置文件 `/etc/docker/daemon.json` 文件，配置内容如下：
++
+--
+[source,json]
+----
+{
+    "dns": [ "8.8.8.8" ]
+}
+----
+--
+2. 重启Docker服务
++
+--
+[source,bash]
+----
+sudo systemctl restart docker.service
+----
+--
+
+====
+
+===== 基本命令
+
+若安装了Docker，那么您可以使用如下命令启动：
+
+[source,bash]
+----
+# 有必要追加 sudo
+# 直接启动
+docker run -i -t -d -p 5600:80 --restart=always -e JWT_SECRET=my_jwt_secret onlyoffice/documentserver:latest
+
+# 您可以先试用如下命令单拉镜像（省掉运行时的镜像拉取时间）
+docker pull onlyoffice/documentserver:latest
+----
+
+从 `7.2` 的版本开始，若您没有指定 `JWT_SECRET` 参数，系统会随机生成，且切换虚拟机（VM）和物理机启动时会重新生成，这会给集成带来一定的问题，所以此处最好您直接使用自定义的值：
+
+- 使用JWT：`-e JWT_SECRET=xxxx`。
+- 关闭JWT：`-e JWT_ENABLED=false`。
+
+===== 存储分离
+
+ONLYOFFICE 中的所有数据都是存储在指定目录中的：
+
+[options="header", cols="4,6"]
+|====
+|目录|含义
+|`/var/log/onlyoffice` |存储 ONLYOFFICE Docs 的日志数据
+|`/var/www/onlyoffice/Data` |存储证书信息
+|`/var/lib/onlyoffice` |文件缓存
+|`/var/lib/postgresql` |数据库文件
+|====
+
+若您想要将这些数据存储到容器之外，您可以使用 `-v` 选项，最终执行命令如下（端口号使用 `31017` ）：
+
+[source,bash]
+----
+# 生成自己的 my_jwt_secret，直接使用 ai str -n 1 -l 36
+ai str -n 1 -l 36
+# 假设：OaBgxq6UYs6IWBSHdUlMswUDmghZIH2cLmK1
+
+docker run -i -t -d -p 31017:80 --restart=always \
+    -v $PWD/app@runtime/doc-office/logs:/var/log/onlyoffice \
+    -v $PWD/app@runtime/doc-office/data:/var/www/onlyoffice/Data \
+    -v $PWD/app@runtime/doc-office/lib:/var/lib/onlyoffice \
+    -v $PWD/app@runtime/doc-office/db:/var/lib/postgresql \
+    -e JWT_SECRET=OaBgxq6UYs6IWBSHdUlMswUDmghZIH2cLmK1 onlyoffice/documentserver:latest
+----
+
+[NOTE]
+====
+若将 Docker 使用在生产环境，强烈建议将数据文件存储到容器之外，这种做法和使用 Docker 运行数据库是一个原理。而在Zero脚手架中，新的文档服务器的规划目录放到启动器的 `app@runtime/doc-office` 目录下，此处的目录基础规划如：
+
+[options="header", cols="3,7"]
+|====
+|目录/文件|含义
+|`<app>/app@runtime/doc-office` | 应用根目录，当前目录使用 `${PWD}` 环境变量可以得到**绝对路径**。
+|`<app>/app@runtime/doc-office/logs` | 对应 `/var/log/onlyoffice` 日志数据。
+|`<app>/app@runtime/doc-office/data` | 对应 `/var/www/onlyoffice/Data` 数据目录。
+|`<app>/app@runtime/doc-office/lib` | 对应 `/var/lib/onlyoffice` 文件缓存。
+|`<app>/app@runtime/doc-office/db` | 对应 `/var/lib/postgresql` 数据库文件。
+|====
+====
+
+==== Docker-Compose
+
+**开发推荐**：这种方式可以自己修改配置文件，然后使用 `docker-compose` 拉起 ONLYOFFICE 的服务，先下载库：
+
+[source,bash]
+----
+git clone https://github.com/ONLYOFFICE/Docker-DocumentServer
+----
+
+修改项目中的 `docker-compose.yml` 配置文件（只更改端口号部分）
+
+[source,yaml]
+----
+version: '2'
+services:
+  onlyoffice-documentserver:
+    build:
+      context: .
+    container_name: onlyoffice-documentserver
+    depends_on:
+      - onlyoffice-postgresql
+      - onlyoffice-rabbitmq
+    environment:
+      - DB_TYPE=postgres
+      - DB_HOST=onlyoffice-postgresql
+      - DB_PORT=5432
+      - DB_NAME=onlyoffice
+      - DB_USER=onlyoffice
+      - AMQP_URI=amqp://guest:guest@onlyoffice-rabbitmq
+      # Uncomment strings below to enable the JSON Web Token validation.
+      #- JWT_ENABLED=true
+      #- JWT_SECRET=secret
+      #- JWT_HEADER=Authorization
+      #- JWT_IN_BODY=true
+    ports:
+      - '20080:80'                      # 端口映射 20080 -> 80
+      - '20443:443'                     # 端口映射 20443 -> 443
+    stdin_open: true
+    restart: always
+    stop_grace_period: 60s
+    volumes:
+      - /var/www/onlyoffice/Data
+      - /var/log/onlyoffice
+      - /var/lib/onlyoffice/documentserver/App_Data/cache/files
+      - /var/www/onlyoffice/documentserver-example/public/files
+      - /usr/share/fonts
+
+  onlyoffice-rabbitmq:
+    container_name: onlyoffice-rabbitmq
+    image: rabbitmq
+    restart: always
+    expose:
+      - '5672'
+
+  onlyoffice-postgresql:
+    container_name: onlyoffice-postgresql
+    image: postgres:9.5
+    environment:
+      - POSTGRES_DB=onlyoffice
+      - POSTGRES_USER=onlyoffice
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    restart: always
+    expose:
+      - '5432'
+    volumes:
+      - postgresql_data:/var/lib/postgresql
+
+volumes:
+  postgresql_data:
+----
+
+依次执行如下命令：
+
+[source,bash]
+----
+# 进入目录中，docker-compose.yml 已改过
+cd Docker-DocumentServer
+
+# 然后拉起
+docker-compose up -d
+
+# 停止使用如下命令
+docker-compose down
+----
+
+第一次由于镜像、依赖库下载等各种问题，速度会慢一点（保证您的网络连通性），执行过程中您可以看到如下截图：
+
+image:zero-doc-docker-compose.png[,900]
+
+==== Ubuntu
+
+本章提供在 `Ubuntu` （ `Ubuntu Server 22.04.3 LTS` ）上安装的详细流程，此部分内容同时支持**开发环境/生产环境**。
+
+[options="header", cols="4,6"]
+|====
+|项|需求
+|`CPU` | `> 2GHz`
+|`RAM`（内存） | `> 2GB`
+|`HDD`（硬盘） | `> 40GB`
+|`SWAP` | `> 4GB`
+|`OS` | 内核版本超过 `3.13`（执行 `uname -a` 查看）
+|其他库 a|
+
+- `PostgreSQL > 12.9`
+- `NGINX > 1.3.13`
+- `libstdc++6 > 4.8.4`
+- `RabbitMQ`
+|====
+
+[TIP]
+====
+前文中已经配置过 `ox.office.cn` 域名映射的IP地址，所以本章节所有的配置都配置到此域名下，推荐搭建环境时使用域名替换掉IP，不论是局域网DNS还是伪集群模式，使用域名是最好的方式，以防止IP地址变化导致配置的大规模更新；不仅如此，在搭建 `Document Server` 的机器上还需要设置如下Host：
+
+[options="header", cols"4,6"]
+|====
+|域名|含义
+|`ox.server.cn` |Zero Ui的运行服务器。
+|`ox.engine.cn` |Zero 后端的运行服务器。
+|`ox.office.cn` |Document Server文档服务器。
+|====
+====
+
+由于实例运行在局域网中，安装配置之前先按如下步骤检查防火墙并关闭：
+
+[source,bash]
+----
+# 查看防火墙状态
+# inactive - 禁用
+# active - 启用
+sudo ufw status
+# 禁用防火墙
+sudo ufw disable
+----
+
+===== 依赖库
+
+下边是安装 ONLYOFFICE 所需的依赖库：
+
+[options="header", cols="4,6"]
+|====
+|库|备注
+|`libcurl3` |一个用于处理网络数据传输的开源库，它提供了一个简单的 API，允许开发人员通过多种协议（如HTTP、FTP、SCP、SFTP等）发送和接收数据。
+|`libxml2` |libxml2 是一个用于解析和处理XML（可扩展标记语言）文档的开源库，libxml2 提供了一套功能强大的工具，用于读取、解析、创建和修改XML文档，使开发人员能够在各种应用程序中处理XML数据。
+|`fonts-dejavu` |fonts-dejavu 是一个开源字体包，包含了 DejaVu 字体系列的字体文件，这些字体是基于 Bitstream Vera 字体系列的扩展，旨在提供广泛的字符集支持，包括拉丁字母、希腊字母、西里尔字母以及各种特殊字符和符号。
+|`fonts-liberation` |fonts-liberation 是一个字体包，旨在提供一组兼容微软字体的开源替代品，这些字体与微软的字体（例如Times New Roman、Arial和Courier New）在外观和排版上非常相似，但它们是自由和开源的，可以在各种操作系统上自由使用、分发和修改。
+|`ttf-mscorefonts-installer` |ttf-mscorefonts-installer 是一个用于在Linux系统上安装微软核心字体（Microsoft Core Fonts）的软件包，微软核心字体是一组由微软创建并在其操作系统中广泛使用的字体，包括常见的字体如Arial、Times New Roman、Courier New等。
+|`fonts-crosextra-carlito` |fonts-crosextra-carlito 是一种字体包，提供了 Carlito 字体，这是对微软 Calibri 字体的开源替代品，Calibri 是一种常见的无衬线字体，通常用于文档和电子邮件等办公应用程序中。
+|`fonts-takao-gothic` |fonts-takao-gothic 是一个字体包，包含了 Takao 字体家族的高丽字体（Gothic）变种。Takao 字体是一组用于支持多种亚洲语言字符集的开源字体。
+|`fonts-opensymbol` |fonts-opensymbol 是一个字体包，包含了开源的 OpenSymbol 字体。OpenSymbol 字体是一种特殊的字体，用于显示各种符号、图标和特殊字符，通常与办公套件和文档处理软件一起使用。
+|====
+
+执行如下命令安装上述库：
+
+[source,bash]
+----
+# 1. libcurl3 已经没有提供安装源了，所以此处使用 libcurl4 替换
+# 2. 此处执行时需使用 sudo 提升权限
+sudo apt install libcurl4 libxml2 fonts-dejavu fonts-liberation ttf-mscorefonts-installer fonts-crosextra-carlito fonts-takao-gothic fonts-opensymbol
+----
+
+[WARNING]
+====
+按照官方教程提及，若安装的是 `14.04 TLS` 或旧版本才需安装上述依赖库，但由于部分内容已经存在更新包，所以依旧执行一次上述命令，当您看到如下信息证明依赖库已全部安装完成：
+
+image:zero-doc-dep.png[,800]
+====
+
+===== PostgreSQL
+
+ONLYOFFICE 依赖 PgSQL 数据库，本章节提供 PgSQL 在 Ubuntu 上的安装。
+
+1. 执行下边命令先安装 PgSQL 数据库：
++
+--
+[source,bash]
+----
+sudo apt-get install postgresql
+----
+--
+2. 安装完成后，您需要为 ONLYOFFICE 初始化数据库：
++
+--
+[source,bash]
+----
+sudo -i -u postgres psql -c "CREATE USER onlyoffice WITH PASSWORD 'onlyoffice';"
+sudo -i -u postgres psql -c "CREATE DATABASE onlyoffice OWNER onlyoffice;"
+----
+--
+3. （局域网访问）编辑 PgSQL 的配置文件：
++
+--
+_1) `postgresql.conf` 编辑_
+
+[source,bash]
+----
+sudo vim /etc/postgresql/14/main/postgresql.conf
+----
+
+找到配置文件中的如下配置，并更改：
+
+[source,properties]
+----
+listen_addresses = '*'
+----
+
+_2) `pg_hba.conf` 编辑_
+
+[source,bash]
+----
+sudo vim /etc/postgresql/14/main/pg_hba.conf
+----
+
+在配置文件末尾追加如下：
+
+[source,properties]
+----
+# Local Network connect on [ADDRESS] section
+host    all             all             0.0.0.0/0               scram-sha-256
+----
+
+_3）重启服务_
+
+更改配置文件之后，执行如下命令：
+
+[source,bash]
+----
+sudo systemctl restart postgresql
+----
+--
+4. 打开数据库连接工具，并使用 `onlyoffice/onlyoffice` 账号密码访问（确认可连接即可）：
++
+--
+image:zero-doc-pg.png[,640]
+--
+
+===== RabbitMQ
+
+RabbitMQ 是一个开源的消息队列中间件（Message Broker），它实现了高级消息队列协议（AMQP）的标准，消息队列是一种用于在不同的应用程序或组件之间传递消息的通信方式，它们通常用于解耦不同部分的应用程序，以便它们可以独立运行和扩展。
+
+您可以按照如下步骤搭建 Ubuntu 上的 MQ：
+
+1. 由于 RabbitMQ 依赖 `Erlang` 语言环境的支持，所以先要安装 `Erlang` 环境：
++
+--
+[source,bash]
+----
+# 依赖库
+sudo apt install build-essential
+sudo apt install libncurses5-dev
+sudo apt install libssl-dev
+sudo apt install unixodbc unixodbc-dev
+sudo apt install freeglut3-dev libwxgtk2.8-dev          # Couldn't find any package by glob 'libwxgtk2.8-dev'
+sudo apt install xsltproc
+sudo apt install fop
+sudo apt install tk8.6
+
+# 语言环境（安装完成后执行 `erl`）
+sudo apt install erlang
+----
+
+这些库的作用如下：
+
+[options="header",cols="3,7"]
+|====
+|库|备注
+|`build-essential` |一个用于在Linux操作系统上设置开发环境的包集合，它通常用于Debian和Ubuntu等基于Debian的Linux发行版，包括编译器（GCC）、构建工具（Make）、基本开发库（libc）。
+|`libncurses5-dev` |用于开发基于文本界面的终端应用程序的开发库，它是ncurses库的开发包，通常用于在Linux和类Unix操作系统上创建具有文本用户界面（TUI）的应用程序。
+|`libssl-dev` |是用于开发与安全套接字层（SSL）和传输层安全性（TLS）相关的应用程序的开发包，这个包通常在Linux和类Unix操作系统上提供，用于支持安全的网络通信。
+|`m4` |一个用于文本处理的实用工具，通常用于自动化文本文件的生成和转换。
+|`unixodbc unixodbc-dev` |是与数据库连接相关的库和开发工具，通常在Unix和Unix-like操作系统上使用，它们用于支持在这些操作系统上连接和访问各种数据库管理系统（DBMS）的应用程序。
+|`freeglut3-dev libwxgtk2.8-dev` |两个不同的开发包，用于开发图形用户界面（GUI）应用程序，通常在Linux和类Unix操作系统上使用。
+|`xsltproc` |一个命令行工具，用于处理XML文档并执行XSLT（Extensible Stylesheet Language Transformations）转换。
+|`fop` |一个开源的Java应用程序，用于将XSL-FO（Extensible Stylesheet Language - Formatting Objects）文档转换为PDF和其他输出格式，XSL-FO是一种XML格式，用于描述文档的外观和格式化要求，包括字体、排版、页眉、页脚、段落和表格等。
+|`tk8.6` |Tcl/Tk图形用户界面（GUI）工具包的一个特定版本，Tcl（Tool Command Language）是一种脚本编程语言，而Tk是一个用于创建图形用户界面的工具包。
+|====
+--
+2. RabbitMQ 的安装和状态查看：
++
+--
+[source,bash]
+----
+# 安装
+sudo apt install rabbitmq-server
+# 状态查看
+sudo systemctl status rabbitmq-server
+# < 18.04+, 执行如下
+sudo apt install nginx-extras
+----
+--
+3. RabbitMQ 的日志信息查看：
++
+--
+直接进入日志目录查看日志信息：
+[source,bash]
+----
+cd /var/log/rabbitmq/
+----
+
+image:zero-doc-rmqlog.png[]
+
+将带有 `rabbit@` 前缀的日志打开（后边跟 host 名），您可以看到当前服务是否查找到对应配置目录：
+
+image:zero-doc-rmqss.png[]
+--
+4. RabbitMQ 配置局域网访问（由于关闭了防火墙，所以不需要相关设置，生产环境不推荐）：
++
+--
+[source,bash]
+----
+cd /etc/rabbitmq/
+vim rabbitmq.config
+# 内容：[{rabbit, [{loopback_users, []}]}].
+# 注意上述配置中最后一个英文句点 . 不可以丢，若丢了会导致启动失败
+
+# 修改完成后重启
+sudo systemctl restart rabbitmq-server
+----
+此处配置的 `[{rabbit, [{loopback_users, []}]}].` 意思是开放使用，rabbitmq 默认创建用户 guest，密码也是 guest，值允许 `localhost` 访问，若要外部访问则必须加上上述配置。
+--
+5. 安装管理平台，安装之后重启：
++
+--
+[source,bash]
+----
+sudo rabbitmq-plugins list                          # 查看目前有的插件列表
+sudo rabbitmq-plugins enable rabbitmq_management    # 启用管理平台
+----
+
+image:zero-doc-rmanage.png[,700]
+--
+6. 重启完成之后浏览器打开：`http://ox.office.cn:15672/`（此处的 `ox.office.cn` 已经在前边章节配置了），账号密码使用 `guest/guest`：
++
+--
+image:zero-doc-mqgui.png[]
+--
+
+===== ONLYOFFICE Docs
+
+安装 Docs 之前，您需要先看看此产品的端口相关内容，参考如下表格（完整版参考：link:https://helpcenter.onlyoffice.com/installation/docs-community-open-ports.aspx[Ports List]）：
+
+[options="header",cols="4,6"]
+|====
+|端口号 |服务
+|80 |HTTP
+|443 |HTTPS
+|4369 |Erlang
+|5432 |PostgreSQL
+|5672 |RabbitMQ
+|6379 |Redis
+|8000 |DocService
+|8080 |Spellchecker
+|====
+
+若您想要更改 **debconf** 系统的默认端口，则您可以执行如下命令：
+
+[source,bash]
+----
+# Zero Framework 中推荐端口号 5600
+echo onlyoffice-documentserver onlyoffice/ds-port select <PORT_NUMBER> | sudo debconf-set-selections
+----
+
+[WARNING]
+====
+如果您想将 ONLYOFFICE Docs 协议更改为 HTTPS，请不要将端口更改为 443，而是参考官方的专用说明：link:https://helpcenter.onlyoffice.com/installation/docs-community-https-linux.aspx[Switching to HTTPS Protocol]。
+====
+
+参考如下步骤安装 `Docs`：
+
+1. 添加 `GPG Key`：
++
+--
+[source,bash]
+----
+mkdir -p -m 700 ~/.gnupg
+
+curl -fsSL https://download.onlyoffice.com/GPG-KEY-ONLYOFFICE | gpg --no-default-keyring --keyring gnupg-ring:/tmp/onlyoffice.gpg --import
+
+chmod 644 /tmp/onlyoffice.gpg
+
+sudo chown root:root /tmp/onlyoffice.gpg
+
+sudo mv /tmp/onlyoffice.gpg /usr/share/keyrings/onlyoffice.gpg
+----
+--
+2. 追加 ONLYOFFICE Docs 的库：
++
+--
+[source,bash]
+----
+echo "deb [signed-by=/usr/share/keyrings/onlyoffice.gpg] https://download.onlyoffice.com/repo/debian squeeze main" | sudo tee /etc/apt/sources.list.d/onlyoffice.list
+----
+--
+3. 更新包缓存：
++
+--
+[source,bash]
+----
+sudo apt update
+----
+
+image:zero-doc-deb.png[,800]
+--
+4. 执行如下命令安装
++
+--
+[source,bash]
+----
+# Fonts（依赖项部分已安装）
+sudo apt install ttf-mscorefonts-installer
+
+# OnlyOffice（安装过程要提供 PgSQL中的密码）
+sudo apt install onlyoffice-documentserver
+----
+--
+
+====
+其他 Linux 版本如 CentOS 的安装流程，开发人员可参考官方文档和本章提到的步骤自行研究。
+====
+
+===== JWT
+
+`ONLYOFFICE` 从 `7.2` 开始默认会开启 `JWT`，若您没有为它配置任何密钥 `secret`，那么它会随机生成一个密钥，若是使用 Docker 模式启动，您可以使用如下两个选项进行配置：
+
+[options="header", cols="3,7"]
+|====
+|选项|含义
+|`JWT_ENABLED` |是否开启 JWT，默认是 true，若想要关闭可以选择 false。
+|`JWT_SECRET` |设置 JWT 的值，若此处不设置，则 `ONLYOFFICE` 会为它随机生成。
+|====
+
+安装完成之后，`secret` 会存储在配置文件 `/etc/onlyoffice/documentserver/local.json` 中，您可以检查属性 `services.CoAuthoring.secret.browser.string`。其中 `/etc/onlyoffice/documentserver/` 是 `ONLYOFFICE` 的配置目录，此目录中还有一个 `default.json` 的配置文件，根据官方的教程推荐，配置处理仅编辑 `local.json` 即可，不要直接编辑 `default.json` 文件的内容——每次重新启动 Docker 容器或升级 **文档服务器** 到新版本时都会恢复默认值，并且所有的更改都将丢失。参考如下示例（只和 JWT 相关的部分）：
+
+[source,json]
+----
+{
+    "services": {
+        "CoAuthoring": {
+            "secret": {
+                "inbox": {
+                    "string": "secret"
+                },
+                "outbox": {
+                    "string": "secret"
+                },
+            },
+            "token": {
+                "enable": {
+                    "browser": true,
+                    "request": {
+                        "inbox": true,
+                        "outbox": true
+                    }
+                }
+            }
+        }
+    }
+}
+----
+
+配置 JWT 时需理解如下参数：
+
+[options="header", cols="4,6"]
+|====
+|参数|含义
+|`services.CoAuthoring.secret.browser.string` |「*Deprecated*」定义了在客户端浏览器请求ONLYOFFICE Docs生成令牌的秘钥。自版本 *7.2* 起请改用 `services.CoAuthoring.secret.inbox.string`。
+|`services.CoAuthoring.secret.inbox.string` |自版本 *7.2* 起，该项定义了在来自文档存储服务到文档命令服务、文档转换服务和文档构建服务的传入HTTP请求中生成令牌的秘钥，以及在客户端浏览器请求ONLYOFFICE Docs时生成令牌的秘钥。
+|`services.CoAuthoring.secret.outbox.string` |定义了用于在文档编辑服务发送的传出HTTP请求中生成令牌的秘钥，以供回调URL地址使用。
+|`services.CoAuthoring.token.enable.browser` |定义客户端浏览器请求中的令牌是否启用。
+|`services.CoAuthoring.token.enable.request.inbox` |定义传入的HTTP请求中的令牌是否启用。
+|`services.CoAuthoring.token.enable.request.outbox` |定义传出的HTTP请求中的令牌是否启用。
+|====

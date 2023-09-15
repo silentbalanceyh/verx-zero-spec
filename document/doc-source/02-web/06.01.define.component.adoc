@@ -156,3 +156,5 @@ export default Component;
 |====
 
 由于 `DocViewer` 使用的是 `class` 模式的开发，文件下载流程应该在 `componentDidMount` 方法中设置，并在预览之前初始化好组件状态。
+
+
