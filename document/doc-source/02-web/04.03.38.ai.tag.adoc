@@ -1,0 +1,39 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+==== `aiTag` (A)
+
+对应 `AntD` 中的 `<Radio.Group/>` 组件变种，您可直接设置单选框信息，这种为特殊单选框，其配置如下：
+
+[source,json]
+----
+[
+    {
+        "metadata": "color,标签颜色,,,aiTag",
+        "optionJsx.config.items": [
+            "geekblue,极客蓝",
+            "magenta,粉红",
+            "red,红色",
+            "volcano,火山红",
+            "orange,橙色",
+            "gold,金色",
+            "lime,青柠绿",
+            "green,绿色",
+            "cyan,青色",
+            "blue,蓝色",
+            "purple,紫色"
+        ]
+    }
+]
+----
+
+===== 选项说明
+
+此处选项为特殊选项，是为 **antd** 量身打造的色彩选项，色彩只可以删除或维持，不可以追加，运行截图如下：
+
+image:exp-input-tag.png[,960]
+
+====
+注意若使用的是英文模式，则需要在英文资源包中追加英文相关配置！目前版本只支持上述简单配置，后续可支持特定配置实现这种特殊效果。
+====

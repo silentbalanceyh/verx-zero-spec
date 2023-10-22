@@ -692,6 +692,39 @@ const foundIndex = __Zn.elementIndex(value, fieldCond, record[format.keyField]);
 |`tag:text`|将 `text` 转换成 `<img/>` 标签中加载的系统默认的图片 `src` 来对待。
 |====
 
+新版标签渲染器追加了标签的独立渲染功能，可直接渲染 **antd** 中的 `<Tag/>` 标签，生成如下列信息：
+
+image:exp-list-col-tag.png[,800]
+
+[WARNING]
+====
+新版标签渲染器需配合 `zero-ambient` 扩展模块一同使用，用于在某些记录中直接打标签，实现记录的标签化处理，且对应到后端的 `X_TAG` 表结构中，其中此处列渲染要启用基础配置信息，配置片段示例如下：
+
+[source,json]
+----
+    {
+        "metadata": "color,标签颜色,TAG",
+        "$config": {
+            "items": [
+                "geekblue,极客蓝",
+                "magenta,粉红",
+                "red,红色",
+                "volcano,火山红",
+                "orange,橙色",
+                "gold,金色",
+                "lime,青柠绿",
+                "green,绿色",
+                "cyan,青色",
+                "blue,蓝色",
+                "purple,紫色"
+            ]
+        }
+    }
+----
+
+还有一点需注意是这种渲染器是为 **antd** 中的 `<Tag/>` 标签量身打造，所以此处的颜色 **只能移除部分而不能追加新的** ，即此处的颜色信息是一个固定列表。
+====
+
 ==== `TEXT`
 
 （默认）文本渲染器，此渲染器是唯一一个不需要配置的渲染器，属于 **默认渲染器**，此渲染器到处都是，就不详细拆解了。
