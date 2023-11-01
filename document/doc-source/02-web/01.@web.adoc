@@ -7,6 +7,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 include::01.01.modulat.adoc[]
 include::01.02.cab.adoc[]
 include::01.03.component.adoc[]
+include::01.04.route.adoc[]
 
 == 远程通信
 
@@ -35,6 +36,4 @@ include::05.03.list.column.adoc[]
 include::05.04.list.qr.adoc[]
 include::05.05.list.action.adoc[]
 
-== 自定义开发
 
-include::06.01.define.component.adoc[]

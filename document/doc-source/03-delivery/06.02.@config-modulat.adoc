@@ -17,7 +17,6 @@ ifndef::imagesdir[:imagesdir: ../images]
     </dependency>
 ----
 
-include::06.02.01.config-modulat-route.adoc[]
-include::06.02.02.config-modulat-ai.adoc[]
-include::06.02.03.config-modulat-setting.adoc[]
+include::06.02.01.config-modulat-ai.adoc[]
+include::06.02.02.config-modulat-setting.adoc[]
 

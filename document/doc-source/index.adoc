@@ -101,6 +101,7 @@ include::03-delivery/01.03.config-app-modulat.adoc[]
 include::03-delivery/01.04.config-app-upload.adoc[]
 include::03-delivery/01.05.config-app-number.adoc[]
 include::03-delivery/01.06.config-app-tabb.adoc[]
+include::03-delivery/01.07.config-app-route.adoc[]
 
 
 include::03-delivery/02.01.mod.adoc[]
