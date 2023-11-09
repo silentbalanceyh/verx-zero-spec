@@ -1,7 +1,7 @@
 ifndef::imagesdir[:imagesdir: ../images]
 :data-uri:
 
-=== 配置详解
+=== 配置：基础配置
 
 流程引擎最后一个章节负责细节解析，给您讲解实施配置过程的步骤信息（Camunda设计流程在前边示例中已经提供，此处不再讲解 `workflow.bpmn` 文件的设计）。
 
@@ -21,14 +21,7 @@ Zero中的流转配置主要针对 `?_CONFIG` 类型的字段，该配置隶属�
 
 include::10.04.03.config-wf-adv-transfer.adoc[]
 
-==== 表单配置
-
-Zero中的表单配置属于静态配置，现阶段版本不会导入到数据库中，是根据流程图中绑定的表单文件 `.form` 执行的扩展，后续开放动态表单配置后，此部分内容可实现所见即所得的动态化。
-
-
-include::10.04.04.config-wf-adv-form.adoc[]
-
 
 ==== 网格派工
 
-include::10.04.05.config-wf-adv-grid.adoc[]
+include::10.04.04.config-wf-adv-grid.adoc[]

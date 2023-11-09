@@ -10,8 +10,8 @@
 :sectnums:
 :sectnumlevels: 5
 :email: silentbalanceyh@126.com
-:revnumber: v1.60
-:revdate: 2023年9月07日
+:revnumber: v1.70
+:revdate: 2023年11月09日
 :toc: left
 :toclevels: 3
 :toc-title: 目录
@@ -27,7 +27,8 @@
 [options="header",title="版本修订历史",cols="15,15,15,55"]
 |====
 |版本|作者|时间|描述
-|1.60|Lang|2023-09-07|自定义表单、ONLYOFFICE
+|1.70|Lang|2023-11-09|工作流功能升级
+|1.60|Lang|2023-09-07|自定义表单、办公协同（ONLYOFFICE）
 |1.52|Lang|2023-09-04|列操作定制
 |1.51|Lang|2023-08-29|上传/下载详解
 |1.50|Lang|2023-08-15|CRUD实战
