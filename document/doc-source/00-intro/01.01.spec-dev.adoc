@@ -11,8 +11,8 @@ image::workflow-fork.png[Fork,1280]
 
 整个环境中包括两种PR
 
-* Dev PR / develop分支：从开发人员Fork分支中直接提交PR到 *develop* 分支的PR，*develop* 分支可配置到测试环境中直接提供给测试人员测试。
-* Release PR / master分支：从 *develop* 分支提交同库PR到 *master* 分支中。
+* `Dev PR / develop分支`：从开发人员Fork分支中直接提交PR到 *develop* 分支的PR，*develop* 分支可配置到测试环境中直接提供给测试人员测试。
+* `Release PR / master分支`：从 *develop* 分支提交同库PR到 *master* 分支中。
 
 [WARNING]
 *develop* 分支和 *master* 分支追加保护功能，锁定之后不允许任何形式的 push 动作直接修改分支中的内容，仅走PR流程可更改两个分支中的代码。
@@ -198,9 +198,9 @@ scp -r /Users/dengchunmei/Desktop/XXX/hotel-ui/build root@116.xxx.xxx.41:/usr/lo
                             <Z_CORS_DOMAIN>http://116.205.172.41:7005</Z_CORS_DOMAIN>
                             <Z_API_PORT>7085</Z_API_PORT>
                             <Z_HED_ENABLED>true</Z_HED_ENABLED>
-                            <Z_DBS_HOST>116.205.172.41</Z_DBS_HOST>
-                            <Z_DBW_HOST>116.205.172.41</Z_DBW_HOST>
-                            <Z_DBH_HOST>116.205.172.41</Z_DBH_HOST>
+                            <Z_DBS_HOST>116.xxx.172.41</Z_DBS_HOST>
+                            <Z_DBW_HOST>116.xxx.172.41</Z_DBW_HOST>
+                            <Z_DBH_HOST>116.xxx.172.41</Z_DBH_HOST>
                         </environment>
                     </container>
                     <allowInsecureRegistries>true</allowInsecureRegistries>

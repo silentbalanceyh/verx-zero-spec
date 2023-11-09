@@ -1485,12 +1485,7 @@ public class AmbientOOB extends AbstractBoot {
 </div>
 </div>
 <div class="sect3">
-<h4 id="_规则文件"><a class="anchor" href="#_规则文件"></a><a class="link" href="#_规则文件">规则文件</a></h4>
-<div class="paragraph">
-<p>除数据本身的导入导出之外，为简化Excel模板配置，框架内部支持两种基础规则文件提高开发人员配置效率。</p>
-</div>
-<div class="sect4">
-<h5 id="_excel单元格"><a class="anchor" href="#_excel单元格"></a><a class="link" href="#_excel单元格">Excel单元格<a id="__ENV_LOADING_EXCEL"></a></a></h5>
+<h4 id="_规则excel单元格"><a class="anchor" href="#_规则excel单元格"></a><a class="link" href="#_规则excel单元格">规则：Excel单元格<a id="__ENV_LOADING_EXCEL"></a></a></h4>
 <div class="paragraph">
 <p>若您在Excel单元格中填写如下：</p>
 </div>
@@ -1536,8 +1531,8 @@ public class AmbientOOB extends AbstractBoot {
 </table>
 </div>
 </div>
-<div class="sect4">
-<h5 id="_默认值限制转换"><a class="anchor" href="#_默认值限制转换"></a><a class="link" href="#_默认值限制转换">默认值/限制/转换<a id="__SPEC_LOADDATA_GLOBAL"></a></a></h5>
+<div class="sect3">
+<h4 id="_规则默认值限制转换"><a class="anchor" href="#_规则默认值限制转换"></a><a class="link" href="#_规则默认值限制转换">规则：默认值/限制/转换<a id="__SPEC_LOADDATA_GLOBAL"></a></a></h4>
 <div class="paragraph">
 <p>Zero为导入程序提供了一个环境数据文件，文件地址位于启动器下的如下位置：</p>
 </div>
@@ -1641,7 +1636,7 @@ public class AmbientOOB extends AbstractBoot {
 </td>
 <td class="content">
 <div class="paragraph">
-<p>新版已经包含了 <a href="#__CONFIG_MOD_ROUTE" target="_blank" rel="noopener">路由规划表</a>，所以菜单级别的过滤可以不用在 <code>forbidden</code> 中执行，但其他内容依旧可以在此过滤。</p>
+<p>新版已经包含了 <a href="#__CONFIG_MOD_ROUTE" target="_blank" rel="noopener">路由规划表</a>，所以菜单级别的过滤可以不用在 <code>forbidden</code> 中执行，但其他内容依旧可以在此过滤；路由规划表每个应用的不一样，除了可以过滤路由信息之外，还可以调整路由的具体树型结构，以实现路由的完整规划，系统自动帮助完成调整，结合导入部分的幂等性，可反复执行脚本来完成路由的编排。</p>
 </div>
 </td>
 </tr>
@@ -1649,11 +1644,10 @@ public class AmbientOOB extends AbstractBoot {
 </div>
 </div>
 </div>
-</div>
 <div class="sect2">
 <h3 id="_办公协同"><a class="anchor" href="#_办公协同"></a><a class="link" href="#_办公协同">办公协同</a></h3>
 <div class="paragraph">
-<p>Zero Ui中的办公协同，主要针对Office的套件（ <code>Word, Excel, PPT</code> ）进行在线的协同浏览/编辑，集成了开源版的 <a href="https://www.onlyoffice.com/">ONLYOFFICE</a> 套件，此套件依赖后端运行一个特殊的<strong>文档服务器</strong>，所以本文提供<strong>开发</strong>和<strong>生产场景</strong>下的服务器搭建流程，让开发人员可以完善扩展模块 <code>zero-is / zero-doc</code> 的<strong>文档管理</strong>以及<strong>文档阅览</strong>功能。</p>
+<p>Zero Ui中的办公协同，主要针对Office的套件（ <code>Word, Excel, PPT，PDF</code> ）进行在线的协同浏览/编辑，集成了开源版的 <a href="https://www.onlyoffice.com/">ONLYOFFICE</a> 套件，此套件依赖后端运行一个特殊的<strong>文档服务器</strong>，所以本文提供<strong>开发</strong>和<strong>生产场景</strong>下的服务器搭建流程，让开发人员可以完善扩展模块 <code>zero-is / zero-doc</code> 的<strong>文档管理</strong>以及<strong>文档阅览</strong>功能。</p>
 </div>
 <div class="sect3">
 <h4 id="_onlyoffice"><a class="anchor" href="#_onlyoffice"></a><a class="link" href="#_onlyoffice">ONLYOFFICE</a></h4>

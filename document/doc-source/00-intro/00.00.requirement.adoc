@@ -3,24 +3,32 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 == 飞翼零式
 
+- 官方地址：<https://www.zerows.io/>
+- 文档/规范：<https://www.vertx-cloud.cn/>
+
 === 时间线
+
+==== 发展轨迹
 
 Zero框架整体发展时间轴如下：
 
 image:zero-history.png[0,1024]
 
-现阶段Zero整体结构如下：
+==== 项目结构
 
-[options="header", cols="30,70"]
+新版Zero整体结构如：
+
+[options="header", cols="3,7"]
 |====
-|模块|说明
-|`vertx-zero/vertx-gaia` | *Zero核心框架*，纯封装Vert.x的核心框架，新版包含 *元数据规范* 和 *高阶设计*。
-|`vertx-zero/vertx-ifx` | *Zero Infix架构*，集成不同非业务功能的插件结构：多认证模式、ES、Excel集成模块、Feign客户端、FTP集成模块、GIT集成模块、删除备份模块、爱奇艺客户端、Liquibase插件、Mongo数据访问模块、Neo4J拓扑模块、Redis缓存、DevOps命令行（Shell架构）、SMS阿里云短信模块、Stomp主动提醒模块。
-|`vertx-zero/vertx-pin` | *Zero Extension扩展框架*，多应用/租户/语言配置、动态建模、模块化架构、CRUD引擎、ERP管理、财务管理、拓扑图交互模块、集成服务管理、动态接口/任务系统、地理定位服务、PSI进销存模块、异构模板系统、界面化配置、单应用脚手架、异构数据库插件（MySQL、Oracle）、工作流引擎。
-|`vertx-zero/vertx-semper` | *Zero Aeon Cloud平台*，云原生K8S、Service Mesh支持（Istio）、自动化运维部署、低代码开发中心、智能需求分析平台。
-|`vertx-ui` | *Zero UI* 前端：React / Antd / 微前端模式。
-|`vertx-ai` | *Zero AI* 工具：自动化开发、部署、运维专用脚本。
-|`vertx-zero-cloud` | *Aeon Cloud* 工具箱：自动化云端部署、IaC脚本，云端工具平台。
+|项目|说明
+|`zero-ecotope`|根项目：POM管理、版本管理、文档管理。
+|`zero-epic`|内含 AMS（Agreed Metadata Specification）接口设计和规范定义，作为最底层跨框架基础功能规范。
+|`zero-elite`|原 Zero Core 核心框架，包含内置组件、功能函数、编排器，为上层容器提供环境支撑，新版还引入了OSGI规范。
+|`zero-energy`|Web容器，可选择三种方式运行：单机运行、OSGI插件运行、云环境运行）。
+|`zero-equip`|Infix Architecture 的各种功能插件，对应旧版 `Zero Infix`。
+|`zero-extension`|Zero Extension 扩展插件，对应旧版 `Zero Extension`。
+|`zero-external`|动态建模专用外置插件，如 Oracle、MySQL 等，基于 MBSE 的核心插件体系。
+|`zero-entry`|入口程序，可选择：最小环境运行、单点脚手架环境、继承专用POM库。
 |====
 
 === 设计哲学
@@ -127,7 +135,6 @@ Zero框架中为了方便远程本地协同开发，以及各个团队成员之�
 |====
 
 === 文档管理
-
 
 [options="header",cols="15,10,15,60"]
 |====

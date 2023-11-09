@@ -3,7 +3,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 === 办公协同
 
-Zero Ui中的办公协同，主要针对Office的套件（ `Word, Excel, PPT` ）进行在线的协同浏览/编辑，集成了开源版的 link:https://www.onlyoffice.com/[ONLYOFFICE] 套件，此套件依赖后端运行一个特殊的**文档服务器**，所以本文提供**开发**和**生产场景**下的服务器搭建流程，让开发人员可以完善扩展模块 `zero-is / zero-doc` 的**文档管理**以及**文档阅览**功能。
+Zero Ui中的办公协同，主要针对Office的套件（ `Word, Excel, PPT，PDF` ）进行在线的协同浏览/编辑，集成了开源版的 link:https://www.onlyoffice.com/[ONLYOFFICE] 套件，此套件依赖后端运行一个特殊的**文档服务器**，所以本文提供**开发**和**生产场景**下的服务器搭建流程，让开发人员可以完善扩展模块 `zero-is / zero-doc` 的**文档管理**以及**文档阅览**功能。
 
 ==== ONLYOFFICE
 
