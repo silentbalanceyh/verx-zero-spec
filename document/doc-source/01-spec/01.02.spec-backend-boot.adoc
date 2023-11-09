@@ -12,8 +12,22 @@ image:zapp-extension.png[0,1024]
 1. 核心框架只有四个项目，包含了容器以及所有底层架构。
 2. 扩展框架拥有一个底座项目 `zero-ke`，它负责将扩展模块连接到底层容器上。
 3. 插件项目、扩展模块各自独立，相互之间不存在任何依赖。
-4. `zero-vie` 是一个单机应用综合包（比较重），它引用了所有要使用的扩展模块构造单机应用。
+4. （新版已改名）`zero-vie` 是一个单机应用综合包（比较重），它引用了所有要使用的扩展模块构造单机应用。
 5. 新版的 `zero-doc` 没有出现在截图中。
+
+Zero全框架一般有三种插件（都可以按需加载）：
+
+[options="header",cols="2,2,6"]
+|====
+|类型|项目|含义
+|Infix架构插件|zero-equip|按需导入基于技术的插件。
+|Extension模块|zero-extension|Zero Extension扩展模块、带有业务、包括表结构的内容。
+|动态插件|zero-external|动态建模过程中支持的 MBSE 插件。
+|====
+
+====
+Zero Extension 中的按需加载在于您对业务层做的深度定制有多少，每个扩展模块可以编译成 jar 的依赖包、也可以直接编译成 OSGI 中的 bundle、还可以做项目代码集成和桥接，若您在使用功能时没有启用 Extension 的部分功能，那么只会影响那一部分的业务功能，不会对整个应用产生影响，由于 Extension 的模块之间采用的 SPI 机制，所以在静态类加载器过程中，这部分的组件执行会很灵活，Zero 也为这种情况设置了大量的幂等性操作和模块隔离，您的禁用模块只会影响界面上和它相关的部分，其他部分依旧会正常执行。简单说：Extension 中的所有业务类型模块都可以单独运行，而非业务型的功能模块取决于您自身的应用的依赖程度。
+====
 
 ==== 扩展模块概览
 
@@ -24,6 +38,7 @@ image:zapp-extension.png[0,1024]
 |`zero-atom` | image:i-sql.png[0,22] 表前缀 `M_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |动态建模管理、关系管理
 |`zero-battery` | image:i-sql.png[0,22] 表前缀 `B_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |模块化架构
 |`zero-crud` | |image:i-config.png[0,22] 否|CRUD标准化十六接口模板化引擎
+|`zero-doc` | image:i-sql.png[0,22] 表前缀 `D_` |image:i-config-t.png[0,22] 是|新增办公协同文档管理
 |`zero-erp` | image:i-sql.png[0,22] 表前缀 `E_` |image:i-config-t.png[0,22] 是|企业管理、办公管理、客户管理
 |`zero-fm` | image:i-sql.png[0,22] 表前缀 `F_` |image:i-config-t.png[0,22] 是|金融管理、财务管理
 |`zero-graphic` | image:i-sql.png[0,22] 表前缀 `G_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |图管理，对接 Neo4j 执行拓扑图功能支撑结构
@@ -36,7 +51,9 @@ image:zapp-extension.png[0,1024]
 |`zero-tpl` | image:i-sql.png[0,22] 表前缀 `TPL_` |image:i-config.png[0,22] 否|消息模板、邮件模板、工单模板
 |`zero-ui` | image:i-sql.png[0,22] 表前缀 `UI_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |界面配置化管理
 |`zero-wf` | image:i-sql.png[0,22] 表前缀 `W_ / T_` |image:i-config.png[0,22] 否 image:i-jar.png[9,22] |工作流引擎
-|`zero-vie` | |image:i-run.png[0,22] 否|单机应用专用统一项目依赖
+|`zero-vie` | |image:i-run.png[0,22] 否|**@Deprecated**（已弃用）单机应用专用统一项目依赖
+|`zero-mini` | |image:i-run.png[0,22] 否|不启用 Zero Extension 的纯框架环境项目依赖。
+|`zero-focus` | |image:i-run.png[0,22] 否|启用 Zero Extension 的单机应用专用统一项目依赖。
 |`infix-hed` | |image:i-plugin.svg[0,22] 否|HED加密解密插件
 |`infix-mysql` | |image:i-plugin.svg[0,22] 否|（动态建模专用）MySQL数据库插件
 |`infix-oracle` | |image:i-plugin.svg[0,22] 否|（动态建模专用）Oracle数据库插件
