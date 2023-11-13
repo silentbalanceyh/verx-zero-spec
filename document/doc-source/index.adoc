@@ -10,8 +10,8 @@
 :sectnums:
 :sectnumlevels: 5
 :email: silentbalanceyh@126.com
-:revnumber: v2.00
-:revdate: 2023年11月09日
+:revnumber: v2.01
+:revdate: 2023年11月13日
 :toc: left
 :toclevels: 3
 :toc-title: 目录
@@ -27,6 +27,7 @@
 [options="header",title="版本修订历史",cols="15,15,15,55"]
 |====
 |版本|作者|时间|描述
+|2.01|Lang|2023-11-13|前端命名语义
 |2.00|Lang|2023-11-09|2.0版本文档
 |1.70|Lang|2023-10-25|工作流功能升级
 |1.60|Lang|2023-09-07|自定义表单、办公协同（ONLYOFFICE）
@@ -80,6 +81,7 @@ include::01-spec/01.02.spec-backend-boot.adoc[]
 include::01-spec/02.01.spec-frontend.adoc[]
 include::01-spec/02.02.spec-frontend-style.adoc[]
 include::01-spec/02.03.spec-frontend-src.adoc[]
+include::01-spec/02.04.spec-frontend-name.adoc[]
 include::01-spec/03.01.@spec-is.adoc[]
 
 = 前端实施
