@@ -4,6 +4,8 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 === Ui库
 
+界面的快速开发依赖新库 `ui` 中提供的智能化开发模块。
+
 ==== `Ui.smartList`
 
 `smartList` 的骨架代码如下：

@@ -38,6 +38,5 @@ include::05.05.list.action.adoc[]
 
 == 快速开发[[__WEB_SMART_DEV]]
 
-快速开发依赖新库 `ui` 中提供的智能化开发模块。
-
 include::06.01.rapid.ui.adoc[]
+include::06.02.rapid.of.adoc[]

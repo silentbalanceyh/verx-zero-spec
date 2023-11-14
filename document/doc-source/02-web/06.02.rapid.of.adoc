@@ -1,0 +1,197 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== Of对象
+
+Of对象是Zero UI中使用 `TypeScript` 开发的一个 **状态管理** 专用的对象，它可以帮助完成如下任务：
+
+- 状态变量管理：
++
+--
+- `$visible`：显示、隐藏
+- `$ready`：配置、配置完成
+- `$loading`：加载、加载完成
+- `$submitting`：提交、提交完成
+- `$paging`：复杂列表中处理分页专用的一个补充变量
+- `$spinning`：多路列表管理中负责会签和分叉的状态处理控制变量
+--
+- 状态判断（保留）
+- 父状态更新：通过调用函数使用幂等的方式调用父类继承过来的函数完成父组件中状态的变更
+
+==== 三个对象
+
+您通常会在Zero UI开发代码中使用如下方式触发 `Of` 的整体管理：
+
+[source,js]
+----
+Ux.of(reference).ready().done();
+----
+
+这里的 `Ux.of` 的函数签名在代码中如下：
+
+[source,js]
+----
+export default {
+    of: (reference) => Of.create(reference)
+}
+----
+
+实际上述代码内置访问了三个类：`Of, OfState, OfFn`，由于这三个类使用内置隐藏使得外层代码无法使用 **new** 的方式初始化对象，只有一个单一的 `Ux.of` 入口可获取新对象来初始化状态管理器，这就是您会看到上述链式代码的原因。
+
+[options="header",cols="2,3,7"]
+|====
+|类名|代码|含义
+|`Of` | `Ux.of(reference)` |内置调用当前组件的 setState 方法完成状态的更新，标准状态管理主类。
+|`OfState` | `Ux.of(reference)._` | 内置调用当前组件 props 中继承过来的 Function 函数，通常这个函数会更新父组件的状态。
+|`OfFn` | `Ux.of(reference).is` |（保留）和 `Of` 相对，可以直接判断组件的状态，位于加载中、未开始加载、加载完成。
+|====
+
+====
+`reference` 变量不做详细说明，整个 Zero UI 的基础命名规范中（包括函数定义），`reference` 表示当前组件，而 `ref` 表示父组件。
+====
+
+上述三个类的拓扑结构如下：
+
+image:zui-util-of.png[,960]
+
+==== `Ux.of`
+
+本章节重点看在实际开发过程中如何使用 `Ux.of` 来完成状态管理，直接上代码。
+
+===== Of
+
+Of对象最终使用触发函数调用 `setState` 方法，所以除开附加状态以外，它会成对调用：
+
+[options="header"]
+|====
+|变量|值：true|值：false
+|`$paging` | `paging()` | `paged()`
+|`$visible` | `open()` | `hide()`
+|`$ready` | `ready()` | `readying()`
+|`$spinning` | `spun()` | `spinning()`
+|`$submitting` | `submitting()` | `submitted()`
+|`$loading` | `loading(Boolean)` | `load(Boolean)`
+|====
+
+除开上述API之外，没有配对的情况如：
+
+1. `up()`：强制更新方法，一旦触发会无条件更新。
+2. `in(Object)`：状态附加方法，会把额外的状态追加到待更新的状态中统一更新。
+
+[source,js]
+----
+// 1. 列表专用分页，触发函数：done
+Ux.of(reference).paging().done();           // $paging = true
+Ux.of(reference).paged().done();            // $paging = false
+
+
+// 2. 配置驱动刷新，触发函数：handle
+Ux.of(reference).readying().handle(() => {
+    /*
+     * 当 setState 调用之后，等待多少秒执行回调
+     * 一般此处应该设置基本的时间，如果不设置时间，那么在 React 中有可能会出现闪屏
+     * 导致状态更新不成功，处理 React 中的闪屏可追加一个 setTimeout 的方法让回调
+     * 的执行不要严格按照系统时间执行。
+     **/
+}, 2)                                       // $ready = false
+/*
+ * 触发函数：done
+ * 此处多调用了一个 in 方法来附加状态
+ **/
+Ux.of(reference).in(state).ready().done();  // $ready = true
+
+
+// 3. 列表多状态同时加载，触发函数 next
+if ($submitting) {
+    return Ux.of(this).spinning().next();   // $spinning = true
+} else {
+    return Ux.of(this).spun().next();       // $spinning = false
+}
+
+
+// 4. 打开关闭窗口，触发函数 done
+__Zn.of(reference).loading(false)           // $loading = true, $submitting = true
+    .open().done();                         // $visible = true
+__Zn.of(reference).load(false)              // $loading = false, $submitting = false
+    .hide().done();                         // $visible = false
+    
+
+// 5. 防重复提交，触发函数 handle
+Ux.of(reference).submitting().handle(() => {// $submitting = true
+    // 回调中为 提交过程中 的执行的代码
+});
+
+Ux.of(reference).in({
+    $step: 2
+}).submitted().handle(() => {
+    // 回调中为 提交完成之后的代码
+})
+----
+
+===== OfState
+
+OfState对象为内置对象，它可以让您直接调用父类的 `rx` 函数实现父类的状态更新，参考如下表格看看这个内部类的API：
+
+[options="header",cols="3,3,3,15"]
+|====
+|方法|是否幂等|附加状态|含义
+|`ioIn`|  | | 辅助数据处理，调用父类 `rxAssist` 方法，保存模式：新增、更新
+|`ioOut`|  | | 辅助数据处理，调用父类 `rxAssist` 方法，删除模式
+|`qrV`|  | 是 | 视图处理，调用父类 `rxViewV` 方法，处理 projection 
+|`qrQ`|  | 是 | 视图处理，调用父类 `rxViewQ` 方法，处理 criteria，内置设置 `$condition, isQrC` 放到默认状态中
+|`qrFilter` | 是 | 是 | （保留函数，兼容旧版本用的）查询表单专用调用处理，调用父类的 `rxFilter` 方法
+|`submitting` | 是 | 是 | 调用父类的 `rxSubmitting` 函数，传入 `$submitting = true`
+|`submitted` | 是 | 是 | 调用父类的 `rxSubmitting` 函数，传入 `$submitting = false`
+|`closeAnd` | | 是 | 调用父类的 `rxClose` 函数，追加 `$submitting = false`
+|`close` | | 是 | 直接调用父类的 `rxClose` 函数
+|`closeOnly` | | 是 | 直接调用父类的 `rxClose` 函数，追加 `$stop = true`
+|`open` | | |（列表用）打开行数据，调用父类的 `rxOpen` 函数，此函数会比 `rxView` 多一个打开页签或页面的功能
+|`view` | | |（列表用）打开行数据，调用父类的 `rxView` 函数
+|`open_` | || （后置）调用父类的 `rxPostOpen` 函数
+|`close_` ||| （后置）调用父类的 `rxPostClose` 函数
+|`delete_`||| （后置）调用父类的 `rxPostDelete` 函数
+|`selected_`||| （后置）调用父类的 `rxPostSelected` 函数
+|====
+
+上述表格已经详细讲解了所有的父类调用函数的函数名，此处这些函数也是 Zero UI 中的高频使用函数，有几点要说明：
+
+1. OfState 对象中的函数引入了AOP机制，分三大类：
++
+--
+- `rxPreXxx` 类型的函数，函数名以 `_` 符号为前缀。
+- `rxXxx` 函数，主函数行为的执行代码。
+- `rxPostXxx` 类型的函数，函数名以 `_` 符号为结束（表格中存在）。
+--
+2. 组件配置会有自己的规范，自定义组件一般是研发专用，`Ux.of` 这个API主要是开发应用时会常用：
++
+--
+[options="header",cols="3,7"]
+|====
+|函数名|含义
+|`rxCBefore`| 第一步，前置配置处理，针对 config 变量进行前置调整。
+|`rxCAfter`| 第二步，后置配置处理，针对 config 变量进行后置调整（可以在异步之后）。
+|`rxBefore`| 第三步，前置数据处理，针对 data 变量进行前置调整。
+|`rxAfter`| 第四部，后置数据处理，针对 data 变量进行后置调整（可以在异步之后）。
+|====
+--
+3. 关于幂等：幂等在此处意味着如果函数不存在，那么不会报错，会跳过函数执行直接走下一步，可以安全执行，理论上应该将所有的API都设计成幂等的，但目前由于框架本身是按需执行，所以此处并没有全部开放幂等，和附加状态一样都是有需求就变更。
+4. 若您注入的函数本身是一个 Promise，那么这个API的调用可以异步返回，然后执行类似 `Ux.of(referece)._.xxx().then()` 的代码，但若函数并非 Promise 返回，这样的代码会报错。
+
+[CAUTION]
+====
+必须注意的一点是，`OfState / OfFn` 都是内置对象，没有任何**API**可以直接拿到对应的引用，所有对象的提取方法只能透过 `Ux.of(reference)` 来完成引用提取，其中 `_` 子引用表示 `OfState`（父调用），而 `is` 子引用表示 `OfFn`（状态检查）。
+====
+
+==== 触发函数
+
+前边章节提到的状态变更都是在构造一个 `Object` 类型的 `state` 对象，众所周知如果在 React 组件中不调用 `setState` 方法，那么这些状态不会被设置到组件中引起生命周期的变动，如上边代码可知，触发函数为整个函数链中的最后一个函数，即所有内容设置完成后您可以执行触发函数来更改状态或调用函数形成最终的**状态变更、回调、异步**等，`Ux.of` 的触发函数主要有以下四大类：
+
+[options="header", cols="2,8"]
+|====
+|函数签名|含义
+|`done()`| 纯设置的尾函数，没有任何返回值，内部直接调用 `setState` 方法。
+|`handle(callbackFn, delaySec)`| 带回调函数的 `setState`，状态变更之后，`callbackFn` 函数会在延迟 `delaySec` 秒之后再执行（延迟目的此处不再综述）。
+|`future(futureFn, delaySec)`| 异步执行 `setState`，状态变更之后等待 `delaySec` 秒再执行 `futureFn`（通常返回Promise）形成一个完整的Promise异步链。
+|`next()`| 等价于 `future()`。
+|====
