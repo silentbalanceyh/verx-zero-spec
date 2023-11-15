@@ -2,4 +2,4 @@ ifndef::imagesdir[:imagesdir: ../images]
 :data-uri:
 :table-caption!:
 
-=== 扩展组件基础
+=== 编程组件

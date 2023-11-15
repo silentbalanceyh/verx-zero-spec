@@ -149,3 +149,32 @@ ai sync -m true
 ====
 商业项目交付过程中，您可以直接交付非开源部分的代码作交付物，框架代码也可以直接交付，不过由于是开源的，所以客户也可以按照本教程中的方式拉取代码进行框架同步。
 ====
+
+==== 发布检查
+
+发布检查依赖如下三个核心环境变量：
+
+[source,properties]
+----
+# 「启动」打包尺寸插件
+Z_DEV_PLUGIN_SIZE=false
+# 「启动」循环依赖监测插件
+Z_DEV_PLUGIN_LOOP=true
+# 「启动」Loader耗时统计插件
+Z_DEV_PLUGIN_SMP=false
+----
+
+如果你在环境中开发了比较多的功能，提交代码之前尽可能对这部分内容执行一次检查，确保符合基本发布规范。
+
+[options="header",cols="3,7"]
+|====
+|变量名|含义
+|image:i-bug.png[,20] Z_DEV_PLUGIN_SIZE|启用打包尺寸查看插件，查看打包之后的尺寸信息。
+|image:i-bug.png[,20] Z_DEV_PLUGIN_LOOP|检查代码中的循环依赖调用。
+|image:i-bug.png[,20] Z_DEV_PLUGIN_SMP|统计 Webpack 中的Loader使用时长，优化专用。
+|====
+
+[WARNING]
+====
+强调一下，此处的 `Z_DEV_PLUGIN_LOOP` 必须检查，Zero UI 的前端框架中是包含了从上到下调用的基本命名规范的，不允许出现**循环引用**的情况，而这个插件会检查代码中的循环引用，让代码整体结构变得非常规范。
+====
