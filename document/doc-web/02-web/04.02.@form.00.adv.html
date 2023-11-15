@@ -825,31 +825,114 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div class="sect3">
 <h4 id="_表单碎片"><a class="anchor" href="#_表单碎片"></a><a class="link" href="#_表单碎片">表单碎片</a></h4>
+<div class="sect4">
+<h5 id="_基本介绍"><a class="anchor" href="#_基本介绍"></a><a class="link" href="#_基本介绍">基本介绍</a></h5>
 <div class="paragraph">
-<p><strong>表单碎片</strong> 和表单组合一样，同样是开发表单布局使用的内容，现阶段只用于 <strong>工作流管理</strong>，教程暂时不梳理，后续版本落地成型后再追加到白皮书中（目前版本比较脆）。</p>
+<p><strong>表单碎片</strong> 新版的版本已经在工作流中正式启用，本章主要针对 <code>segment</code> 配置进行详解，分段表单配置牵涉到表单中如下配置段（目前在工作流中常用）：</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-json" data-lang="json">{
+    "segment": {
+        "A": "String / Array",
+        "B": "String / Array"
+    },
+    "combiner": {
+        "segment": []
+    }
+}</code></pre>
 </div>
 </div>
-<div class="sect3">
-<h4 id="_动态表单"><a class="anchor" href="#_动态表单"></a><a class="link" href="#_动态表单">动态表单</a></h4>
-
+<div class="paragraph">
+<p>上述配置中 <code>segment</code> 节点定义了表单的源头，此处的源头分两种：</p>
 </div>
-<div class="sect3">
-<h4 id="_子表单"><a class="anchor" href="#_子表单"></a><a class="link" href="#_子表单">子表单</a></h4>
-
+<div class="ulist">
+<ul>
+<li>
+<p>如果直接是二维数组（注意此处必须是和 <code>ui</code> 同态结构），那么可以不依赖外联文件（库）来实现表单动态扩展和配置组合。</p>
+</li>
+<li>
+<p>如果类型是 <code>String</code> 类型，那么表单配置依赖外联文件执行动态扩展和配置组合。</p>
+</li>
+</ul>
 </div>
-<div class="sect3">
-<h4 id="_自定义渲染"><a class="anchor" href="#_自定义渲染"></a><a class="link" href="#_自定义渲染">自定义渲染</a></h4>
-
 </div>
-<div class="sect3">
-<h4 id="_三态acl表单"><a class="anchor" href="#_三态acl表单"></a><a class="link" href="#_三态acl表单">三态ACL表单</a></h4>
-
+<div class="sect4">
+<h5 id="_外联文件"><a class="anchor" href="#_外联文件"></a><a class="link" href="#_外联文件">外联文件</a></h5>
+<div class="paragraph">
+<p>目前 <code>segment</code> 的配置仅在 <strong>工作流表单</strong> 中使用，后续会拓展到全表单成为通用配置，若键值使用的是 <code>Array</code> 类型，那么组合过程可以不用考虑内容层，若是 <code>String</code> 类型则依需启动外联库配置文件。</p>
+</div>
+<div class="paragraph">
+<p>先参考如下源代码：</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-js" data-lang="js">const __ioSegment = (reference, form, cab) =&gt; {
+    const $cab = form.cab ? form.cab : {};
+    const segment = {};
+    [
+        "SxAssign",
+        "SxClose",
+        "SxOpen",
+        "SxRun"
+    ].forEach(filename =&gt; {
+        const name = cab.ns + '/' + ($cab.name ? $cab.name : filename)
+        const resource = Langue(name);
+        if (resource) {
+            Object.assign(segment, resource);
+        }
+    });
+    return segment;
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>上述代码需要说明一点：</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p>表单碎片模式支持 <code>cab</code> 配置，即您可以定义表单配置文件所处的名空间相关信息。</p>
+</li>
+<li>
+<p>有了名空间之后，目前支持的文件是 <code>SxX</code> 类型的（工作流专用）。</p>
+</li>
+</ol>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>后续这部分内容会启用异步模式从远程加载，会有特殊的配置来限定文件名称，比如库路径、名空间、文件名，最终组合所需的 <code>segment</code> 配置中的表单段。</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_组合器"><a class="anchor" href="#_组合器"></a><a class="link" href="#_组合器">组合器</a></h5>
+<div class="paragraph">
+<p>组合器 <code>combiner</code> 配置是新配置，它主要负责表单碎片的重新排序，您可以在一个完整的表单中按行模式进行随意排序，这样就方便您调整表单的整体布局信息，后续会开一个专程的章节来讲解组合器的实战。</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p>表单碎片暂时只讲这么多，由于它牵涉的范围十分广泛，后续拓展空间比较大，配置的内容可以去工作流章节详细解读。</p>
+</div>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-08-24 09:41:06 +0800
+Last updated 2023-11-15 15:54:22 +0800
 </div>
 </div>
 </body>

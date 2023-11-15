@@ -40,3 +40,7 @@ include::05.05.list.action.adoc[]
 
 include::06.01.rapid.ui.adoc[]
 include::06.02.rapid.of.adoc[]
+
+== 扩展组件 `ei`
+
+include::07.01.extension.ui.adoc[]
