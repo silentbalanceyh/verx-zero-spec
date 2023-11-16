@@ -121,7 +121,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 上述片段定义了模型中的特殊属性集内容，除 `unique` 以外，其他属性新版都不需单独配置：
 
-[options="header"]
+[options="header",cols="3,3,14"]
 |====
 |属性名|默认值|含义
 |key|`"key"` |定义当前模型主键信息，配合 React 前端所以使用了 `key`，现阶段的版本不支持复合组件（两字段以上）。
@@ -136,7 +136,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 Zero核心框架中定义了如下自定义头：
 
-[options="header"]
+[options="header",cols="3,3,14"]
 |====
 |属性名|自定义头|含义
 |appId|X-App-Id|当前运行应用的主键，存储在 `X_APP` 中的主键（UUID格式）。

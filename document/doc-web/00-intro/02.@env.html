@@ -454,7 +454,10 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </div>
 <div class="listingblock">
 <div class="content">
-<pre class="highlight"><code class="language-bash" data-lang="bash">$ sudo npm install -g vertx-ai</code></pre>
+<pre class="highlight"><code class="language-bash" data-lang="bash"># 旧版
+$ sudo npm install -g vertx-ai
+# 新版
+$ sudo npm install -g zero-ai</code></pre>
 </div>
 </div>
 <div class="paragraph">
@@ -673,7 +676,10 @@ ox.engine.cn            # 该地址也已经写入本机host中：127.0.0.1 -&gt
 </tbody>
 </table>
 <div class="paragraph">
-<p>有了 <strong>菜单规划器</strong> 之后，新版本的程序导入不需要导入菜单中的 <code>ORDER（排序）、PARENT_ID（父子级关系）、TEXT（菜单名称）、LEVEL（菜单等级）</code> 等核心字段，这样Excel配置文件中的菜单数据就彻底被简化了。
+<p>有了 <strong>菜单规划器</strong> 之后，新版本的程序导入不需要导入菜单中的 <code>ORDER（排序）、PARENT_ID（父子级关系）、TEXT（菜单名称）、LEVEL（菜单等级）</code> 等核心字段，这样Excel配置文件中的菜单数据就彻底被简化了。</p>
+</div>
+<div class="paragraph">
+<p>所有的 <strong>指令程序</strong> 都是可以独立运行的，您也可以直接找到对应的 <code>main</code> 函数作为单独的 Java Console 程序去执行，最终产生的效果都是一致的，Zero 中针对大量的程序执行做过 <strong>幂等性</strong> 处理，所以您也不用担心反复执行带来的副作用问题。
 :data-uri:</p>
 </div>
 </div>
@@ -709,6 +715,20 @@ ox.engine.cn            # 该地址也已经写入本机host中：127.0.0.1 -&gt
 </tr>
 </tbody>
 </table>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>由于做过脱敏的处理，MySQL 需要您在自己运行的机器上配置 <strong>免密码</strong> 登录的模式来执行Zero Extension的数据库交互脚本，这样的模式下不依赖环境变量，但更安全，不过这种模式仅用于 Zero 的研发过程而不是开发过程。</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 <div class="sect3">
 <h4 id="_mysql_8_0"><a class="anchor" href="#_mysql_8_0"></a><a class="link" href="#_mysql_8_0">MySQL 8.0</a></h4>
 <div class="sect4">
@@ -2997,7 +3017,7 @@ sudo systemctl enable ds-example</code></pre>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-09-13 16:10:14 +0800
+Last updated 2023-11-16 15:36:17 +0800
 </div>
 </div>
 </body>

@@ -24,7 +24,7 @@ image:zis-document.png[0,1024]
 
 目录配置中存储了当前系统中的目录树，它的核心表结构如下：
 
-[options="header"]
+[options="header",cols="3,3,14"]
 |====
 |属性|列|含义
 |name| `NAME`|目录名称，如上边合同管理，其目录名称为 `合同管理`，只包含了当前目录名称。
@@ -49,7 +49,7 @@ image:zis-document.png[0,1024]
 - `storePath` 中只包含了应用根目录，即 `zero-ambient` 中定义的存储根路径，如上边提到的 `/apps/xc/document` 实际是在应用级配置文件中定义。
 - `category` 会影响目录的基本规划，每个主目录的生成依靠此处的目录规划程序，如现在系统中包含如下值：
 +
-[options="header"]
+[options="header",cols="3,17"]
 |====
 |category值|含义
 |department|部门文档，读取部门构造左侧树。
@@ -63,7 +63,7 @@ Zero Extension中还有一个不成文的约定，就是系统规划程序初始
 
 - `type` 主要有三种，这三种代表了存储规划的三种不同模式：
 +
-[options="header"]
+[options="header",cols="3,17"]
 |====
 |类型|含义
 |STORE|（默认值），不使用任何集成服务，直接根据远程上传的方式构建存储。
@@ -73,7 +73,7 @@ Zero Extension中还有一个不成文的约定，就是系统规划程序初始
 
 - `visitMode` 访问模式主要包含三种：
 +
-[options="header"]
+[options="header",cols="3,17"]
 |====
 |标记|含义
 |r|只读权限，可读取目录、打开目录、下载目录中的文件。

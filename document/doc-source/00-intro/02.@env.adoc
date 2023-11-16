@@ -10,7 +10,10 @@ ifndef::imagesdir[:imagesdir: ../images]
 初始化工程之前先安装 link:http://www.vertxai.cn[Zero Ai工具,window="_blank"]，该工具提供了不同初始化工程的命令，可一键生成模板。
 [source,bash]
 ----
+# 旧版
 $ sudo npm install -g vertx-ai
+# 新版
+$ sudo npm install -g zero-ai
 ----
 初始化完成之后既可执行工程初始化命令分别初始化：*后端、前端、后端插件*（现阶段只支持三种类型）。
 ====

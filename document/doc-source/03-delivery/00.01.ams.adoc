@@ -5,7 +5,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 ==== 功能支持表
 
-新版Zero从 `vertx-co` 项目中分裂出一个新项目 `vertx-ams`，全称为 `Agreed Metadata Specification`（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，它支持的功能点参考下表：
+新版Zero从原来的 `zero-co` 项目中分裂出一个新项目 `zero-ams`，全称为 `Agreed Metadata Specification`（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，它支持的功能点参考下表：
 
 [options="header",cols="20,80"]
 |====
@@ -82,12 +82,12 @@ java.lang.Throwable
 
 [CAUTION]
 ====
-`vertx-ams` 的设计主要是重新抽象了 Zero 核心框架底层的功能包，用于跨框架执行，理论上只能在 Vert.x 框架中使用，若和Spring做集成，则可直接引入 `vertx-core` 的依赖包作为额外的依赖包之后直接在Spring中使用。
+`zero-ams` 的设计主要是重新抽象了 Zero 核心框架底层的功能包，用于跨框架执行，理论上只能在 Vert.x 框架中使用，若和Spring做集成，则可直接引入 `zero-ams` 的依赖包作为额外的依赖包之后直接在Spring中使用。
 ====
 
 ==== 框架对接
 
-`vertx-ams` 中的异常架构本身是基于SPI执行扩展，若要对接新框架如Spring，则需要实现基础资源关联部分的SPI，才可以和 `vertx-ams` 完整对接，否则 *可配置* 异常架构无法在新框架中发挥作用，本章主要讲解对接步骤以及注意事项，有了本章基础之后，您可以完全隔离 Zero 框架在任何支持 Vert.x 的结构中直接使用此规范。
+`zero-ams` 中的异常架构本身是基于SPI执行扩展，若要对接新框架如Spring，则需要实现基础资源关联部分的SPI，才可以和 `zero-ams` 完整对接，否则 *可配置* 异常架构无法在新框架中发挥作用，本章主要讲解对接步骤以及注意事项，有了本章基础之后，您可以完全隔离 Zero 框架在任何支持 Vert.x 的结构中直接使用此规范。
 
 ===== 资源文件
 
@@ -189,5 +189,5 @@ public interface HorizonIo {
 --
 3. _ofLogger_ 用于返回 `io.horizon.specification.uca.HLogger` 实现类名，反射替换原始日志记录器（若不替换则使用默认的 `slf4j` 接口。
 
-上述实现完成之后，您可以在 `/META-INF/services/io.horizon.spi.HorizonIo` 中追加默认SPI的实现类，在自己的项目中直接对接异常架构，如此您的系统就可以享受 `vertx-ams` 带来的完整的可配置异常架构和函数模型，若您使用的是 Zero 框架，则不需要做任何对接，默认的 `vertx-co` 中已经包含了和 Zero 相关的所有实现。
+上述实现完成之后，您可以在 `/META-INF/services/io.horizon.spi.HorizonIo` 中追加默认SPI的实现类，在自己的项目中直接对接异常架构，如此您的系统就可以享受 `zero-ams` 带来的完整的可配置异常架构和函数模型，若您使用的是 Zero 框架，则不需要做任何对接，默认的 `zero-co` 中已经包含了和 Zero 相关的所有实现。
 

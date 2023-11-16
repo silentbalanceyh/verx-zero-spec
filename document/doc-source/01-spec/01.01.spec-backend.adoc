@@ -469,7 +469,7 @@ image:zenv-init.png[0,1024]
 
 启动器中的基本结构是一致的，文件名都可以维持一致。
 
-[options="header",cols="3,2,5"]
+[options="header",cols="4,2,5"]
 |====
 |类全名|数据目录|说明
 |image:i-bug.png[,20] cn.vertxup.routine.AtomInit|x|建模初始化：JSON -> Database 全流程，包括建模过程中的插件
@@ -846,36 +846,68 @@ Zero从 `0.9` 之后在扩展模块初始化时执行了细分流程，但依旧
 |compile *（已弃用）*|数据初始化，加载模块配置中的预处理数据、初始化全局缓存（跨应用、租户、语言通用应用的数据布局）。
 |synchro|数据同步器，在运行时过程针对单个应用执行数据同步。
 |====
+
+此处的 *compile* 弃用的原因在于初始化组件直接使用 configure 配置即可，Zero 会根据你在代码中的函数签名自动计算哪个步骤属于配置步骤，哪个步骤属于初始化步骤，新版引入了 `HRegistry` 高阶接口来对接应用和模块的初始化流程，只要您的实现类实现了这个接口，那么最终的程序执行就是可用的。
 ====
 
-元数据初始化器（ `configure` 配置）的方法定义如下：
+初始化实现的模块接口定义如下（去掉了完整注释）：
 
 [source,java]
 ----
-    public static Future<Boolean> init(final Vertx vertx) {
-        // 异步调用初始化方法
-        return Ux.futureT();
+package io.macrocosm.specification.app;
+
+import io.macrocosm.specification.config.HConfig;
+import io.macrocosm.specification.program.HArk;
+import io.modello.atom.app.KTenement;
+import io.vertx.core.Future;
+
+import java.util.Set;
+
+public interface HRegistry<T> {
+
+    // 上下文注册
+    Set<HArk> registry(T container, HConfig config);
+
+    // 上下文注册（异步）
+    default Future<Set<HArk>> registryAsync(final T container, final HConfig config) {
+        return Future.succeededFuture(this.registry(container, config));
     }
-    
-    public static void init() {
-        // 同步调用初始化方法
+
+    // 模块注册，主要针对 Zero Extension
+    interface Mod<T> {
+        // 模块配置
+        default Boolean configure(final T container, final HAmbient ambient) {
+            return Boolean.TRUE;
+        }
+        
+        // 模块配置（异步）
+        default Future<Boolean> configureAsync(final T container, final HAmbient ambient) {
+            return Future.succeededFuture(this.configure(container, ambient));
+        }
+
+        // 初始化器
+        default Boolean initialize(final T container, final HArk ark) {
+            return Boolean.TRUE;
+        }
+
+        // 初始化器（异步）
+        default Future<Boolean> initializeAsync(final T container, final HArk ark) {
+            return Future.succeededFuture(this.initialize(container, ark));
+        }
     }
+}
 ----
 
-1. 扩展模块只有启动之后会初始化（预处理）扩展模块配置，若没有启动则配置数据不会被加载。
-2. 初始化器只有在模块有静态配置时才需要，并且必须遵循上述两个静态方法格式。
+1. 新版扩展模块不会跟随启动执行初始化流程，而是在 *指令集* 中就会被调用，和旧版的启动初始化不一样，简单说启动之前配置程序已经完成了完整初始化。
+2. 初始化器实现接口为 `HRegistry.Mod<T>`，所有的模块都可以走这样的生命周期管理流程。
 3. 初始化器的配置规范定义每个模块的配置文件通常位于：`plugin/<module>/configuration.json`。
 4. （新版）新版已经丢弃了 `async` 参数，系统会直接根据方法签名进行同异步运算，自动判断应该使用同步加载还是异步加载。
 
 image:zmod-init.png[0,1024]
 
-数据初始化器（ `compile` 配置）的方法定义比较随意，您可以定义在一个类中，也可以定义在N个类中，但它的方法必须遵循如下规范：
+最新版的初始化器已经遵循了高阶设计（`zero-ams`）中的模块注册生命周期管理中的接口规范，放弃了曾经比较自由的模式，这一点需要开发人员注意。其次使用过程中注意从 `io.horizon / io.macrocosm` 两个包导入的类信息，这些包中包含了太多新版高阶设计的内容，其复杂度远大于 Zero 框架本身，您可以直接点击代码进入到这些接口定义中，了解高阶设计的目的。
 
-1. 所有方法的参数表和元数据初始化器一致，要么无参传入，要么传入单参 `Vertx`。
-2. 所有方法的方法名必须以 `init` 为前缀——这是和元数据初始化器不同的地方，只要为 `init` 前缀就可生效。
-3. 由于 JooqInfix 是和数据库打交道比较频繁的地方，所以启用该功能时，`JooqInfix` 会提前执行以确认数据库配置是正确的。
-
-参考下边的 *文档管理* 的代码了解一下数据初始化器的基本写法：
+参考下边的 *文档管理* 的代码了解一下数据初始化器的完整代码：
 
 [source,java]
 ----
@@ -883,44 +915,67 @@ package io.vertx.mod.ambient.init;
 
 import cn.vertxup.ambient.service.file.DocBStub;
 import cn.vertxup.ambient.service.file.DocBuilder;
-import io.horizon.uca.log.Annal;
+import io.horizon.spi.extension.Init;
+import io.horizon.spi.extension.Prerequisite;
+import io.macrocosm.specification.app.HAmbient;
+import io.macrocosm.specification.app.HApp;
+import io.macrocosm.specification.app.HRegistry;
+import io.macrocosm.specification.program.HArk;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.mod.ambient.atom.AtConfig;
 import io.vertx.mod.ke.refine.Ke;
 import io.vertx.up.boot.di.DiPlugin;
-import io.vertx.up.eon.KName;
 import io.vertx.up.unity.Ux;
 import io.vertx.up.util.Ut;
 
 import static io.vertx.mod.ambient.refine.At.LOG;
 
-/*
- * Prefix + c + feature keyword
- */
-public class AtInit {
+public class AtPin implements HRegistry.Mod<Vertx> {
+    private static final DiPlugin PLUGIN = DiPlugin.create(AtPin.class);
 
-    private static final Annal LOGGER = Annal.get(AtInit.class);
+    public static AtConfig getConfig() {
+        return AtConfiguration.getConfig();
+    }
 
-    private static final DiPlugin PLUGIN = DiPlugin.create(AtInit.class);
+    public static Init getInit() {
+        return AtConfiguration.getInit(getConfig().getInitializer());
+    }
 
-    public static Future<Boolean> initDocument(final Vertx vertx) {
-        return Ke.mapApp(appJ -> {
-            final AtConfig config = AtConfiguration.getConfig();
-            final boolean disabled = Ut.isNil(config.getFileIntegration());
-            if (disabled) {
-                LOG.Init.info(LOGGER, "Document Platform Disabled !!");
-                return Ux.futureF();
-            }
-            // 此处提前调用 initialize 方法，此方法保证无副作用的多次调用即可
-            final DocBStub docStub = PLUGIN.createSingleton(DocBuilder.class);
-            // Here mapApp function extract `appId`
-            final String appId = Ut.valueString(appJ, KName.KEY);
-            return docStub.initialize(appId, config.getFileIntegration()).compose(initialized -> {
-                LOG.Init.info(LOGGER, "AppId = {0}, Directory Size = {1}", appId, String.valueOf(initialized.size()));
-                return Ux.futureT();
-            });
-        }, (result) -> Ux.future(result.stream().allMatch(item -> item)));
+    public static Init getLoader() {
+        return AtConfiguration.getInit(getConfig().getLoader());
+    }
+
+    public static Prerequisite getPrerequisite() {
+        return AtConfiguration.getPrerequisite();
+    }
+
+    /* 新版模块注册器 */
+    @Override
+    public Boolean configure(final Vertx vertx, final HAmbient ambient) {
+        Ke.banner("「περιβάλλων」- Ambient ( At )");
+        LOG.Init.info(AtPin.class, "AtConfiguration...");
+        AtConfiguration.registry(ambient);
+        return Boolean.TRUE;
+    }
+
+    @Override
+    public Future<Boolean> initializeAsync(final Vertx container, final HArk ark) {
+        final AtConfig config = AtConfiguration.getConfig();
+        final boolean disabled = Ut.isNil(config.getFileIntegration());
+        if (disabled) {
+            LOG.Init.info(this.getClass(), "Document Platform Disabled !!");
+            return Ux.futureF();
+        }
+        // 此处提前调用 initialize 方法，此方法保证无副作用的多次调用即可
+        final DocBStub docStub = PLUGIN.createSingleton(DocBuilder.class);
+        // Here mapApp function extract `appId`
+        final HApp app = ark.app();
+        final String appId = app.appId(); // Ut.valueString(appJ, KName.KEY);
+        return docStub.initialize(appId, config.getFileIntegration()).compose(initialized -> {
+            LOG.Init.info(this.getClass(), "AppId = {0}, Directory Size = {1}", appId, String.valueOf(initialized.size()));
+            return Ux.futureT();
+        });
     }
 }
 ----

@@ -28,7 +28,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 }
 ----
 
-[options="header"]
+[options="header",cols="3,17"]
 |====
 |属性|含义
 |user|用户主键（登录过程中使用的 `clientId` 值）
@@ -44,7 +44,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 令牌生成完成后，系统将会调用 `ScUser` 类中的静态方法初始化 link:#__SEC_CACHE_LOGIN[用户登录缓存,window="_blank"]，ScUser类是Zero为账号封装过的核心用户类，此处不讲解该类的一些成员方法（如视图、Profile访问、用户主键提取），但下边几个高频方法可以给开发带来很大的福利。
 
-[options="header"]
+[options="header",cols="4,4,12"]
 |====
 |方法签名|返回值|含义
 |`user()` | `String` |读取当前登录用户主键

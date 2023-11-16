@@ -24,7 +24,7 @@ image:zero-history.png[0,1024]
 |`zero-ecotope`|根项目：POM管理、版本管理、文档管理。
 |`zero-epic`|内含 AMS（Agreed Metadata Specification）接口设计和规范定义，作为最底层跨框架基础功能规范。
 |`zero-elite`|原 Zero Core 核心框架，包含内置组件、功能函数、编排器，为上层容器提供环境支撑，新版还引入了OSGI规范。
-|`zero-energy`|Web容器，可选择三种方式运行：单机运行、OSGI插件运行、云环境运行）。
+|`zero-energy`|Web容器，可选择三种方式运行：单机运行、OSGI插件运行、云环境运行。
 |`zero-equip`|Infix Architecture 的各种功能插件，对应旧版 `Zero Infix`。
 |`zero-extension`|Zero Extension 扩展插件，对应旧版 `Zero Extension`。
 |`zero-external`|动态建模专用外置插件，如 Oracle、MySQL 等，基于 MBSE 的核心插件体系。
@@ -69,7 +69,7 @@ Zero最新版基于 `MBSE` 理论，以**建模**为中心打造稳定、可成�
 
 [WARNING]
 ====
-最新版本中，核心框架的 `vertx-co` 已经将底层规范项目分离成新的 `vertx-ams` 项目，该项目可在任意 Vert.x 相关的项目中使用，全称为 `Agreed Metadata Specification`，意在打造以 *建模 / 工具* 为中心的基础规范项目底座，并使用SPI实现了从 Vert.x 到 Spring 以及其他框架的无缝切换，该项目完整版将在 1.0 正式版本发布中问世，增强了通用性和扩展性，大量开放出来的代码结构和规范都来自于现阶段的 Vert.x/Zero 项目中。
+最新版本中，核心框架的 `zero-epic（原 vertx-co）` 已经将底层规范项目分离成新的 `zero-ams` 项目，该项目可在任意 Vert.x 相关的项目中使用，全称为 `Agreed Metadata Specification`，意在打造以 *建模 / 工具* 为中心的基础规范项目底座，并使用SPI实现了从 Vert.x 到 Spring 以及其他框架的无缝切换，该项目完整版将在 1.0 正式版本发布中问世，增强了通用性和扩展性，大量开放出来的代码结构和规范都来自于现阶段的 Vert.x/Zero 项目中。
 ====
 
 === 默认HOST

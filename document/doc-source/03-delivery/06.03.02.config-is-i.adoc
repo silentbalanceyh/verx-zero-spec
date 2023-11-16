@@ -7,7 +7,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 集成配置的核心配置数据存储于 `I_INTEGRATION` 表中。
 
-[options="header"]
+[options="header",cols="3,3,14"]
 |====
 |属性|列|含义
 |name| `NAME`|当前集成配置的名称。

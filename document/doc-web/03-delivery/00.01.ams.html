@@ -443,7 +443,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="sect3">
 <h4 id="_功能支持表"><a class="anchor" href="#_功能支持表"></a><a class="link" href="#_功能支持表">功能支持表</a></h4>
 <div class="paragraph">
-<p>新版Zero从 <code>vertx-co</code> 项目中分裂出一个新项目 <code>vertx-ams</code>，全称为 <code>Agreed Metadata Specification</code>（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，它支持的功能点参考下表：</p>
+<p>新版Zero从原来的 <code>zero-co</code> 项目中分裂出一个新项目 <code>zero-ams</code>，全称为 <code>Agreed Metadata Specification</code>（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，它支持的功能点参考下表：</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -653,7 +653,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </td>
 <td class="content">
 <div class="paragraph">
-<p><code>vertx-ams</code> 的设计主要是重新抽象了 Zero 核心框架底层的功能包，用于跨框架执行，理论上只能在 Vert.x 框架中使用，若和Spring做集成，则可直接引入 <code>vertx-core</code> 的依赖包作为额外的依赖包之后直接在Spring中使用。</p>
+<p><code>zero-ams</code> 的设计主要是重新抽象了 Zero 核心框架底层的功能包，用于跨框架执行，理论上只能在 Vert.x 框架中使用，若和Spring做集成，则可直接引入 <code>zero-ams</code> 的依赖包作为额外的依赖包之后直接在Spring中使用。</p>
 </div>
 </td>
 </tr>
@@ -663,7 +663,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="sect3">
 <h4 id="_框架对接"><a class="anchor" href="#_框架对接"></a><a class="link" href="#_框架对接">框架对接</a></h4>
 <div class="paragraph">
-<p><code>vertx-ams</code> 中的异常架构本身是基于SPI执行扩展，若要对接新框架如Spring，则需要实现基础资源关联部分的SPI，才可以和 <code>vertx-ams</code> 完整对接，否则 <strong>可配置</strong> 异常架构无法在新框架中发挥作用，本章主要讲解对接步骤以及注意事项，有了本章基础之后，您可以完全隔离 Zero 框架在任何支持 Vert.x 的结构中直接使用此规范。</p>
+<p><code>zero-ams</code> 中的异常架构本身是基于SPI执行扩展，若要对接新框架如Spring，则需要实现基础资源关联部分的SPI，才可以和 <code>zero-ams</code> 完整对接，否则 <strong>可配置</strong> 异常架构无法在新框架中发挥作用，本章主要讲解对接步骤以及注意事项，有了本章基础之后，您可以完全隔离 Zero 框架在任何支持 Vert.x 的结构中直接使用此规范。</p>
 </div>
 <div class="sect4">
 <h5 id="_资源文件"><a class="anchor" href="#_资源文件"></a><a class="link" href="#_资源文件">资源文件</a></h5>
@@ -804,7 +804,7 @@ public interface HorizonIo {
 </ol>
 </div>
 <div class="paragraph">
-<p>上述实现完成之后，您可以在 <code>/META-INF/services/io.horizon.spi.HorizonIo</code> 中追加默认SPI的实现类，在自己的项目中直接对接异常架构，如此您的系统就可以享受 <code>vertx-ams</code> 带来的完整的可配置异常架构和函数模型，若您使用的是 Zero 框架，则不需要做任何对接，默认的 <code>vertx-co</code> 中已经包含了和 Zero 相关的所有实现。</p>
+<p>上述实现完成之后，您可以在 <code>/META-INF/services/io.horizon.spi.HorizonIo</code> 中追加默认SPI的实现类，在自己的项目中直接对接异常架构，如此您的系统就可以享受 <code>zero-ams</code> 带来的完整的可配置异常架构和函数模型，若您使用的是 Zero 框架，则不需要做任何对接，默认的 <code>zero-co</code> 中已经包含了和 Zero 相关的所有实现。</p>
 </div>
 </div>
 </div>
@@ -812,7 +812,7 @@ public interface HorizonIo {
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-07-22 11:58:29 +0800
+Last updated 2023-11-16 16:31:15 +0800
 </div>
 </div>
 </body>

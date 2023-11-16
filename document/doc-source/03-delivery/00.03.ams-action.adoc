@@ -5,7 +5,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 ==== 元数据注解
 
-Zero中的 `vertx-ams` 提供了四个核心的元数据注解，这些注解位于 `io.horizon.annotations` 包中。
+Zero中的 `zero-ams` 提供了四个核心的元数据注解，这些注解位于 `io.horizon.annotations` 包中。
 
 [options="header",cols="10,10,80"]
 |====

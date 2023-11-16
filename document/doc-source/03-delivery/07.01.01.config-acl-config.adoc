@@ -62,7 +62,7 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 上述配置是一个完整的DEMO，除了初始化密码部分为了脱敏修改过，其他内容都是可参考的：
 
-[options="header"]
+[options="header",cols="3,17"]
 |====
 |属性|含义
 |condition|默认选择对应实体的查询条件，多应用模式下可直接支持。

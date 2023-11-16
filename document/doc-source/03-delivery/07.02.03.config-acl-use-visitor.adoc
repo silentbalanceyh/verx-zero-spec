@@ -38,7 +38,7 @@ Zero中按照如下流程配置一个资源访问者：
 
 资源访问者流程可以总结成两个大步骤：
 
-[options="header"]
+[options="header",cols="3,7"]
 |====
 |步骤|说明
 |真实资源查找|根据 `S_RESOURCE` 中 `VIRTUAL = true` 的定义去查找真实资源，真实资源的查找就借用访问者配置（前文提到的基本规则）来实现。
@@ -99,7 +99,7 @@ image:zero-p-visit-phase.png[,800]
 
 访问者记录中虽然保存了 `SEEK_KEY`，但在不同的业务场景中，它无法做 *全局标识*，所以根据实际需求，此处设计在后期做过一些基本改动，访问者标识维度如下：
 
-[options="header"]
+[options="header",cols="3,17"]
 |====
 |字段|含义
 |TYPE|访问者类型，针对资源维度的分类定义，现阶段支持：FORM、LIST、OP、VIEW 四种，服务于 `zero-atom` 动态建模。
@@ -157,7 +157,7 @@ image:zero-p-visit-phase.png[,800]
 
 访问者对列表的控制基本和 `S_VIEW` 同源，主要覆盖如下：
 
-[options="header"]
+[options="header",cols="3,17"]
 |====
 |字段|含义
 |DM_ROW|等价于视图中的 ROWS 限定规则，前端标记：H - Horizon，水平限定。
@@ -167,7 +167,7 @@ image:zero-p-visit-phase.png[,800]
 
 访问者优于视图的地方在于它还提供了表单级的控制，主要覆盖如下：
 
-[options="header"]
+[options="header",cols="3,3,14"]
 |====
 |字段|关键字|含义
 |ACL_VISIBLE|可见性|可见属性集设置，限定表单中的某些表单字段是否可见。

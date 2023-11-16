@@ -1,5 +1,6 @@
 ifndef::imagesdir[:imagesdir: ../images]
 :data-uri:
+:table-caption!:
 
 === 样式规范
 
@@ -66,7 +67,7 @@ WebPack中关于样式的路径和模块定义、使用流程如下：
 全局风格文件位于style目录中，本章节描述全局风格文件的目录职责，不同职责目录入口文件都是 index.scss，相关说明在 style/index.scss 注释中。
 ====
 
-[options="header",cols="2,4,4"]
+[options="header",cols="2,4,4",title="注：「不稳定」随时更改"]
 |====
 |类型|路径|说明
 |image:i-folder.png[,20] 目录|style/connect|第三方样式表连接专用目录。
@@ -124,7 +125,7 @@ WebPack中关于样式的路径和模块定义、使用流程如下：
 
 ===== 全局函数
 
-[options="header",cols="3,1,6"]
+[options="header",cols="3,1,6",title="注：「不稳定」随时更改"]
 |====
 |名称|类型|说明
 |attr_gradient_l|函数|水平渐变从左往右。
@@ -168,7 +169,7 @@ WebPack中关于样式的路径和模块定义、使用流程如下：
 
 ====
 
-[options="header",cols="3,1,6"]
+[options="header",cols="3,1,6",title="注：「不稳定」随时更改"]
 |====
 |名称|类型|说明
 |uc_green|类名|色彩按钮：绿色。

@@ -150,7 +150,7 @@ WHERE NAME IN ('zero.destkop', 'zero.desktop.my', 'zero.desktop.my.todo-pending'
 ====
 上述配置中的 `phase` 和 `data` 节点中的 `type` 最终会生成如下格式的合法值：
 
-[options="header"]
+[options="header",cols="4,2,2,6"]
 |====
 |值|phase|type|含义
 |BEFORE_PROJECTION|BEFORE|PROJECTION|前置操作，修改查询引擎参数 projection。
@@ -194,7 +194,7 @@ public interface Confine {
 
 其中此处的 `syntax` 就是 `SEEK_SYNTAX` 配置的内容，而 `request` 参数对应到前文中 `data` 节点可使用的预设参数（预设参数不包含您在 Http 请求体 `Body` 中传入的参数），预设参数如下：
 
-[options="header"]
+[options="header",cols="3,3,14"]
 |====
 |参数名|默认值|含义
 |appId|无|多应用模式中，所属应用程序ID，来自请求头：`X-App-Id`。
@@ -219,7 +219,7 @@ public interface Confine {
 
 最后简单讲解下 `ACL_` 表单级语法：
 
-[options="header"]
+[options="header",cols="3,3,14"]
 |====
 |字段|类型|格式和含义
 |ACL_VERGE|JsonObject|一般格式是：`field = JsonObject` 结构，包含依赖字段名和依赖字段相关配置。

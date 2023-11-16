@@ -76,7 +76,7 @@ excel:
 --
 此处定义了 `transform` 节点，即当前模型在导入时会执行转换节点定义的各种转换规则，默认值规则 `initial` 则表示数据导入过程中必须遵循此规则，它是一个 `Object` 类型，描述了属性和来源，如上边片段中，左值 `type, identifier` 表示当前模型中这两个属性需要在转换规则中执行默认值规则（左值是模型中存在的属性名），右值的每项可以是固定值，也可以是上边这种 `JEXL3` 表达式，现阶段此处的表达式入参参考下表：
 
-[options="header"]
+[options="header",cols="3,7"]
 |====
 |参数|含义
 |module|当前模型定义的模块名，默认是 identifier，用于鉴类。
@@ -391,7 +391,7 @@ _上述配置结构中的 `source` 和 `target` 是可以完全展开的，`sour
 
 这些属性含义如下：
 
-[options="header"]
+[options="header",cols="3,17"]
 |====
 |属性|含义
 |identifier|当前实体的 `identifier` 名称（也可以是模型的 `identifier`，非动态模式下二者相同）。

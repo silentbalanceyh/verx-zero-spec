@@ -1,5 +1,6 @@
 ifndef::imagesdir[:imagesdir: ../images]
 :data-uri:
+:table-caption!:
 
 === 模块连接[[__SPEC_BACKEND_BOOT]]
 
@@ -12,7 +13,7 @@ image:zapp-extension.png[0,1024]
 1. 核心框架只有四个项目，包含了容器以及所有底层架构。
 2. 扩展框架拥有一个底座项目 `zero-ke`，它负责将扩展模块连接到底层容器上。
 3. 插件项目、扩展模块各自独立，相互之间不存在任何依赖。
-4. （新版已改名）`zero-vie` 是一个单机应用综合包（比较重），它引用了所有要使用的扩展模块构造单机应用。
+4. `zero-focus（原：zero-vie）` 是一个单机应用综合包（比较重），它引用了所有要使用的扩展模块构造单机应用。
 5. 新版的 `zero-doc` 没有出现在截图中。
 
 Zero全框架一般有三种插件（都可以按需加载）：
@@ -114,7 +115,7 @@ find . -name "*io.horizon.spi*"
 
 即使 `zero-atom` 模块不在POM表中引用 `zero-jet` 模块，只要环境中存在 `zero-jet` 模块，也会因为SPI的关系调用成功。现阶段Zero框架中所有SPI部分清单参考下表（所有SPI组件定义和实现都位于 `io.horizon.spi` 包或子包中，考虑到表格布局，表格中使用缩写格式）：
 
-[options="header",cols="8,3,3,6"]
+[options="header",cols="8,3,3,6",title="注：「不稳定」随时更改"]
 |====
 |接口/实现|调用模块（可多个）|被调用模块|说明
 |`i.h.s.HorizonIo` | vertx-ams | image:i-pojo.png[0,16] vertx-co | 新版 Agreed Metadata Specification 专用的规范连接专用包，用于连接 *建模 / 元模型* 规范专用，可跨 Vertx 和 Spring 等其他框架平台。
