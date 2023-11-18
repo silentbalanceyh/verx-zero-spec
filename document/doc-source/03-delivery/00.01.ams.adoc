@@ -3,18 +3,23 @@ ifndef::imagesdir[:imagesdir: ../images]
 
 === 元数据规范
 
+新版Zero从原来的 `zero-co` 项目中分裂出一个新项目 `zero-ams`，全称为 `Agreed Metadata Specification`（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，此项目为大量 Vert.x 项目提供了一种基础**标准**，即使您不使用Zero也可以在 Vert.x 项目中使用此依赖来完善**元数据规范**。
+
 ==== 功能支持表
 
-新版Zero从原来的 `zero-co` 项目中分裂出一个新项目 `zero-ams`，全称为 `Agreed Metadata Specification`（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，它支持的功能点参考下表：
+**AMS** 支持的功能点参考下表：
 
 [options="header",cols="20,80"]
 |====
 |功能|说明
 |逆向注解 a|提供新注解，针对特殊的功能实现元数据分析（代码分析代码的模式）：
 
-- 开发注解，定义部分私有成员辅助开发，可使用代码和脚本对项目本身执行分析。
-- 连接注解，定义和 ams 项目相关的工具调用，以标记代码。
-- 缓存注解，可对Cc架构执行缓存注解。
+- `@Development`：开发注解，定义部分私有成员辅助开发，可使用代码和脚本对项目本身执行分析。
+- `@HighOrder`：连接注解，定义和 ams 项目相关的工具调用，以标记代码。
+- `@Memory`：缓存注解，可对Cc架构执行缓存注解。
+- `@ChatGPT`：使用ChatGPT编写的机器代码部分
+
+逆向注解是非必须，若没有在代码中标注，仅在**逆向工程**中无法收集相关元数据，对正常程序的运行不产生任何影响。
 |通用数据结构|提供部分通用数据结构定义，不带任何业务色彩，纯功能支持型内容。
 |异常架构 a|提供任何项目都可使用的异常规划，可加载不同资源文件实现扩展异常定义，动参和继承相结合，实现项级的完整异常体系，完整抽象层异常体系如下：
 
@@ -23,35 +28,55 @@ ifndef::imagesdir[:imagesdir: ../images]
 java.lang.Throwable
 
   -- java.lang.Exception
-        # 编译时顶级抽象异常
-     -- io.horizon.exception.ProgramException      
-           # （Fatal类）容器内部配置检查异常
-        -- io.horizon.exception.io.horizon.exception 
+  
+        # 编译时顶级 Checked 异常
+     -- io.horizon.exception.ProgramException   
+     
+           # 和资源文档绑定的检查异常，通常在编程过程中可抛出
+           # 1. 配置强化校验
+           # 2. 容器后台程序校验
+        -- io.horizon.exception.DaemonException 
         
      -- java.lang.RuntimeException
+     
            # 运行时顶级抽象异常
-        -- io.horizon.exception.AbstractException    
-              # 容器内部扫描合规性检查异常
+        -- io.horizon.exception.AbstractException  
+        
+              # 内部专用异常，不绑定资源文件，直接编程使用硬编码方式定义
            -- io.horizon.exception.InternalException   
-              # 容器启动异常
+           
+              # 和资源文档绑定的启动异常，在容器启动过程中出现
+              # 1. 模型校验
+              # 2. 容器启动校验
            -- io.horizon.exception.BootingException     
-              # 容器运行时Web异常（可呈现异常信息到前端）
+           
+              # Web容器运行过程中的通用异常
+              # 通用异常包括常见的：500、501、400、401、403 等常见异常
            -- io.horizon.exception.WebException         
 ----
-|函数包 a|提供 *类* 级别的函数顶层包 `HFn`（Java语法糖），实现工具独立规划和分析，且在函数包中引入增强的防御式、文学式编程范式，以更优雅的方式处理JVM级别的异常，且扩展 *函数接口* 让Java可支持 lambda 中的检查异常抛出机制。
+|函数包 a|提供 *类* 级别的函数顶层包 **HFn**（Java语法糖），实现工具独立规划和分析，且在函数包中引入增强的防御式、文学式编程范式，以更优雅的方式处理JVM级别的异常，且扩展 *函数接口* 让Java可支持 lambda 中的检查异常抛出机制。
 
-- 扩展Throwable的函数式接口
-- 扩展纯执行器函数式接口
-- 扩展Exception的函数式接口
-- 针对业务ProgramException / InternalException实现快速抛出
-- 支持带异常日志的函数式调用
-- *二选一* 快速分支性函数接口常用功能方法
-|规范 a|提供 *建模、数据结构、组件* 三种规范接口定义，整个系统中不提供实现，实现依赖您想要引入的该包的项目。
+- 由于Java语言中的 `@FunctionalInterface` 内部不支持异常捕捉，若您在 lambda 块中写了 **检查异常** 抛出相关的代码会导致 **编译错误**，**HFn** 扩展 Throwable 函数接口定义了可抛异常的接口。
+- 除开官方提供的 `Predicate、Supplier、Consumer、Funcation` 四种常用函数式接口之外，**HFn** 定以了纯执行类接口 `Actuator`，此接口 **无参数，且返回值为void**。
+- `try-catch` 的小封装，提供几个级别的快速函数执行接口，不同前缀处理不同类型的异常：
++
+--
+- `bug`：处理所有 `ProgramException` 类型的异常，这种类型的API要求底层必须以 throws 抛出对应异常，属于静态检查。
+- `fail`：处理所有 `Exception` 类型的异常，虽然 `Exception` 是检查性异常，API封装后外层 lambda 不抛出。
+- `jvm`：处理所有 `Throwable` 类型的异常，API封装后外层 lambda 不抛出。
+- `run`：广泛定义 `RuntimeException` 级别的异常，API内部可随意抛出这种类型异常，不检查。
+--
+- 在原始异常结构中定义了新的异常体系，和 **AMS** 中的部分 SPI 插件接口对接，实现任意框架级的资源文件扩展，除开 Zero 中的 `vertx-error.yml` 中的实现，您可以开发自定义的资源文件实现方案。
+- 提供常用的 **异步** 编排组合函数，您可以将多个异步 **Monad** 组合成复杂结构：**串行、并行、网状、树状** 等——编排是异步编程中的重点，也是 Zero 框架本身的一大亮点。
+- 开放部分类的 **高阶** 组合函数，您可以在二阶以上实现基础的编排工作，近似于标准库中的 `BiXx`，但扩展部分还可能包含 `TiXx` 的更加高阶的函数模型。
 
-- 应用、租户概念定义
-- 模型相关定义（元模型抽象定义）
-- 数据库配置定义
-|工具包 a|提供 *类* 级别的工具顶层包 `HaS`，实现工具独立调用，工具支持：
+|规范 a|提供 *运行时、建模、云端* 三种规范接口定义，这种类型的定义仅限 `interface` 关键字，所以整个 **AMS** 中不提供任何实现，代码内部注释比较齐全，所有接口都是 `H` 前缀的高阶设计，主要包含四大类：
+
+- 基础功能类
+- 建模类
+- 云端类
+- 开发定制类
+|工具包 a|提供 *类* 级别的工具顶层包 `HUt`，实现工具独立调用，工具支持：
 
 - 彩色Console日志
 - 对象比对、值比对
@@ -69,6 +94,9 @@ java.lang.Throwable
 - 随机数、字符串、验证码生成功能包
 - 安全值读写
 - 常用反射包（单件、实例、池化、SPI级核心反射）
+- 表达式解析包
+- AOP插件执行包
+- Jackson 基础序列化/反序列化包
 |UCA架构 a|全称为 User Component Architecture，用户自定义组件架构，规范中支持的自定义组件如：
 
 - CC缓存架构：Cloud Cache，支持内存缓存、异步缓存、线程缓存，全局统一管理缓存
@@ -78,6 +106,9 @@ java.lang.Throwable
 - 日志组件：基础日志、扩展日志专用组件，提供可扩展日志结构，外可连ELK平台
 - 本地文件组件：提供本地文件类似 `mkdir / rm` 等常用命令的文件操作
 - 网络组件：IPv4和IPv6专用网络检查功能包
+- Qr查询引擎组件：支持 Qr 查询引擎语法的专用组件
+- 启动组件：可插拔启动器架构的核心组件
+- AOP组件：新版AOP编排组件
 |====
 
 [CAUTION]

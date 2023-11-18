@@ -440,10 +440,13 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div id="content">
 <div class="sect2">
 <h3 id="_元数据规范"><a class="anchor" href="#_元数据规范"></a><a class="link" href="#_元数据规范">元数据规范</a></h3>
+<div class="paragraph">
+<p>新版Zero从原来的 <code>zero-co</code> 项目中分裂出一个新项目 <code>zero-ams</code>，全称为 <code>Agreed Metadata Specification</code>（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，此项目为大量 Vert.x 项目提供了一种基础<strong>标准</strong>，即使您不使用Zero也可以在 Vert.x 项目中使用此依赖来完善<strong>元数据规范</strong>。</p>
+</div>
 <div class="sect3">
 <h4 id="_功能支持表"><a class="anchor" href="#_功能支持表"></a><a class="link" href="#_功能支持表">功能支持表</a></h4>
 <div class="paragraph">
-<p>新版Zero从原来的 <code>zero-co</code> 项目中分裂出一个新项目 <code>zero-ams</code>，全称为 <code>Agreed Metadata Specification</code>（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，它支持的功能点参考下表：</p>
+<p><strong>AMS</strong> 支持的功能点参考下表：</p>
 </div>
 <table class="tableblock frame-all grid-all stretch">
 <colgroup>
@@ -465,15 +468,21 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <div class="ulist">
 <ul>
 <li>
-<p>开发注解，定义部分私有成员辅助开发，可使用代码和脚本对项目本身执行分析。</p>
+<p><code>@Development</code>：开发注解，定义部分私有成员辅助开发，可使用代码和脚本对项目本身执行分析。</p>
 </li>
 <li>
-<p>连接注解，定义和 ams 项目相关的工具调用，以标记代码。</p>
+<p><code>@HighOrder</code>：连接注解，定义和 ams 项目相关的工具调用，以标记代码。</p>
 </li>
 <li>
-<p>缓存注解，可对Cc架构执行缓存注解。</p>
+<p><code>@Memory</code>：缓存注解，可对Cc架构执行缓存注解。</p>
+</li>
+<li>
+<p><code>@ChatGPT</code>：使用ChatGPT编写的机器代码部分</p>
 </li>
 </ul>
+</div>
+<div class="paragraph">
+<p>逆向注解是非必须，若没有在代码中标注，仅在<strong>逆向工程</strong>中无法收集相关元数据，对正常程序的运行不产生任何影响。</p>
 </div></div></td>
 </tr>
 <tr>
@@ -490,19 +499,30 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <pre class="highlight"><code class="language-bash" data-lang="bash">java.lang.Throwable
 
   -- java.lang.Exception
-        # 编译时顶级抽象异常
+
+        # 编译时顶级 Checked 异常
      -- io.horizon.exception.ProgramException
-           # （Fatal类）容器内部配置检查异常
-        -- io.horizon.exception.io.horizon.exception
+
+           # 和资源文档绑定的检查异常，通常在编程过程中可抛出
+           # 1. 配置强化校验
+           # 2. 容器后台程序校验
+        -- io.horizon.exception.DaemonException
 
      -- java.lang.RuntimeException
+
            # 运行时顶级抽象异常
         -- io.horizon.exception.AbstractException
-              # 容器内部扫描合规性检查异常
+
+              # 内部专用异常，不绑定资源文件，直接编程使用硬编码方式定义
            -- io.horizon.exception.InternalException
-              # 容器启动异常
+
+              # 和资源文档绑定的启动异常，在容器启动过程中出现
+              # 1. 模型校验
+              # 2. 容器启动校验
            -- io.horizon.exception.BootingException
-              # 容器运行时Web异常（可呈现异常信息到前端）
+
+              # Web容器运行过程中的通用异常
+              # 通用异常包括常见的：500、501、400、401、403 等常见异常
            -- io.horizon.exception.WebException</code></pre>
 </div>
 </div></div></td>
@@ -510,27 +530,47 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">函数包</p></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>提供 <strong>类</strong> 级别的函数顶层包 <code>HFn</code>（Java语法糖），实现工具独立规划和分析，且在函数包中引入增强的防御式、文学式编程范式，以更优雅的方式处理JVM级别的异常，且扩展 <strong>函数接口</strong> 让Java可支持 lambda 中的检查异常抛出机制。</p>
+<p>提供 <strong>类</strong> 级别的函数顶层包 <strong>HFn</strong>（Java语法糖），实现工具独立规划和分析，且在函数包中引入增强的防御式、文学式编程范式，以更优雅的方式处理JVM级别的异常，且扩展 <strong>函数接口</strong> 让Java可支持 lambda 中的检查异常抛出机制。</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>扩展Throwable的函数式接口</p>
+<p>由于Java语言中的 <code>@FunctionalInterface</code> 内部不支持异常捕捉，若您在 lambda 块中写了 <strong>检查异常</strong> 抛出相关的代码会导致 <strong>编译错误</strong>，<strong>HFn</strong> 扩展 Throwable 函数接口定义了可抛异常的接口。</p>
 </li>
 <li>
-<p>扩展纯执行器函数式接口</p>
+<p>除开官方提供的 <code>Predicate、Supplier、Consumer、Funcation</code> 四种常用函数式接口之外，<strong>HFn</strong> 定以了纯执行类接口 <code>Actuator</code>，此接口 <strong>无参数，且返回值为void</strong>。</p>
 </li>
 <li>
-<p>扩展Exception的函数式接口</p>
+<p><code>try-catch</code> 的小封装，提供几个级别的快速函数执行接口，不同前缀处理不同类型的异常：</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><code>bug</code>：处理所有 <code>ProgramException</code> 类型的异常，这种类型的API要求底层必须以 throws 抛出对应异常，属于静态检查。</p>
 </li>
 <li>
-<p>针对业务ProgramException / InternalException实现快速抛出</p>
+<p><code>fail</code>：处理所有 <code>Exception</code> 类型的异常，虽然 <code>Exception</code> 是检查性异常，API封装后外层 lambda 不抛出。</p>
 </li>
 <li>
-<p>支持带异常日志的函数式调用</p>
+<p><code>jvm</code>：处理所有 <code>Throwable</code> 类型的异常，API封装后外层 lambda 不抛出。</p>
 </li>
 <li>
-<p><strong>二选一</strong> 快速分支性函数接口常用功能方法</p>
+<p><code>run</code>：广泛定义 <code>RuntimeException</code> 级别的异常，API内部可随意抛出这种类型异常，不检查。</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</li>
+<li>
+<p>在原始异常结构中定义了新的异常体系，和 <strong>AMS</strong> 中的部分 SPI 插件接口对接，实现任意框架级的资源文件扩展，除开 Zero 中的 <code>vertx-error.yml</code> 中的实现，您可以开发自定义的资源文件实现方案。</p>
+</li>
+<li>
+<p>提供常用的 <strong>异步</strong> 编排组合函数，您可以将多个异步 <strong>Monad</strong> 组合成复杂结构：<strong>串行、并行、网状、树状</strong> 等——编排是异步编程中的重点，也是 Zero 框架本身的一大亮点。</p>
+</li>
+<li>
+<p>开放部分类的 <strong>高阶</strong> 组合函数，您可以在二阶以上实现基础的编排工作，近似于标准库中的 <code>BiXx</code>，但扩展部分还可能包含 <code>TiXx</code> 的更加高阶的函数模型。</p>
 </li>
 </ul>
 </div></div></td>
@@ -538,18 +578,21 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">规范</p></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>提供 <strong>建模、数据结构、组件</strong> 三种规范接口定义，整个系统中不提供实现，实现依赖您想要引入的该包的项目。</p>
+<p>提供 <strong>运行时、建模、云端</strong> 三种规范接口定义，这种类型的定义仅限 <code>interface</code> 关键字，所以整个 <strong>AMS</strong> 中不提供任何实现，代码内部注释比较齐全，所有接口都是 <code>H</code> 前缀的高阶设计，主要包含四大类：</p>
 </div>
 <div class="ulist">
 <ul>
 <li>
-<p>应用、租户概念定义</p>
+<p>基础功能类</p>
 </li>
 <li>
-<p>模型相关定义（元模型抽象定义）</p>
+<p>建模类</p>
 </li>
 <li>
-<p>数据库配置定义</p>
+<p>云端类</p>
+</li>
+<li>
+<p>开发定制类</p>
 </li>
 </ul>
 </div></div></td>
@@ -557,7 +600,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <tr>
 <td class="tableblock halign-left valign-top"><p class="tableblock">工具包</p></td>
 <td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
-<p>提供 <strong>类</strong> 级别的工具顶层包 <code>HaS</code>，实现工具独立调用，工具支持：</p>
+<p>提供 <strong>类</strong> 级别的工具顶层包 <code>HUt</code>，实现工具独立调用，工具支持：</p>
 </div>
 <div class="ulist">
 <ul>
@@ -609,6 +652,15 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <li>
 <p>常用反射包（单件、实例、池化、SPI级核心反射）</p>
 </li>
+<li>
+<p>表达式解析包</p>
+</li>
+<li>
+<p>AOP插件执行包</p>
+</li>
+<li>
+<p>Jackson 基础序列化/反序列化包</p>
+</li>
 </ul>
 </div></div></td>
 </tr>
@@ -639,6 +691,15 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </li>
 <li>
 <p>网络组件：IPv4和IPv6专用网络检查功能包</p>
+</li>
+<li>
+<p>Qr查询引擎组件：支持 Qr 查询引擎语法的专用组件</p>
+</li>
+<li>
+<p>启动组件：可插拔启动器架构的核心组件</p>
+</li>
+<li>
+<p>AOP组件：新版AOP编排组件</p>
 </li>
 </ul>
 </div></div></td>
@@ -812,7 +873,7 @@ public interface HorizonIo {
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-11-16 16:31:15 +0800
+Last updated 2023-11-18 17:13:22 +0800
 </div>
 </div>
 </body>
