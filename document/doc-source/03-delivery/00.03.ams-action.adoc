@@ -86,11 +86,11 @@ public enum ErrorCode {
     _11000(-11000,
         "Cannot find META-INF/services/ {} on classpath")                                  
     , _11001(-11001,
-        "( Depend ) ArgumentWrongException")                                      
+        "( Depend ) ArgumentWrongException")                                               
     , _11002(-11002,
         "The `filename` of io stream is empty, filename = `{}`")                           
     , _11003(-11003,
-        "The error of `{}` has not been defined and could not be found")         
+        "The error of `{}` has not been defined and could not be found")                   
     , _11004(-11004,
         "The system met json decoding/encoding exception: {}")                             
     , _11005(-11005,
@@ -103,6 +103,10 @@ public enum ErrorCode {
         "The input key of `Pool` is null, it''s conflict in current environment")          
     , _11009(-11009,
         "The input cache mode should not be null, please check your code")                 
+    , _11010(-11010,
+        "The META-INF/services/io.horizon.spi.BootIo component is null, please configure.") 
+    , _11011(-11011,
+        "The Reflection invoking does not satisfy the pre-condition. Method = {}")          
     ;
     private final String message;
     private final int code;
@@ -217,7 +221,7 @@ public class _403ForbiddenException extends WebException {
 
 [WARNING]
 ====
-前文提到的书写 HorizonIo 的SPI组件实现的主要目的就是在此处实现资源绑定，若未提供实现，则资源绑定会失败。
+书写 HorizonIo 的SPI组件实现的主要目的就是在此处实现资源绑定，若未提供实现，则资源绑定会失败。
 ====
 
 此处提供默认资源绑定代码，若您想要使用默认的 `WebException`，这些错误代码是必须的。
@@ -244,22 +248,54 @@ public class _403ForbiddenException extends WebException {
 
 [source,yaml]
 ----
+# ----------- AMS 部分
+# BootException: io.horizon.exception.boot
+#    E40101 = CombineAppException
+#    E40102 = CombineOwnerException
+#    E40103 = AmbientConnectException
+#    E40104 = DuplicateRegistryException
+# New for Booting
+E40101: "(Boot) The two app of HArk could not been combined, the current name = `{1}`, ns = `{0}`"
+E40102: "(Boot) The two owner of HArk could not been combined, the current id = `{0}`, target = `{1}`"
+E40103: "(Boot) The container try to connect HArk, but `HArk` is null and could not start up"
+E40104: "(Boot) The stored Ambient has already been registry, current stored size = `{0}`"
+# WebException: io.horizon.exception.web
+# -- Web
+#    E60011 = _400BadRequestException
+#    E60007 = _500InternalServerException
 E60007: "(500) - The system detected internal error, contact administrator and check details = {0}"
-E60011: "(400) - (Security) Zero system detected invalid request in request"
+E60011: "(400) - The system detected invalid ( Bad ) request in request"
+
+# -- Secure
+#    E60012 = _401UnauthorizedException
+#    E60013 = _403ForbiddenException
 E60012: "(401) - (Security) Unauthorized request met in request"
 E60013: "(403) - (Security) Access denied/forbidden in request"
-E60059: "(400) - (Progma) Detected Null Value = `{0}`"
-E60060: "(500) - Method invoking met exception, but could not find WebException, ex = {0}"
-E60050: "(501) - This api is not supported or implemented, please check your specification, source = {0}"
-E80413: "(501) - (Jet) This api does not implement here, please provide in programming"
 
-# Query
+# -- Qr
+#    E60022 = _400QQueryAttributeException
+#    E60023 = _400QPagerInvalidException
+#    E60024 = _500QQueryMetaNullException
+#    E60025 = _400QPagerIndexException
+#    E60026 = _400QOpUnknownException
 E60022: "(400) - (Ir) You''ll try to parse Ir key = \"{0}\", the expected type is {1} but now it''s {2}"
 E60023: "(400) - (Ir) You''ll try to build \"pager\", the key \"{0}\" of pager missing."
 E60024: "(500) - (Ir) Your query meta is null, expected input meta object is not null reference."
 E60025: "(400) - (Ir) The \"pager\" started page number should start from 1, now input \"page\" is {0}"
 E60026: "(400) - (Ir) The op is not supported, please provide valid op of \"<, >, <=, >=, =, <>, !n, n, t, f, i, !i, s, e, c\", current is {0}"
+
+# -- JVM
+#    E60050 = _501NotSupportException
+#    E60059 = _412ArgumentNullException
+#    E60060 = _500InternalCauseException
+#    E80413 = _501NotImplementException
+E60050: "(501) - This api is not supported or implemented, please check your specification, source = {0}"
+E60059: "(400) - (Progma) Detected Null Value = `{0}`"
+E60060: "(500) - Method invoking met exception, but could not find WebException, ex = {0}"
+E80413: "(501) - (Jet) This api Method does not implement here, please provide in programming"
 ----
+
+新版本中由于完整的**启动器架构**已经实现和落地，所以多出了几个新的异常，但此异常的使用取决于您使用了Zero原生的启动器，若不想使用此启动器而是自己设计或实现一套新的，这四个异常代码是非必须的，所以没有在表格中列出。
 
 [CAUTION]
 ====

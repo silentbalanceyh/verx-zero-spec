@@ -444,6 +444,38 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 <p>新版Zero从原来的 <code>zero-co</code> 项目中分裂出一个新项目 <code>zero-ams</code>，全称为 <code>Agreed Metadata Specification</code>（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，此项目为大量 Vert.x 项目提供了一种基础<strong>标准</strong>，即使您不使用Zero也可以在 Vert.x 项目中使用此依赖来完善<strong>元数据规范</strong>。</p>
 </div>
 <div class="sect3">
+<h4 id="_设计原则"><a class="anchor" href="#_设计原则"></a><a class="link" href="#_设计原则">设计原则</a></h4>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>抽象、体系、复用、深度。</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p><code>zero-ams</code> 的设计主要是重新抽象了 Zero 核心框架底层的功能包，用于跨框架执行，理论上只能在 Vert.x 框架中使用，但在实战中若和Spring做集成，可直接引入 <code>zero-ams</code> 的依赖包直接在 Spring 中使用。<strong>AMS</strong> 的设计核心在于：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>弥补JVM中部分语法定义处理得不当的地方，让整个环境变得更加自由（JVM支持函数式编程是8+之后的事，由于本身设计的缺陷是完全支持函数式编程理论的）。</p>
+</li>
+<li>
+<p>扩展部分JVM中的API以适应更多偏向于<strong>业务计算</strong>的场景，解决大部分重复劳动的工作量，如：MD5加密、序列化、IO等。</p>
+</li>
+<li>
+<p>从实战经验中总结相关教训，提供和平台无关的基础组件，让您的项目和框架本身语义（羽翼）变得更加丰满。</p>
+</li>
+<li>
+<p>定义一套基于：<strong>运行时、建模、云端</strong> 的 <strong>纯接口规范</strong>（这是私货），让您在处理平台级应用时有一个设计层面的思考。</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>虽然从实际过程中可以看到这部分内容的设计略有冗余，但若您选择使用 Vert.x 作底层框架时，我相信这套基础规范可以让项目实施和交付变得更加流畅。</p>
+</div>
+</div>
+<div class="sect3">
 <h4 id="_功能支持表"><a class="anchor" href="#_功能支持表"></a><a class="link" href="#_功能支持表">功能支持表</a></h4>
 <div class="paragraph">
 <p><strong>AMS</strong> 支持的功能点参考下表：</p>
@@ -706,6 +738,12 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </tr>
 </tbody>
 </table>
+</div>
+<div class="sect3">
+<h4 id="_框架对接"><a class="anchor" href="#_框架对接"></a><a class="link" href="#_框架对接">框架对接</a></h4>
+<div class="paragraph">
+<p><code>zero-ams</code> 中的异常架构是基于 <strong>SPI</strong> 扩展，若要对接新框架如Spring，则需要实现基础资源关联部分的SPI，才可以和 <code>zero-ams</code> 完整集成，否则 <strong>可配置</strong> 异常架构无法在新框架中发挥作用，本章主要讲解对接步骤以及注意事项，您可以完全隔离 Zero 框架在任何支持 Vert.x 的结构中直接使用此教程。</p>
+</div>
 <div class="admonitionblock caution">
 <table>
 <tr>
@@ -714,22 +752,32 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </td>
 <td class="content">
 <div class="paragraph">
-<p><code>zero-ams</code> 的设计主要是重新抽象了 Zero 核心框架底层的功能包，用于跨框架执行，理论上只能在 Vert.x 框架中使用，若和Spring做集成，则可直接引入 <code>zero-ams</code> 的依赖包作为额外的依赖包之后直接在Spring中使用。</p>
+<p>SPI（Service Provider Interface）是Java语言中原生的一种机制，用于实现模块化、可扩展性的应用程序，它允许开发者定义一组接口（或抽象类），而允许不同的实现者提供具体的视线，这些实现可以在运行时被动态加载或替换，而无需修改源代码。它使用场景如下：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>插件系统</p>
+</li>
+<li>
+<p>驱动程序加载</p>
+</li>
+<li>
+<p>扩展框架</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>它是一种实现松耦合、可扩展、可插拔的方式，允许开发人员在不改变核心功能的前提下扩展应用程序。</p>
 </div>
 </td>
 </tr>
 </table>
 </div>
-</div>
-<div class="sect3">
-<h4 id="_框架对接"><a class="anchor" href="#_框架对接"></a><a class="link" href="#_框架对接">框架对接</a></h4>
-<div class="paragraph">
-<p><code>zero-ams</code> 中的异常架构本身是基于SPI执行扩展，若要对接新框架如Spring，则需要实现基础资源关联部分的SPI，才可以和 <code>zero-ams</code> 完整对接，否则 <strong>可配置</strong> 异常架构无法在新框架中发挥作用，本章主要讲解对接步骤以及注意事项，有了本章基础之后，您可以完全隔离 Zero 框架在任何支持 Vert.x 的结构中直接使用此规范。</p>
-</div>
 <div class="sect4">
 <h5 id="_资源文件"><a class="anchor" href="#_资源文件"></a><a class="link" href="#_资源文件">资源文件</a></h5>
 <div class="paragraph">
-<p>新框架对接中基本要求如：必须提供异常资源文件连接，如 Zero 中使用 <code>vertx-error.yml</code> 资源文件做绑定，您可以在新的框架如 Spring 中参考 <code>spring-up</code> 项目中的配置，使用可国际化的 <code>application-error.yml</code> 资源文件做绑定内容。SPI实现过程中并没有强制要求您从文件路径中加载资源，只是要求从返回的数据结构中（JsonObject类型）实现两个核心的数据结构</p>
+<p>新框架对接中基本要求：必须提供异常资源文件连接，如 Zero 中使用 <code>vertx-error.yml</code> 资源文件做绑定，您可以在新的框架如 Spring 中参考 <code>spring-up</code> 项目中的配置，使用可国际化的 <code>application-error.yml</code> 资源文件做绑定内容。SPI实现过程中并没有强制要求您从文件路径中加载资源，只是要求从返回的数据结构中（JsonObject类型）实现两个核心的数据结构</p>
 </div>
 <div class="ulist">
 <ul>
@@ -742,7 +790,7 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </ul>
 </div>
 <div class="paragraph">
-<p>这两个信息表在Zero框架中位于 <code>vertx-error.yml / vertx-readable.yml</code> 两个资源文件中，您可以在自己对接其他框架时，采用其他实现手段来完成，不影响整体结构。以下是 Zero 框架中的异常信息表的范例：</p>
+<p>这两个信息表在Zero框架中位于 <code>vertx-error.yml / vertx-readable.yml</code> 两个资源文件定义，您可以在自己对接其他框架时，采用其他实现手段来完成，不影响整体结构。以下是 Zero 框架中的异常信息表的范例：</p>
 </div>
 <div class="paragraph">
 <p><em>vertx-error.yml</em></p>
@@ -776,7 +824,7 @@ E80204: "(401) - (RBAC) The user''s ( username = {0} ) password that you provide
 </td>
 <td class="content">
 <div class="paragraph">
-<p>上述结构取决于 <code>io.horizon.spi.HorizonIo</code> 接口下的实现逻辑，Zero中的实现逻辑因为历史原因，两个文件的基础 <strong>键</strong> 命名并没有维持一致，一个是 <code>EXXXXX</code> 一个是 <code>XXXXX</code>，但相同的异常代码实现了错误表的绑定，这一点是相对实用的。</p>
+<p>上述结构取决于 <code>io.horizon.spi.HorizonIo</code> 接口下的实现逻辑，Zero中的实现逻辑因为历史原因，两个文件的基础 <strong>键</strong> 命名并没有维持一致，一个是 <code>EXXXXX</code> 一个是 <code>XXXXX</code>，但若 <code>XXXXX</code> 部分相同，则代表描述的是同一个错误代码对应的信息。此处设计成<strong>五位</strong>是考虑到在日志打印过程中让前缀的长度维持一致，一般框架内部或扩展使用<strong>五位</strong>，而您若开发其他应用则考虑<strong>六位</strong>。</p>
 </div>
 </td>
 </tr>
@@ -786,7 +834,7 @@ E80204: "(401) - (RBAC) The user''s ( username = {0} ) password that you provide
 <div class="sect4">
 <h5 id="_horizonio"><a class="anchor" href="#_horizonio"></a><a class="link" href="#_horizonio">HorizonIo</a></h5>
 <div class="paragraph">
-<p>若要对接框架，您只需要提供SPI接口 <code>io.horizon.spi.HorizonIo</code> 接口的相关实现，该接口的定义如下：</p>
+<p>对接框架，您只需要提供SPI接口 <code>io.horizon.spi.HorizonIo</code> 接口的相关实现，该接口的定义如下：</p>
 </div>
 <div class="listingblock">
 <div class="content">
@@ -867,13 +915,33 @@ public interface HorizonIo {
 <div class="paragraph">
 <p>上述实现完成之后，您可以在 <code>/META-INF/services/io.horizon.spi.HorizonIo</code> 中追加默认SPI的实现类，在自己的项目中直接对接异常架构，如此您的系统就可以享受 <code>zero-ams</code> 带来的完整的可配置异常架构和函数模型，若您使用的是 Zero 框架，则不需要做任何对接，默认的 <code>zero-co</code> 中已经包含了和 Zero 相关的所有实现。</p>
 </div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p>最后需说明一点，上述接口的实现在 JVM 中会出现三种不同场景，都和类加载器有关：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>标准场景：直接使用单个JVM运行 jar 程序，这种模式下无需额外配置。</p>
+</li>
+<li>
+<p>OSGI场景：由于OSGI场景下类加载器是相互隔离或独立的，所以在实现 <code>HorizonIo</code> 的过程中，您需要先精确定位类加载器，再读取相关配置才可以。</p>
+</li>
+<li>
+<p>Spring场景：Spring 框架对类加载器本身做过调整，特别是IO读取文件这一层，若要对接 Spring 您必须保证底层 IO 访问的资源是可达的。</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
 </div>
 </div>
 </div>
 </div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2023-11-18 17:13:22 +0800
+Last updated 2023-11-19 10:06:49 +0800
 </div>
 </div>
 </body>
