@@ -2401,6 +2401,23 @@ body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-b
 </tr>
 </tbody>
 </table>
+<div class="admonitionblock warning">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-warning" title="Warning"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>新版的 <code>TableEditor / TableTransfer</code> 在处理 <code>config.format</code> 节点时在原始基础上略微有些变化：旧版本中 <code>config.format</code> 在不配置的时候默认值为 <code>OBJECT</code>，新版本则切换成 <code>ARRAY</code>，同时兼容所有的组件（ <code>ROW</code> 渲染）。</p>
+</div>
+<div class="paragraph">
+<p>实战过程中遇到过 <code>ROW</code> 中不触发 <code>onChange</code> 外层函数的情况导致最终数据结果不被认可，这种原因即 <code>config.format.type</code> 的值不对引起的事件函数无法被注入，最新版的 <code>scaffold-ui</code> 已修订过此问题。</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
 </div>
 </div>
 <div class="sect3">

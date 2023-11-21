@@ -107,3 +107,11 @@ image:exp-input-tabletransfer.png[0,800]
 |`optionJsx.config.table`|右侧列表配置，配置右侧的表格列等相关信息。
 |====
 
+
+[WARNING]
+====
+新版的 `TableEditor / TableTransfer` 在处理 `config.format` 节点时在原始基础上略微有些变化：旧版本中 `config.format` 在不配置的时候默认值为 `OBJECT`，新版本则切换成 `ARRAY`，同时兼容所有的组件（ `ROW` 渲染）。
+
+实战过程中遇到过 `ROW` 中不触发 `onChange` 外层函数的情况导致最终数据结果不被认可，这种原因即 `config.format.type` 的值不对引起的事件函数无法被注入，最新版的 `scaffold-ui` 已修订过此问题。
+====
+
