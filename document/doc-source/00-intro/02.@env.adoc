@@ -24,6 +24,7 @@ include::02.03.env-database.adoc[]
 include::02.04.env-loading.adoc[]
 include::02.05.@env-office.adoc[]
 include::02.06.env-is-neo4j.adoc[]
+include::02.07.env-is-es.adoc[]
 
 
 
