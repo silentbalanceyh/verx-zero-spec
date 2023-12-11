@@ -645,6 +645,7 @@ AEON_APP=/Users/lang/zero-cloud/cloud-hotel/
 # Z_NS：             名空间信息
 # Z_SIGMA：          统一标识符
 # Z_LANG：           语言信息
+# 参考例子：
 # Z_NS=xxx
 # Z_SIGMA=xxx
 # X_LANG=cn
@@ -739,16 +740,16 @@ _run.env.sh_ / _run.env.sh.tpl_
 #      检查远程环境中的 ~/.bashrc 中是否已包含了 mvn / java / mysql 三个命令的基础环境变量
 # - 4) 默认数据库账号使用 zero，此处 DB_PASSWORD 对应的是 zero 的密码
 # - 5) 默认 DB_ENV = DEV（开发测试环境）
-# - 6) DB_ATOM开启动态建模部分
+# - 6) DB_ATOM开启动态建模部分，动态建模开启时，Z_NS参考白皮书进行设置
 # - 7）Z_HED_ENABLED是否打开加密模块（默认关闭）
 # TIDB / MYSQL
 export DB_TYPE=MYSQL
 export DB_PASSWORD=
 export DB_ENV=DEV
 export DB_ATOM=
-export DB_HOST=
-export Z_APP=
 export Z_HED_ENABLED=
+export Z_APP=
+export Z_NS=
 ----
 
 [options="header",cols="25,75"]
@@ -761,6 +762,7 @@ export Z_HED_ENABLED=
 |Z_HED_ENABLED|是否打开加密模块（默认关闭）
 |DB_HOST|当前应用使用的数据库IP地址或域名
 |Z_APP|应用程序的code，对应后端 X_APP 中的 name 配置
+|Z_NS|名空间前缀信息，导入数据执行指令集的时候必须有此前缀信息
 |====
 
 [CAUTION]

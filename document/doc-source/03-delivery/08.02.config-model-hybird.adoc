@@ -1,0 +1,174 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 静态建模[[__CONFIG_MODEL_HYBRID]]
+
+==== hybrid基础
+
+静态建模会依赖 `zero-crud` 引擎中的模型定义，此处不对 `zero-crud` 引擎中的模型定义做说明，您可以理解静态建模部分是为了桥接动态建模接口而做的特殊配置层，参考下边结构图：
+
+image:zmod-hybird-j.png[0,1120]
+
+静态建模的主要定义目录从 `hybrid` 中提取，而 `crud` 的模型则是存放在 `plugin/<module>/oob/module/` 中，如出差申请的定义如下：
+
+[options="header"]
+|====
+|模型标识|hybird文件 / crud模型|是否变体|含义
+|`w.ticket` a| 
+- `hybrid/w.ticket.json`
+- `plugin/wf/oob/module/hybrid/w.ticket.json` | 是 | 主工单模型定义
+|`w.todo` a|
+- `hybrid/w.todo.json`
+- `plugin/wf/oob/module/hybrid/w.todo.json` | 是 | 任务工单模型定义
+|`w.oa.trip` a|
+- `hybrid/w.oa.trip.json`
+- `hybrid/workfloww.oa.trip.json` | 是 | 出差申请单模型定义
+|====
+
+只有位于 `crud` 目录下的标准模型才可以出现在 `zero-crud` 模块中被解析，其他所有变体模型都不会被解析，但是变体模型的存储目录可随意，如上述结构中：
+
+1. `w.todo` 和 `w.ticket` 的变体模型存放在和 `crud` 平级的 `hybrid` 目录中。
+2. `w.oa.trip` 的变体模型则直接存放在 `hybrid/workflow` 目录中。
+
+==== 配置结构
+
+静态建模文件JSON配置结构如下：
+
+[source,json]
+----
+{
+    "identifier": "xxx",
+    "module": "xxx/xxx.json",
+    "linkage": [
+        "xxx"
+    ],
+    "hybrid": {
+        "trackable": false,
+        "alias": "xxx",
+        "matrix": {
+            "xxx": "<flag>"
+        },
+        "ruleUnique": {
+            "xxx": "xxx"
+        },
+        "attribute": {
+            "xxx": "xxxText"
+        }
+    }
+}
+----
+
+上述JSON结构的配置说明如下：
+
+[options="header"]
+|====
+|属性|子属性|含义
+|identifier||模型统一标识符，动态建模和静态建模统一。
+|module||引用 `crud` 或 `hybrid` 变体模型文件的专用属性（防止重复定义）。
+|linkage||多个模型执行连接时，设置 `JOIN` 的模型链，此处设置的 `JOIN` 配置会存储在 `module` 属性中。
+|hybrid|trackable|是否开启模型的监视功能，若启用则可生成日志、历史、变更记录等。
+|hybrid|alias|模型的显示名称。
+|hybrid|matrix|针对模型中特定属性的标识定义。
+|hybrid|ruleUnique|当前模型的标识规则。
+|hybrid|attribute|当前模型的属性信息，属性类型可从 Java 类中解析，此处只设置 `name=alias` 结构标识当前模型的属性名和显示文字。
+|====
+
+[NOTE]
+====
+hybrid 的配置是根据 `zero-atom` 中的动态模型量身定制的，该功能诞生于 *动态建模* 功能之后：
+
+- linkage中的配置是为了做静态的 `JOIN`，如 `w.oa.trip` 的配置如下
++
+[source,json]
+----
+    linkage: [
+        "w.todo",
+        "w.ticket"
+    ]
+----
++
+--
+生成的SQL最终会如下（此处以 identifier 代替底层表名）：
+--
+
++
+[source,sql]
+----
+    (w.oa.trip) LEFT JOIN (w.todo) LEFT JOIN (w.ticket)
+----
+- matrix中的配置主要是用于做属性标识专用（和动态模型对接），后续会说明。
+- attribute/alias 的配置也是为了连接动态模型中的 `alias` 配置（呈现出来的文字）。
+- ruleUnique属性则是直接对应到动态建模中的标识规则字段 `M_MODEL` 中的 `RULE_UNIQUE` 字段。
+
+====
+
+==== 标识说明
+
+标识定义通常如下（8个维度）：
+
+[source,json]
+----
+    "key": "1,0,1,0,0,0,0,0"
+----
+
+此处针对动态建模和静态建模做一个统一说明（后续动态建模中还会说明各个维度的细节）：
+
+[options="header"]
+|====
+|索引| `M_ATTRIBUTE` 表字段|属性|含义
+|0|`ACTIVE` |active|是否启用该属性。
+|1|`IS_TRACE` |track|是否针对该属性启用监视功能（日志、历史、变更记录）。
+|2|`IS_LOCK` |lock|是否锁定，锁定属性无法执行更新，也不可删除。
+|3|`IS_CONFIRM` |confirm|是否确认后更新，若集成过程中发送请求更新该属性，此更新是否执行二次确认后更新。
+|4|`IS_ARRAY` |array|是否数组型属性，若是数组型属性，该属性格式必须是：`[]`。
+|5|`IS_SYNC_IN` |syncIn|（集成）是否允许外部程序集成传入该属性参数，若不允许则集成写入时会滤掉该属性。
+|6|`IS_SYNC_OUT` |syncOut|（集成）是否允许外部程序集成读取该属性，若不允许则该属性值不对外。
+|7|`IS_REFER` |refer|是否引用外联字段，功能同动态建模中的Reference。
+|====
+
+特殊说明：
+
+1. `track`：和日志模块（变更模块）关联的核心属性，在模型支持了监视功能之后，字段级的 `track` 可标识当前属性是否启用日志、历史、变更记录等功能。
+2. `active/lock`：首先启用/禁用某个属性，使用 `active`，且只有 `active = true` 时 `lock` 才有意义，它们表示：`DISABLE/ENABLE -> READONLY/EDIT` 四个维度的转变。
+3. `confirm`：属性执行二次更新流程时才生效：`预更新 -> 确认 -> 实际更新`，中间的确认流程启用该属性。
+4. `syncIn/syncOut`：集成写只针对 `syncIn = true` 的属性生效，集成读只针对 `syncOut = false` 的属性生效。
+
+==== 标识规则
+
+标识规则的定义通常如下（5个维度）：
+
+[source,json]
+----
+{
+    "record": [
+        "code",
+        "serial"
+    ],
+    "integration": [
+        "code"
+    ],
+    "priority": [
+        "code"
+    ],
+    "strong": [
+        "code"
+    ],
+    "weak": []
+}
+----
+
+上述属性的说明如下：
+
+[options="header"]
+|====
+|属性名|类型|含义
+|`record` | 数组 | 当前模型的标准标识规则字段，以二者的值结合成为 *唯一字段*。
+|`integration` | 数组 | 当前模型的集成标识规则，通常是和外部程序集成时专用标识规则。
+|`priority` | 二维数组 | 比对优先级，优先级通常是二维数组用于标识规则定义，每个元素可能是 `[]`，也可能是 `String`，两个模型对比时优先按哪种标识规则执行计算。
+|`strong` | 数组 | 强连接标识，强连接标识之间不可以相互更新。
+|`weak` | 数组 | 弱连接标识，弱连接标识之间可相互更新。
+|====
+
+标识规则的定义拓扑结构如下：
+
+image:zmodel-rule.png[0,960]

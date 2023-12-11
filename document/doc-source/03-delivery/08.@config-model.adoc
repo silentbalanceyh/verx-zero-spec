@@ -36,7 +36,8 @@ Zero Extension扩展框架中支持如下模型内容：
 Zero核心框架本身是基于静态模型而构造，所以静态模型无需引入任何依赖项就可实现，`Ux.Jooq / Ux.Join` 都是针对静态模型的API处理，而动态建模是一个扩展模块，所以动态建模需要引入额外的依赖项才可完成。
 ====
 
-include::08.01.config-model-hybird.adoc[]
-include::08.02.config-model-atom.adoc[]
-include::08.03.config-model-load.adoc[]
+include::08.01.config-model-ns.adoc[]
+include::08.02.config-model-hybird.adoc[]
+include::08.03.config-model-atom.adoc[]
+include::08.04.config-model-load.adoc[]
 
