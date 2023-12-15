@@ -1,0 +1,14 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+
+== 标准化:AMS
+
+include::00.01.ams.adoc[]
+include::00.02.ams-program.adoc[]
+include::00.03.ams-action.adoc[]
+include::00.04.ams-design.adoc[]
+
+== 机器之心
+
+== 接口规范

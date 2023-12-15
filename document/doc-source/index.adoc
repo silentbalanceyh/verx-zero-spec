@@ -84,18 +84,15 @@ include::01-spec/02.03.spec-frontend-src.adoc[]
 include::01-spec/02.04.spec-frontend-name.adoc[]
 include::01-spec/03.01.@spec-is.adoc[]
 
+= 高阶设计
+
+include::01-spec-hd/00.@ams.adoc[]
+
 = 前端实施
 
 include::02-web/01.@web.adoc[]
 
 = 后端实施
-
-== 标准化
-
-include::03-delivery/00.01.ams.adoc[]
-include::03-delivery/00.02.ams-program.adoc[]
-include::03-delivery/00.03.ams-action.adoc[]
-include::03-delivery/00.04.ams-design.adoc[]
 
 == 全局环境
 
