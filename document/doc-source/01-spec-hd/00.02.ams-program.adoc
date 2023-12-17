@@ -236,3 +236,19 @@ _Zero中所有的命名规范和基础都是为了代码阅读以及和IDE互动
 
 ====
 
+==== 高阶接口
+
+Zero高阶设计中会包含三种接口，分别对应包名参考下表：
+
+[options="header",cols="1,3,6"]
+|====
+|类型|包|含义
+|*Horizon*| `io.horizon.specification` | 基础层、配置层、环境层。
+|*Macrocosm*| `io.macrocosm.specification` | 云原生，平台层。
+|*Modello*| `io.modello.specification` | 模型层、集成层、业务对接层。
+|*Mature*| `io.mature.extension` |（非接口）标准化组件、插件。
+|====
+
+====
+接口规范章节会按三种不同的接口分别梳理，**注**：上述提到的三种接口全部使用 `interface` 定义，没有任何实现类。
+====

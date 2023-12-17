@@ -11,4 +11,6 @@ include::00.04.ams-design.adoc[]
 
 == 机器之心
 
-== 接口规范
+== 高阶之 `Horizon`
+
+include::03.01.i-001-install.adoc[]
