@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="generator" content="Asciidoctor 2.0.20">
+<title>元数据规范</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700">
+<style>
+/*! Asciidoctor default stylesheet | MIT License | https://asciidoctor.org */
+/* Uncomment the following line when using as a custom stylesheet */
+/* @import "https://fonts.googleapis.com/css?family=Open+Sans:300,300italic,400,400italic,600,600italic%7CNoto+Serif:400,400italic,700,700italic%7CDroid+Sans+Mono:400,700"; */
+html{font-family:sans-serif;-webkit-text-size-adjust:100%}
+a{background:none}
+a:focus{outline:thin dotted}
+a:active,a:hover{outline:0}
+h1{font-size:2em;margin:.67em 0}
+b,strong{font-weight:bold}
+abbr{font-size:.9em}
+abbr[title]{cursor:help;border-bottom:1px dotted #dddddf;text-decoration:none}
+dfn{font-style:italic}
+hr{height:0}
+mark{background:#ff0;color:#000}
+code,kbd,pre,samp{font-family:monospace;font-size:1em}
+pre{white-space:pre-wrap}
+q{quotes:"\201C" "\201D" "\2018" "\2019"}
+small{font-size:80%}
+sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}
+sup{top:-.5em}
+sub{bottom:-.25em}
+img{border:0}
+svg:not(:root){overflow:hidden}
+figure{margin:0}
+audio,video{display:inline-block}
+audio:not([controls]){display:none;height:0}
+fieldset{border:1px solid silver;margin:0 2px;padding:.35em .625em .75em}
+legend{border:0;padding:0}
+button,input,select,textarea{font-family:inherit;font-size:100%;margin:0}
+button,input{line-height:normal}
+button,select{text-transform:none}
+button,html input[type=button],input[type=reset],input[type=submit]{-webkit-appearance:button;cursor:pointer}
+button[disabled],html input[disabled]{cursor:default}
+input[type=checkbox],input[type=radio]{padding:0}
+button::-moz-focus-inner,input::-moz-focus-inner{border:0;padding:0}
+textarea{overflow:auto;vertical-align:top}
+table{border-collapse:collapse;border-spacing:0}
+*,::before,::after{box-sizing:border-box}
+html,body{font-size:100%}
+body{background:#fff;color:rgba(0,0,0,.8);padding:0;margin:0;font-family:"Noto Serif","DejaVu Serif",serif;line-height:1;position:relative;cursor:auto;-moz-tab-size:4;-o-tab-size:4;tab-size:4;word-wrap:anywhere;-moz-osx-font-smoothing:grayscale;-webkit-font-smoothing:antialiased}
+a:hover{cursor:pointer}
+img,object,embed{max-width:100%;height:auto}
+object,embed{height:100%}
+img{-ms-interpolation-mode:bicubic}
+.left{float:left!important}
+.right{float:right!important}
+.text-left{text-align:left!important}
+.text-right{text-align:right!important}
+.text-center{text-align:center!important}
+.text-justify{text-align:justify!important}
+.hide{display:none}
+img,object,svg{display:inline-block;vertical-align:middle}
+textarea{height:auto;min-height:50px}
+select{width:100%}
+.subheader,.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{line-height:1.45;color:#7a2518;font-weight:400;margin-top:0;margin-bottom:.25em}
+div,dl,dt,dd,ul,ol,li,h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6,pre,form,p,blockquote,th,td{margin:0;padding:0}
+a{color:#2156a5;text-decoration:underline;line-height:inherit}
+a:hover,a:focus{color:#1d4b8f}
+a img{border:0}
+p{line-height:1.6;margin-bottom:1.25em;text-rendering:optimizeLegibility}
+p aside{font-size:.875em;line-height:1.35;font-style:italic}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{font-family:"Open Sans","DejaVu Sans",sans-serif;font-weight:300;font-style:normal;color:#ba3925;text-rendering:optimizeLegibility;margin-top:1em;margin-bottom:.5em;line-height:1.0125em}
+h1 small,h2 small,h3 small,#toctitle small,.sidebarblock>.content>.title small,h4 small,h5 small,h6 small{font-size:60%;color:#e99b8f;line-height:0}
+h1{font-size:2.125em}
+h2{font-size:1.6875em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.375em}
+h4,h5{font-size:1.125em}
+h6{font-size:1em}
+hr{border:solid #dddddf;border-width:1px 0 0;clear:both;margin:1.25em 0 1.1875em}
+em,i{font-style:italic;line-height:inherit}
+strong,b{font-weight:bold;line-height:inherit}
+small{font-size:60%;line-height:inherit}
+code{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;font-weight:400;color:rgba(0,0,0,.9)}
+ul,ol,dl{line-height:1.6;margin-bottom:1.25em;list-style-position:outside;font-family:inherit}
+ul,ol{margin-left:1.5em}
+ul li ul,ul li ol{margin-left:1.25em;margin-bottom:0}
+ul.circle{list-style-type:circle}
+ul.disc{list-style-type:disc}
+ul.square{list-style-type:square}
+ul.circle ul:not([class]),ul.disc ul:not([class]),ul.square ul:not([class]){list-style:inherit}
+ol li ul,ol li ol{margin-left:1.25em;margin-bottom:0}
+dl dt{margin-bottom:.3125em;font-weight:bold}
+dl dd{margin-bottom:1.25em}
+blockquote{margin:0 0 1.25em;padding:.5625em 1.25em 0 1.1875em;border-left:1px solid #ddd}
+blockquote,blockquote p{line-height:1.6;color:rgba(0,0,0,.85)}
+@media screen and (min-width:768px){h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2}
+h1{font-size:2.75em}
+h2{font-size:2.3125em}
+h3,#toctitle,.sidebarblock>.content>.title{font-size:1.6875em}
+h4{font-size:1.4375em}}
+table{background:#fff;margin-bottom:1.25em;border:1px solid #dedede;word-wrap:normal}
+table thead,table tfoot{background:#f7f8f7}
+table thead tr th,table thead tr td,table tfoot tr th,table tfoot tr td{padding:.5em .625em .625em;font-size:inherit;color:rgba(0,0,0,.8);text-align:left}
+table tr th,table tr td{padding:.5625em .625em;font-size:inherit;color:rgba(0,0,0,.8)}
+table tr.even,table tr.alt{background:#f8f8f7}
+table thead tr th,table tfoot tr th,table tbody tr td,table tr td,table tfoot tr td{line-height:1.6}
+h1,h2,h3,#toctitle,.sidebarblock>.content>.title,h4,h5,h6{line-height:1.2;word-spacing:-.05em}
+h1 strong,h2 strong,h3 strong,#toctitle strong,.sidebarblock>.content>.title strong,h4 strong,h5 strong,h6 strong{font-weight:400}
+.center{margin-left:auto;margin-right:auto}
+.stretch{width:100%}
+.clearfix::before,.clearfix::after,.float-group::before,.float-group::after{content:" ";display:table}
+.clearfix::after,.float-group::after{clear:both}
+:not(pre).nobreak{word-wrap:normal}
+:not(pre).nowrap{white-space:nowrap}
+:not(pre).pre-wrap{white-space:pre-wrap}
+:not(pre):not([class^=L])>code{font-size:.9375em;font-style:normal!important;letter-spacing:0;padding:.1em .5ex;word-spacing:-.15em;background:#f7f7f8;border-radius:4px;line-height:1.45;text-rendering:optimizeSpeed}
+pre{color:rgba(0,0,0,.9);font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;line-height:1.45;text-rendering:optimizeSpeed}
+pre code,pre pre{color:inherit;font-size:inherit;line-height:inherit}
+pre>code{display:block}
+pre.nowrap,pre.nowrap pre{white-space:pre;word-wrap:normal}
+em em{font-style:normal}
+strong strong{font-weight:400}
+.keyseq{color:rgba(51,51,51,.8)}
+kbd{font-family:"Droid Sans Mono","DejaVu Sans Mono",monospace;display:inline-block;color:rgba(0,0,0,.8);font-size:.65em;line-height:1.45;background:#f7f7f7;border:1px solid #ccc;border-radius:3px;box-shadow:0 1px 0 rgba(0,0,0,.2),inset 0 0 0 .1em #fff;margin:0 .15em;padding:.2em .5em;vertical-align:middle;position:relative;top:-.1em;white-space:nowrap}
+.keyseq kbd:first-child{margin-left:0}
+.keyseq kbd:last-child{margin-right:0}
+.menuseq,.menuref{color:#000}
+.menuseq b:not(.caret),.menuref{font-weight:inherit}
+.menuseq{word-spacing:-.02em}
+.menuseq b.caret{font-size:1.25em;line-height:.8}
+.menuseq i.caret{font-weight:bold;text-align:center;width:.45em}
+b.button::before,b.button::after{position:relative;top:-1px;font-weight:400}
+b.button::before{content:"[";padding:0 3px 0 2px}
+b.button::after{content:"]";padding:0 2px 0 3px}
+p a>code:hover{color:rgba(0,0,0,.9)}
+#header,#content,#footnotes,#footer{width:100%;margin:0 auto;max-width:62.5em;*zoom:1;position:relative;padding-left:.9375em;padding-right:.9375em}
+#header::before,#header::after,#content::before,#content::after,#footnotes::before,#footnotes::after,#footer::before,#footer::after{content:" ";display:table}
+#header::after,#content::after,#footnotes::after,#footer::after{clear:both}
+#content{margin-top:1.25em}
+#content::before{content:none}
+#header>h1:first-child{color:rgba(0,0,0,.85);margin-top:2.25rem;margin-bottom:0}
+#header>h1:first-child+#toc{margin-top:8px;border-top:1px solid #dddddf}
+#header>h1:only-child,body.toc2 #header>h1:nth-last-child(2){border-bottom:1px solid #dddddf;padding-bottom:8px}
+#header .details{border-bottom:1px solid #dddddf;line-height:1.45;padding-top:.25em;padding-bottom:.25em;padding-left:.25em;color:rgba(0,0,0,.6);display:flex;flex-flow:row wrap}
+#header .details span:first-child{margin-left:-.125em}
+#header .details span.email a{color:rgba(0,0,0,.85)}
+#header .details br{display:none}
+#header .details br+span::before{content:"\00a0\2013\00a0"}
+#header .details br+span.author::before{content:"\00a0\22c5\00a0";color:rgba(0,0,0,.85)}
+#header .details br+span#revremark::before{content:"\00a0|\00a0"}
+#header #revnumber{text-transform:capitalize}
+#header #revnumber::after{content:"\00a0"}
+#content>h1:first-child:not([class]){color:rgba(0,0,0,.85);border-bottom:1px solid #dddddf;padding-bottom:8px;margin-top:0;padding-top:1rem;margin-bottom:1.25rem}
+#toc{border-bottom:1px solid #e7e7e9;padding-bottom:.5em}
+#toc>ul{margin-left:.125em}
+#toc ul.sectlevel0>li>a{font-style:italic}
+#toc ul.sectlevel0 ul.sectlevel1{margin:.5em 0}
+#toc ul{font-family:"Open Sans","DejaVu Sans",sans-serif;list-style-type:none}
+#toc li{line-height:1.3334;margin-top:.3334em}
+#toc a{text-decoration:none}
+#toc a:active{text-decoration:underline}
+#toctitle{color:#7a2518;font-size:1.2em}
+@media screen and (min-width:768px){#toctitle{font-size:1.375em}
+body.toc2{padding-left:15em;padding-right:0}
+#toc.toc2{margin-top:0!important;background:#f8f8f7;position:fixed;width:15em;left:0;top:0;border-right:1px solid #e7e7e9;border-top-width:0!important;border-bottom-width:0!important;z-index:1000;padding:1.25em 1em;height:100%;overflow:auto}
+#toc.toc2 #toctitle{margin-top:0;margin-bottom:.8rem;font-size:1.2em}
+#toc.toc2>ul{font-size:.9em;margin-bottom:0}
+#toc.toc2 ul ul{margin-left:0;padding-left:1em}
+#toc.toc2 ul.sectlevel0 ul.sectlevel1{padding-left:0;margin-top:.5em;margin-bottom:.5em}
+body.toc2.toc-right{padding-left:0;padding-right:15em}
+body.toc2.toc-right #toc.toc2{border-right-width:0;border-left:1px solid #e7e7e9;left:auto;right:0}}
+@media screen and (min-width:1280px){body.toc2{padding-left:20em;padding-right:0}
+#toc.toc2{width:20em}
+#toc.toc2 #toctitle{font-size:1.375em}
+#toc.toc2>ul{font-size:.95em}
+#toc.toc2 ul ul{padding-left:1.25em}
+body.toc2.toc-right{padding-left:0;padding-right:20em}}
+#content #toc{border:1px solid #e0e0dc;margin-bottom:1.25em;padding:1.25em;background:#f8f8f7;border-radius:4px}
+#content #toc>:first-child{margin-top:0}
+#content #toc>:last-child{margin-bottom:0}
+#footer{max-width:none;background:rgba(0,0,0,.8);padding:1.25em}
+#footer-text{color:hsla(0,0%,100%,.8);line-height:1.44}
+#content{margin-bottom:.625em}
+.sect1{padding-bottom:.625em}
+@media screen and (min-width:768px){#content{margin-bottom:1.25em}
+.sect1{padding-bottom:1.25em}}
+.sect1:last-child{padding-bottom:0}
+.sect1+.sect1{border-top:1px solid #e7e7e9}
+#content h1>a.anchor,h2>a.anchor,h3>a.anchor,#toctitle>a.anchor,.sidebarblock>.content>.title>a.anchor,h4>a.anchor,h5>a.anchor,h6>a.anchor{position:absolute;z-index:1001;width:1.5ex;margin-left:-1.5ex;display:block;text-decoration:none!important;visibility:hidden;text-align:center;font-weight:400}
+#content h1>a.anchor::before,h2>a.anchor::before,h3>a.anchor::before,#toctitle>a.anchor::before,.sidebarblock>.content>.title>a.anchor::before,h4>a.anchor::before,h5>a.anchor::before,h6>a.anchor::before{content:"\00A7";font-size:.85em;display:block;padding-top:.1em}
+#content h1:hover>a.anchor,#content h1>a.anchor:hover,h2:hover>a.anchor,h2>a.anchor:hover,h3:hover>a.anchor,#toctitle:hover>a.anchor,.sidebarblock>.content>.title:hover>a.anchor,h3>a.anchor:hover,#toctitle>a.anchor:hover,.sidebarblock>.content>.title>a.anchor:hover,h4:hover>a.anchor,h4>a.anchor:hover,h5:hover>a.anchor,h5>a.anchor:hover,h6:hover>a.anchor,h6>a.anchor:hover{visibility:visible}
+#content h1>a.link,h2>a.link,h3>a.link,#toctitle>a.link,.sidebarblock>.content>.title>a.link,h4>a.link,h5>a.link,h6>a.link{color:#ba3925;text-decoration:none}
+#content h1>a.link:hover,h2>a.link:hover,h3>a.link:hover,#toctitle>a.link:hover,.sidebarblock>.content>.title>a.link:hover,h4>a.link:hover,h5>a.link:hover,h6>a.link:hover{color:#a53221}
+details,.audioblock,.imageblock,.literalblock,.listingblock,.stemblock,.videoblock{margin-bottom:1.25em}
+details{margin-left:1.25rem}
+details>summary{cursor:pointer;display:block;position:relative;line-height:1.6;margin-bottom:.625rem;outline:none;-webkit-tap-highlight-color:transparent}
+details>summary::-webkit-details-marker{display:none}
+details>summary::before{content:"";border:solid transparent;border-left:solid;border-width:.3em 0 .3em .5em;position:absolute;top:.5em;left:-1.25rem;transform:translateX(15%)}
+details[open]>summary::before{border:solid transparent;border-top:solid;border-width:.5em .3em 0;transform:translateY(15%)}
+details>summary::after{content:"";width:1.25rem;height:1em;position:absolute;top:.3em;left:-1.25rem}
+.admonitionblock td.content>.title,.audioblock>.title,.exampleblock>.title,.imageblock>.title,.listingblock>.title,.literalblock>.title,.stemblock>.title,.openblock>.title,.paragraph>.title,.quoteblock>.title,table.tableblock>.title,.verseblock>.title,.videoblock>.title,.dlist>.title,.olist>.title,.ulist>.title,.qlist>.title,.hdlist>.title{text-rendering:optimizeLegibility;text-align:left;font-family:"Noto Serif","DejaVu Serif",serif;font-size:1rem;font-style:italic}
+table.tableblock.fit-content>caption.title{white-space:nowrap;width:0}
+.paragraph.lead>p,#preamble>.sectionbody>[class=paragraph]:first-of-type p{font-size:1.21875em;line-height:1.6;color:rgba(0,0,0,.85)}
+.admonitionblock>table{border-collapse:separate;border:0;background:none;width:100%}
+.admonitionblock>table td.icon{text-align:center;width:80px}
+.admonitionblock>table td.icon img{max-width:none}
+.admonitionblock>table td.icon .title{font-weight:bold;font-family:"Open Sans","DejaVu Sans",sans-serif;text-transform:uppercase}
+.admonitionblock>table td.content{padding-left:1.125em;padding-right:1.25em;border-left:1px solid #dddddf;color:rgba(0,0,0,.6);word-wrap:anywhere}
+.admonitionblock>table td.content>:last-child>:last-child{margin-bottom:0}
+.exampleblock>.content{border:1px solid #e6e6e6;margin-bottom:1.25em;padding:1.25em;background:#fff;border-radius:4px}
+.sidebarblock{border:1px solid #dbdbd6;margin-bottom:1.25em;padding:1.25em;background:#f3f3f2;border-radius:4px}
+.sidebarblock>.content>.title{color:#7a2518;margin-top:0;text-align:center}
+.exampleblock>.content>:first-child,.sidebarblock>.content>:first-child{margin-top:0}
+.exampleblock>.content>:last-child,.exampleblock>.content>:last-child>:last-child,.exampleblock>.content .olist>ol>li:last-child>:last-child,.exampleblock>.content .ulist>ul>li:last-child>:last-child,.exampleblock>.content .qlist>ol>li:last-child>:last-child,.sidebarblock>.content>:last-child,.sidebarblock>.content>:last-child>:last-child,.sidebarblock>.content .olist>ol>li:last-child>:last-child,.sidebarblock>.content .ulist>ul>li:last-child>:last-child,.sidebarblock>.content .qlist>ol>li:last-child>:last-child{margin-bottom:0}
+.literalblock pre,.listingblock>.content>pre{border-radius:4px;overflow-x:auto;padding:1em;font-size:.8125em}
+@media screen and (min-width:768px){.literalblock pre,.listingblock>.content>pre{font-size:.90625em}}
+@media screen and (min-width:1280px){.literalblock pre,.listingblock>.content>pre{font-size:1em}}
+.literalblock pre,.listingblock>.content>pre:not(.highlight),.listingblock>.content>pre[class=highlight],.listingblock>.content>pre[class^="highlight "]{background:#f7f7f8}
+.literalblock.output pre{color:#f7f7f8;background:rgba(0,0,0,.9)}
+.listingblock>.content{position:relative}
+.listingblock code[data-lang]::before{display:none;content:attr(data-lang);position:absolute;font-size:.75em;top:.425rem;right:.5rem;line-height:1;text-transform:uppercase;color:inherit;opacity:.5}
+.listingblock:hover code[data-lang]::before{display:block}
+.listingblock.terminal pre .command::before{content:attr(data-prompt);padding-right:.5em;color:inherit;opacity:.5}
+.listingblock.terminal pre .command:not([data-prompt])::before{content:"$"}
+.listingblock pre.highlightjs{padding:0}
+.listingblock pre.highlightjs>code{padding:1em;border-radius:4px}
+.listingblock pre.prettyprint{border-width:0}
+.prettyprint{background:#f7f7f8}
+pre.prettyprint .linenums{line-height:1.45;margin-left:2em}
+pre.prettyprint li{background:none;list-style-type:inherit;padding-left:0}
+pre.prettyprint li code[data-lang]::before{opacity:1}
+pre.prettyprint li:not(:first-child) code[data-lang]::before{display:none}
+table.linenotable{border-collapse:separate;border:0;margin-bottom:0;background:none}
+table.linenotable td[class]{color:inherit;vertical-align:top;padding:0;line-height:inherit;white-space:normal}
+table.linenotable td.code{padding-left:.75em}
+table.linenotable td.linenos,pre.pygments .linenos{border-right:1px solid;opacity:.35;padding-right:.5em;-webkit-user-select:none;-moz-user-select:none;-ms-user-select:none;user-select:none}
+pre.pygments span.linenos{display:inline-block;margin-right:.75em}
+.quoteblock{margin:0 1em 1.25em 1.5em;display:table}
+.quoteblock:not(.excerpt)>.title{margin-left:-1.5em;margin-bottom:.75em}
+.quoteblock blockquote,.quoteblock p{color:rgba(0,0,0,.85);font-size:1.15rem;line-height:1.75;word-spacing:.1em;letter-spacing:0;font-style:italic;text-align:justify}
+.quoteblock blockquote{margin:0;padding:0;border:0}
+.quoteblock blockquote::before{content:"\201c";float:left;font-size:2.75em;font-weight:bold;line-height:.6em;margin-left:-.6em;color:#7a2518;text-shadow:0 1px 2px rgba(0,0,0,.1)}
+.quoteblock blockquote>.paragraph:last-child p{margin-bottom:0}
+.quoteblock .attribution{margin-top:.75em;margin-right:.5ex;text-align:right}
+.verseblock{margin:0 1em 1.25em}
+.verseblock pre{font-family:"Open Sans","DejaVu Sans",sans-serif;font-size:1.15rem;color:rgba(0,0,0,.85);font-weight:300;text-rendering:optimizeLegibility}
+.verseblock pre strong{font-weight:400}
+.verseblock .attribution{margin-top:1.25rem;margin-left:.5ex}
+.quoteblock .attribution,.verseblock .attribution{font-size:.9375em;line-height:1.45;font-style:italic}
+.quoteblock .attribution br,.verseblock .attribution br{display:none}
+.quoteblock .attribution cite,.verseblock .attribution cite{display:block;letter-spacing:-.025em;color:rgba(0,0,0,.6)}
+.quoteblock.abstract blockquote::before,.quoteblock.excerpt blockquote::before,.quoteblock .quoteblock blockquote::before{display:none}
+.quoteblock.abstract blockquote,.quoteblock.abstract p,.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{line-height:1.6;word-spacing:0}
+.quoteblock.abstract{margin:0 1em 1.25em;display:block}
+.quoteblock.abstract>.title{margin:0 0 .375em;font-size:1.15em;text-align:center}
+.quoteblock.excerpt>blockquote,.quoteblock .quoteblock{padding:0 0 .25em 1em;border-left:.25em solid #dddddf}
+.quoteblock.excerpt,.quoteblock .quoteblock{margin-left:0}
+.quoteblock.excerpt blockquote,.quoteblock.excerpt p,.quoteblock .quoteblock blockquote,.quoteblock .quoteblock p{color:inherit;font-size:1.0625rem}
+.quoteblock.excerpt .attribution,.quoteblock .quoteblock .attribution{color:inherit;font-size:.85rem;text-align:left;margin-right:0}
+p.tableblock:last-child{margin-bottom:0}
+td.tableblock>.content{margin-bottom:1.25em;word-wrap:anywhere}
+td.tableblock>.content>:last-child{margin-bottom:-1.25em}
+table.tableblock,th.tableblock,td.tableblock{border:0 solid #dedede}
+table.grid-all>*>tr>*{border-width:1px}
+table.grid-cols>*>tr>*{border-width:0 1px}
+table.grid-rows>*>tr>*{border-width:1px 0}
+table.frame-all{border-width:1px}
+table.frame-ends{border-width:1px 0}
+table.frame-sides{border-width:0 1px}
+table.frame-none>colgroup+*>:first-child>*,table.frame-sides>colgroup+*>:first-child>*{border-top-width:0}
+table.frame-none>:last-child>:last-child>*,table.frame-sides>:last-child>:last-child>*{border-bottom-width:0}
+table.frame-none>*>tr>:first-child,table.frame-ends>*>tr>:first-child{border-left-width:0}
+table.frame-none>*>tr>:last-child,table.frame-ends>*>tr>:last-child{border-right-width:0}
+table.stripes-all>*>tr,table.stripes-odd>*>tr:nth-of-type(odd),table.stripes-even>*>tr:nth-of-type(even),table.stripes-hover>*>tr:hover{background:#f8f8f7}
+th.halign-left,td.halign-left{text-align:left}
+th.halign-right,td.halign-right{text-align:right}
+th.halign-center,td.halign-center{text-align:center}
+th.valign-top,td.valign-top{vertical-align:top}
+th.valign-bottom,td.valign-bottom{vertical-align:bottom}
+th.valign-middle,td.valign-middle{vertical-align:middle}
+table thead th,table tfoot th{font-weight:bold}
+tbody tr th{background:#f7f8f7}
+tbody tr th,tbody tr th p,tfoot tr th,tfoot tr th p{color:rgba(0,0,0,.8);font-weight:bold}
+p.tableblock>code:only-child{background:none;padding:0}
+p.tableblock{font-size:1em}
+ol{margin-left:1.75em}
+ul li ol{margin-left:1.5em}
+dl dd{margin-left:1.125em}
+dl dd:last-child,dl dd:last-child>:last-child{margin-bottom:0}
+li p,ul dd,ol dd,.olist .olist,.ulist .ulist,.ulist .olist,.olist .ulist{margin-bottom:.625em}
+ul.checklist,ul.none,ol.none,ul.no-bullet,ol.no-bullet,ol.unnumbered,ul.unstyled,ol.unstyled{list-style-type:none}
+ul.no-bullet,ol.no-bullet,ol.unnumbered{margin-left:.625em}
+ul.unstyled,ol.unstyled{margin-left:0}
+li>p:empty:only-child::before{content:"";display:inline-block}
+ul.checklist>li>p:first-child{margin-left:-1em}
+ul.checklist>li>p:first-child>.fa-square-o:first-child,ul.checklist>li>p:first-child>.fa-check-square-o:first-child{width:1.25em;font-size:.8em;position:relative;bottom:.125em}
+ul.checklist>li>p:first-child>input[type=checkbox]:first-child{margin-right:.25em}
+ul.inline{display:flex;flex-flow:row wrap;list-style:none;margin:0 0 .625em -1.25em}
+ul.inline>li{margin-left:1.25em}
+.unstyled dl dt{font-weight:400;font-style:normal}
+ol.arabic{list-style-type:decimal}
+ol.decimal{list-style-type:decimal-leading-zero}
+ol.loweralpha{list-style-type:lower-alpha}
+ol.upperalpha{list-style-type:upper-alpha}
+ol.lowerroman{list-style-type:lower-roman}
+ol.upperroman{list-style-type:upper-roman}
+ol.lowergreek{list-style-type:lower-greek}
+.hdlist>table,.colist>table{border:0;background:none}
+.hdlist>table>tbody>tr,.colist>table>tbody>tr{background:none}
+td.hdlist1,td.hdlist2{vertical-align:top;padding:0 .625em}
+td.hdlist1{font-weight:bold;padding-bottom:1.25em}
+td.hdlist2{word-wrap:anywhere}
+.literalblock+.colist,.listingblock+.colist{margin-top:-.5em}
+.colist td:not([class]):first-child{padding:.4em .75em 0;line-height:1;vertical-align:top}
+.colist td:not([class]):first-child img{max-width:none}
+.colist td:not([class]):last-child{padding:.25em 0}
+.thumb,.th{line-height:0;display:inline-block;border:4px solid #fff;box-shadow:0 0 0 1px #ddd}
+.imageblock.left{margin:.25em .625em 1.25em 0}
+.imageblock.right{margin:.25em 0 1.25em .625em}
+.imageblock>.title{margin-bottom:0}
+.imageblock.thumb,.imageblock.th{border-width:6px}
+.imageblock.thumb>.title,.imageblock.th>.title{padding:0 .125em}
+.image.left,.image.right{margin-top:.25em;margin-bottom:.25em;display:inline-block;line-height:0}
+.image.left{margin-right:.625em}
+.image.right{margin-left:.625em}
+a.image{text-decoration:none;display:inline-block}
+a.image object{pointer-events:none}
+sup.footnote,sup.footnoteref{font-size:.875em;position:static;vertical-align:super}
+sup.footnote a,sup.footnoteref a{text-decoration:none}
+sup.footnote a:active,sup.footnoteref a:active{text-decoration:underline}
+#footnotes{padding-top:.75em;padding-bottom:.75em;margin-bottom:.625em}
+#footnotes hr{width:20%;min-width:6.25em;margin:-.25em 0 .75em;border-width:1px 0 0}
+#footnotes .footnote{padding:0 .375em 0 .225em;line-height:1.3334;font-size:.875em;margin-left:1.2em;margin-bottom:.2em}
+#footnotes .footnote a:first-of-type{font-weight:bold;text-decoration:none;margin-left:-1.05em}
+#footnotes .footnote:last-of-type{margin-bottom:0}
+#content #footnotes{margin-top:-.625em;margin-bottom:0;padding:.75em 0}
+div.unbreakable{page-break-inside:avoid}
+.big{font-size:larger}
+.small{font-size:smaller}
+.underline{text-decoration:underline}
+.overline{text-decoration:overline}
+.line-through{text-decoration:line-through}
+.aqua{color:#00bfbf}
+.aqua-background{background:#00fafa}
+.black{color:#000}
+.black-background{background:#000}
+.blue{color:#0000bf}
+.blue-background{background:#0000fa}
+.fuchsia{color:#bf00bf}
+.fuchsia-background{background:#fa00fa}
+.gray{color:#606060}
+.gray-background{background:#7d7d7d}
+.green{color:#006000}
+.green-background{background:#007d00}
+.lime{color:#00bf00}
+.lime-background{background:#00fa00}
+.maroon{color:#600000}
+.maroon-background{background:#7d0000}
+.navy{color:#000060}
+.navy-background{background:#00007d}
+.olive{color:#606000}
+.olive-background{background:#7d7d00}
+.purple{color:#600060}
+.purple-background{background:#7d007d}
+.red{color:#bf0000}
+.red-background{background:#fa0000}
+.silver{color:#909090}
+.silver-background{background:#bcbcbc}
+.teal{color:#006060}
+.teal-background{background:#007d7d}
+.white{color:#bfbfbf}
+.white-background{background:#fafafa}
+.yellow{color:#bfbf00}
+.yellow-background{background:#fafa00}
+span.icon>.fa{cursor:default}
+a span.icon>.fa{cursor:inherit}
+.admonitionblock td.icon [class^="fa icon-"]{font-size:2.5em;text-shadow:1px 1px 2px rgba(0,0,0,.5);cursor:default}
+.admonitionblock td.icon .icon-note::before{content:"\f05a";color:#19407c}
+.admonitionblock td.icon .icon-tip::before{content:"\f0eb";text-shadow:1px 1px 2px rgba(155,155,0,.8);color:#111}
+.admonitionblock td.icon .icon-warning::before{content:"\f071";color:#bf6900}
+.admonitionblock td.icon .icon-caution::before{content:"\f06d";color:#bf3400}
+.admonitionblock td.icon .icon-important::before{content:"\f06a";color:#bf0000}
+.conum[data-value]{display:inline-block;color:#fff!important;background:rgba(0,0,0,.8);border-radius:50%;text-align:center;font-size:.75em;width:1.67em;height:1.67em;line-height:1.67em;font-family:"Open Sans","DejaVu Sans",sans-serif;font-style:normal;font-weight:bold}
+.conum[data-value] *{color:#fff!important}
+.conum[data-value]+b{display:none}
+.conum[data-value]::after{content:attr(data-value)}
+pre .conum[data-value]{position:relative;top:-.125em}
+b.conum *{color:inherit!important}
+.conum:not([data-value]):empty{display:none}
+dt,th.tableblock,td.content,div.footnote{text-rendering:optimizeLegibility}
+h1,h2,p,td.content,span.alt,summary{letter-spacing:-.01em}
+p strong,td.content strong,div.footnote strong{letter-spacing:-.005em}
+p,blockquote,dt,td.content,td.hdlist1,span.alt,summary{font-size:1.0625rem}
+p{margin-bottom:1.25rem}
+.sidebarblock p,.sidebarblock dt,.sidebarblock td.content,p.tableblock{font-size:1em}
+.exampleblock>.content{background:#fffef7;border-color:#e0e0dc;box-shadow:0 1px 4px #e0e0dc}
+.print-only{display:none!important}
+@page{margin:1.25cm .75cm}
+@media print{*{box-shadow:none!important;text-shadow:none!important}
+html{font-size:80%}
+a{color:inherit!important;text-decoration:underline!important}
+a.bare,a[href^="#"],a[href^="mailto:"]{text-decoration:none!important}
+a[href^="http:"]:not(.bare)::after,a[href^="https:"]:not(.bare)::after{content:"(" attr(href) ")";display:inline-block;font-size:.875em;padding-left:.25em}
+abbr[title]{border-bottom:1px dotted}
+abbr[title]::after{content:" (" attr(title) ")"}
+pre,blockquote,tr,img,object,svg{page-break-inside:avoid}
+thead{display:table-header-group}
+svg{max-width:100%}
+p,blockquote,dt,td.content{font-size:1em;orphans:3;widows:3}
+h2,h3,#toctitle,.sidebarblock>.content>.title{page-break-after:avoid}
+#header,#content,#footnotes,#footer{max-width:none}
+#toc,.sidebarblock,.exampleblock>.content{background:none!important}
+#toc{border-bottom:1px solid #dddddf!important;padding-bottom:0!important}
+body.book #header{text-align:center}
+body.book #header>h1:first-child{border:0!important;margin:2.5em 0 1em}
+body.book #header .details{border:0!important;display:block;padding:0!important}
+body.book #header .details span:first-child{margin-left:0!important}
+body.book #header .details br{display:block}
+body.book #header .details br+span::before{content:none!important}
+body.book #toc{border:0!important;text-align:left!important;padding:0!important;margin:0!important}
+body.book #toc,body.book #preamble,body.book h1.sect0,body.book .sect1>h2{page-break-before:always}
+.listingblock code[data-lang]::before{display:block}
+#footer{padding:0 .9375em}
+.hide-on-print{display:none!important}
+.print-only{display:block!important}
+.hide-for-print{display:none!important}
+.show-for-print{display:inherit!important}}
+@media amzn-kf8,print{#header>h1:first-child{margin-top:1.25rem}
+.sect1{padding:0!important}
+.sect1+.sect1{border:0}
+#footer{background:none}
+#footer-text{color:rgba(0,0,0,.6);font-size:.9em}}
+@media amzn-kf8{#header,#content,#footnotes,#footer{padding:0}}
+</style>
+<link rel="stylesheet" href="css/font-awesome.css">
+</head>
+<body class="article">
+<div id="header">
+</div>
+<div id="content">
+<div class="sect2">
+<h3 id="_元数据规范"><a class="anchor" href="#_元数据规范"></a><a class="link" href="#_元数据规范">元数据规范</a></h3>
+<div class="paragraph">
+<p>新版Zero从原来的 <code>zero-co</code> 项目中分裂出一个新项目 <code>zero-ams</code>，全称为 <code>Agreed Metadata Specification</code>（翻译为：达成共识的元模型规范），该项目具备非常强的扩展性，可适用于任何和 Vert.x 相关的项目，提供了一个项目的基础底座，此项目为大量 Vert.x 项目提供了一种基础<strong>标准</strong>，即使您不使用Zero也可以在 Vert.x 项目中使用此依赖来完善<strong>元数据规范</strong>。</p>
+</div>
+<div class="sect3">
+<h4 id="_设计原则"><a class="anchor" href="#_设计原则"></a><a class="link" href="#_设计原则">设计原则</a></h4>
+<div class="quoteblock">
+<blockquote>
+<div class="paragraph">
+<p>抽象、体系、复用、深度。</p>
+</div>
+</blockquote>
+</div>
+<div class="paragraph">
+<p><code>zero-ams</code> 的设计主要是重新抽象了 Zero 核心框架底层的功能包，用于跨框架执行，理论上只能在 Vert.x 框架中使用，但在实战中若和Spring做集成，可直接引入 <code>zero-ams</code> 的依赖包直接在 Spring 中使用。<strong>AMS</strong> 的设计核心在于：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>弥补JVM中部分语法定义处理得不当的地方，让整个环境变得更加自由（JVM支持函数式编程是8+之后的事，由于本身设计的缺陷是完全支持函数式编程理论的）。</p>
+</li>
+<li>
+<p>扩展部分JVM中的API以适应更多偏向于<strong>业务计算</strong>的场景，解决大部分重复劳动的工作量，如：MD5加密、序列化、IO等。</p>
+</li>
+<li>
+<p>从实战经验中总结相关教训，提供和平台无关的基础组件，让您的项目和框架本身语义（羽翼）变得更加丰满。</p>
+</li>
+<li>
+<p>定义一套基于：<strong>运行时、建模、云端</strong> 的 <strong>纯接口规范</strong>（这是私货），让您在处理平台级应用时有一个设计层面的思考。</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>虽然从实际过程中可以看到这部分内容的设计略有冗余，但若您选择使用 Vert.x 作底层框架时，我相信这套基础规范可以让项目实施和交付变得更加流畅。</p>
+</div>
+</div>
+<div class="sect3">
+<h4 id="_功能支持表"><a class="anchor" href="#_功能支持表"></a><a class="link" href="#_功能支持表">功能支持表</a></h4>
+<div class="paragraph">
+<p><strong>AMS</strong> 支持的功能点参考下表：</p>
+</div>
+<table class="tableblock frame-all grid-all stretch">
+<colgroup>
+<col style="width: 20%;">
+<col style="width: 80%;">
+</colgroup>
+<thead>
+<tr>
+<th class="tableblock halign-left valign-top">功能</th>
+<th class="tableblock halign-left valign-top">说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">逆向注解</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>提供新注解，针对特殊的功能实现元数据分析（代码分析代码的模式）：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p><code>@Development</code>：开发注解，定义部分私有成员辅助开发，可使用代码和脚本对项目本身执行分析。</p>
+</li>
+<li>
+<p><code>@HighOrder</code>：连接注解，定义和 ams 项目相关的工具调用，以标记代码。</p>
+</li>
+<li>
+<p><code>@Memory</code>：缓存注解，可对Cc架构执行缓存注解。</p>
+</li>
+<li>
+<p><code>@ChatGPT</code>：使用ChatGPT编写的机器代码部分</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>逆向注解是非必须，若没有在代码中标注，仅在<strong>逆向工程</strong>中无法收集相关元数据，对正常程序的运行不产生任何影响。</p>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">通用数据结构</p></td>
+<td class="tableblock halign-left valign-top"><p class="tableblock">提供部分通用数据结构定义，不带任何业务色彩，纯功能支持型内容。</p></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">异常架构</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>提供任何项目都可使用的异常规划，可加载不同资源文件实现扩展异常定义，动参和继承相结合，实现项级的完整异常体系，完整抽象层异常体系如下：</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-bash" data-lang="bash">java.lang.Throwable
+
+  -- java.lang.Exception
+
+        # 编译时顶级 Checked 异常
+     -- io.horizon.exception.ProgramException
+
+           # 和资源文档绑定的检查异常，通常在编程过程中可抛出
+           # 1. 配置强化校验
+           # 2. 容器后台程序校验
+        -- io.horizon.exception.DaemonException
+
+     -- java.lang.RuntimeException
+
+           # 运行时顶级抽象异常
+        -- io.horizon.exception.AbstractException
+
+              # 内部专用异常，不绑定资源文件，直接编程使用硬编码方式定义
+           -- io.horizon.exception.InternalException
+
+              # 和资源文档绑定的启动异常，在容器启动过程中出现
+              # 1. 模型校验
+              # 2. 容器启动校验
+           -- io.horizon.exception.BootingException
+
+              # Web容器运行过程中的通用异常
+              # 通用异常包括常见的：500、501、400、401、403 等常见异常
+           -- io.horizon.exception.WebException</code></pre>
+</div>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">函数包</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>提供 <strong>类</strong> 级别的函数顶层包 <strong>HFn</strong>（Java语法糖），实现工具独立规划和分析，且在函数包中引入增强的防御式、文学式编程范式，以更优雅的方式处理JVM级别的异常，且扩展 <strong>函数接口</strong> 让Java可支持 lambda 中的检查异常抛出机制。</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>由于Java语言中的 <code>@FunctionalInterface</code> 内部不支持异常捕捉，若您在 lambda 块中写了 <strong>检查异常</strong> 抛出相关的代码会导致 <strong>编译错误</strong>，<strong>HFn</strong> 扩展 Throwable 函数接口定义了可抛异常的接口。</p>
+</li>
+<li>
+<p>除开官方提供的 <code>Predicate、Supplier、Consumer、Funcation</code> 四种常用函数式接口之外，<strong>HFn</strong> 定以了纯执行类接口 <code>Actuator</code>，此接口 <strong>无参数，且返回值为void</strong>。</p>
+</li>
+<li>
+<p><code>try-catch</code> 的小封装，提供几个级别的快速函数执行接口，不同前缀处理不同类型的异常：</p>
+<div class="openblock">
+<div class="content">
+<div class="ulist">
+<ul>
+<li>
+<p><code>bug</code>：处理所有 <code>ProgramException</code> 类型的异常，这种类型的API要求底层必须以 throws 抛出对应异常，属于静态检查。</p>
+</li>
+<li>
+<p><code>fail</code>：处理所有 <code>Exception</code> 类型的异常，虽然 <code>Exception</code> 是检查性异常，API封装后外层 lambda 不抛出。</p>
+</li>
+<li>
+<p><code>jvm</code>：处理所有 <code>Throwable</code> 类型的异常，API封装后外层 lambda 不抛出。</p>
+</li>
+<li>
+<p><code>run</code>：广泛定义 <code>RuntimeException</code> 级别的异常，API内部可随意抛出这种类型异常，不检查。</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</li>
+<li>
+<p>在原始异常结构中定义了新的异常体系，和 <strong>AMS</strong> 中的部分 SPI 插件接口对接，实现任意框架级的资源文件扩展，除开 Zero 中的 <code>vertx-error.yml</code> 中的实现，您可以开发自定义的资源文件实现方案。</p>
+</li>
+<li>
+<p>提供常用的 <strong>异步</strong> 编排组合函数，您可以将多个异步 <strong>Monad</strong> 组合成复杂结构：<strong>串行、并行、网状、树状</strong> 等——编排是异步编程中的重点，也是 Zero 框架本身的一大亮点。</p>
+</li>
+<li>
+<p>开放部分类的 <strong>高阶</strong> 组合函数，您可以在二阶以上实现基础的编排工作，近似于标准库中的 <code>BiXx</code>，但扩展部分还可能包含 <code>TiXx</code> 的更加高阶的函数模型。</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">规范</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>提供 <strong>运行时、建模、云端</strong> 三种规范接口定义，这种类型的定义仅限 <code>interface</code> 关键字，所以整个 <strong>AMS</strong> 中不提供任何实现，代码内部注释比较齐全，所有接口都是 <code>H</code> 前缀的高阶设计，主要包含四大类：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>基础功能类</p>
+</li>
+<li>
+<p>建模类</p>
+</li>
+<li>
+<p>云端类</p>
+</li>
+<li>
+<p>开发定制类</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">工具包</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>提供 <strong>类</strong> 级别的工具顶层包 <code>HUt</code>，实现工具独立调用，工具支持：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>彩色Console日志</p>
+</li>
+<li>
+<p>对象比对、值比对</p>
+</li>
+<li>
+<p>加密/解密模块（MD5、RSA、公私钥非对称、Base64等）</p>
+</li>
+<li>
+<p>集合运算（添加、基础、聚集、查找、拉平、反序、分组、映射、移除等）</p>
+</li>
+<li>
+<p>环境变量加载</p>
+</li>
+<li>
+<p>异常快速构造</p>
+</li>
+<li>
+<p>String / JsonObject / JsonArray和其他数据结构的相互转换</p>
+</li>
+<li>
+<p>IO目录、文件读取、不同格式文件读取（包括jar内部资源文件）、以及大文件（&gt;10G）算法</p>
+</li>
+<li>
+<p>判断性原子函数</p>
+</li>
+<li>
+<p>专用 lambda 模式的集合迭代</p>
+</li>
+<li>
+<p><strong>建模</strong> 抽象工具类</p>
+</li>
+<li>
+<p>网络检查专用功能包</p>
+</li>
+<li>
+<p>日期/时间 格式化、转换、解析包</p>
+</li>
+<li>
+<p>随机数、字符串、验证码生成功能包</p>
+</li>
+<li>
+<p>安全值读写</p>
+</li>
+<li>
+<p>常用反射包（单件、实例、池化、SPI级核心反射）</p>
+</li>
+<li>
+<p>表达式解析包</p>
+</li>
+<li>
+<p>AOP插件执行包</p>
+</li>
+<li>
+<p>Jackson 基础序列化/反序列化包</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+<tr>
+<td class="tableblock halign-left valign-top"><p class="tableblock">UCA架构</p></td>
+<td class="tableblock halign-left valign-top"><div class="content"><div class="paragraph">
+<p>全称为 User Component Architecture，用户自定义组件架构，规范中支持的自定义组件如：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>CC缓存架构：Cloud Cache，支持内存缓存、异步缓存、线程缓存，全局统一管理缓存</p>
+</li>
+<li>
+<p>比对组件：可针对Java语言中的强类型执行通用比对，差异性比对、等价性比对</p>
+</li>
+<li>
+<p>转换组件：特殊数据结构之间的相互转换功能函数</p>
+</li>
+<li>
+<p>加解密组件：公私钥非对称加解密专用组件，内部支持HED实现敏感数据加解密功能</p>
+</li>
+<li>
+<p>日志组件：基础日志、扩展日志专用组件，提供可扩展日志结构，外可连ELK平台</p>
+</li>
+<li>
+<p>本地文件组件：提供本地文件类似 <code>mkdir / rm</code> 等常用命令的文件操作</p>
+</li>
+<li>
+<p>网络组件：IPv4和IPv6专用网络检查功能包</p>
+</li>
+<li>
+<p>Qr查询引擎组件：支持 Qr 查询引擎语法的专用组件</p>
+</li>
+<li>
+<p>启动组件：可插拔启动器架构的核心组件</p>
+</li>
+<li>
+<p>AOP组件：新版AOP编排组件</p>
+</li>
+</ul>
+</div></div></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="sect3">
+<h4 id="_框架对接"><a class="anchor" href="#_框架对接"></a><a class="link" href="#_框架对接">框架对接</a></h4>
+<div class="paragraph">
+<p><code>zero-ams</code> 中的异常架构是基于 <strong>SPI</strong> 扩展，若要对接新框架如Spring，则需要实现基础资源关联部分的SPI，才可以和 <code>zero-ams</code> 完整集成，否则 <strong>可配置</strong> 异常架构无法在新框架中发挥作用，本章主要讲解对接步骤以及注意事项，您可以完全隔离 Zero 框架在任何支持 Vert.x 的结构中直接使用此教程。</p>
+</div>
+<div class="admonitionblock caution">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-caution" title="Caution"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>SPI（Service Provider Interface）是Java语言中原生的一种机制，用于实现模块化、可扩展性的应用程序，它允许开发者定义一组接口（或抽象类），而允许不同的实现者提供具体的视线，这些实现可以在运行时被动态加载或替换，而无需修改源代码。它使用场景如下：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>插件系统</p>
+</li>
+<li>
+<p>驱动程序加载</p>
+</li>
+<li>
+<p>扩展框架</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>它是一种实现松耦合、可扩展、可插拔的方式，允许开发人员在不改变核心功能的前提下扩展应用程序。</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+<div class="sect4">
+<h5 id="_资源文件"><a class="anchor" href="#_资源文件"></a><a class="link" href="#_资源文件">资源文件</a></h5>
+<div class="paragraph">
+<p>新框架对接中基本要求：必须提供异常资源文件连接，如 Zero 中使用 <code>vertx-error.yml</code> 资源文件做绑定，您可以在新的框架如 Spring 中参考 <code>spring-up</code> 项目中的配置，使用可国际化的 <code>application-error.yml</code> 资源文件做绑定内容。SPI实现过程中并没有强制要求您从文件路径中加载资源，只是要求从返回的数据结构中（JsonObject类型）实现两个核心的数据结构</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>异常代码/系统信息表</p>
+</li>
+<li>
+<p>异常代码/业务信息表（可选，根据业务需求定义）</p>
+</li>
+</ul>
+</div>
+<div class="paragraph">
+<p>这两个信息表在Zero框架中位于 <code>vertx-error.yml / vertx-readable.yml</code> 两个资源文件定义，您可以在自己对接其他框架时，采用其他实现手段来完成，不影响整体结构。以下是 Zero 框架中的异常信息表的范例：</p>
+</div>
+<div class="paragraph">
+<p><em>vertx-error.yml</em></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml"># 20001 - 29999
+# Thirt part error for different integration
+E20001: (401) - Qiy interface of "/iqiyi/authorize" met errors, code = {0}, message = {1}
+E20002: (401) - Qiy token record does not contain "access_token", client_id = {0}
+
+E80203: "(449) - (RBAC) The user `{0}` could not be found in database"
+E80204: "(401) - (RBAC) The user''s ( username = {0} ) password that you provided is wrong"</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p><em>vertx-readable.yml</em></p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-yaml" data-lang="yaml"># 登录异常
+80204: "对不起，用户名和密码错误！"
+80203: "对不起，找不到您提供的用户信息！"</code></pre>
+</div>
+</div>
+<div class="admonitionblock tip">
+<table>
+<tr>
+<td class="icon">
+<i class="fa icon-tip" title="Tip"></i>
+</td>
+<td class="content">
+<div class="paragraph">
+<p>上述结构取决于 <code>io.horizon.spi.HorizonIo</code> 接口下的实现逻辑，Zero中的实现逻辑因为历史原因，两个文件的基础 <strong>键</strong> 命名并没有维持一致，一个是 <code>EXXXXX</code> 一个是 <code>XXXXX</code>，但若 <code>XXXXX</code> 部分相同，则代表描述的是同一个错误代码对应的信息。此处设计成<strong>五位</strong>是考虑到在日志打印过程中让前缀的长度维持一致，一般框架内部或扩展使用<strong>五位</strong>，而您若开发其他应用则考虑<strong>六位</strong>。</p>
+</div>
+</td>
+</tr>
+</table>
+</div>
+</div>
+<div class="sect4">
+<h5 id="_horizonio"><a class="anchor" href="#_horizonio"></a><a class="link" href="#_horizonio">HorizonIo</a></h5>
+<div class="paragraph">
+<p>对接框架，您只需要提供SPI接口 <code>io.horizon.spi.HorizonIo</code> 接口的相关实现，该接口的定义如下：</p>
+</div>
+<div class="listingblock">
+<div class="content">
+<pre class="highlight"><code class="language-java" data-lang="java">package io.horizon.spi;
+
+import io.vertx.core.json.JsonObject;
+
+/**
+ * 资源文件加载专用SPI模式
+ * - 日志器：HLogger 是高阶实现，Annal 为Zero默认实现
+ * - 资源加载器：
+ * --- spring 中加载 application-error.yml
+ * --- vertx zero 中加载 vertx-error.yml
+ * - 最终实现完整加载流程
+ * 该组件SPI为底层资源加载组件，用于如下作用
+ * 1. 对接不同的 Annal 扩展组件，实现日志器的替换扩展流程。
+ * 2. 对接错误信息的资源提取流程，提取错误信息专用，构造成一个JsonObject包含所有资源类错误信息定义。
+ *
+ * @author lang : 2023/4/28
+ */
+public interface HorizonIo {
+    /**
+     * 资源加载，加载对应的异常资源文件，内部实现可自定义
+     *
+     * @return {@link JsonObject}
+     */
+    JsonObject ofError();
+
+    /**
+     * 资源加载，加载对应的异常资源文件，和 ofError() 可成对出现
+     * 该方法返回的内容可直接提取可读部分，用于前端展示
+     *
+     * @return {@link JsonObject}
+     */
+    JsonObject ofFailure();
+
+    /**
+     * 日志获取器，可读取扩展日志类型，实例时基于 Class&lt;?&gt;
+     *
+     * @return {@link io.horizon.specification.uca.HLogger}
+     */
+    default Class&lt;?&gt; ofLogger() {
+        return null;
+    }
+}</code></pre>
+</div>
+</div>
+<div class="paragraph">
+<p>上述接口实现过程中，解释一下：</p>
+</div>
+<div class="olist arabic">
+<ol class="arabic">
+<li>
+<p><em>ofError</em> 用于返回 <strong>异常代码/系统信息表</strong></p>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+<p>格式如：<code>EXXXXX = xxxxx</code></p>
+</div>
+</div>
+</div>
+</li>
+<li>
+<p><em>ofFailure</em> 用于返回 <strong>异常代码/业务信息表</strong></p>
+<div class="openblock">
+<div class="content">
+<div class="paragraph">
+<p>格式如：<code>XXXXX = xxxxx</code></p>
+</div>
+</div>
+</div>
+</li>
+<li>
+<p><em>ofLogger</em> 用于返回 <code>io.horizon.specification.uca.HLogger</code> 实现类名，反射替换原始日志记录器（若不替换则使用默认的 <code>slf4j</code> 接口。</p>
+</li>
+</ol>
+</div>
+<div class="paragraph">
+<p>上述实现完成之后，您可以在 <code>/META-INF/services/io.horizon.spi.HorizonIo</code> 中追加默认SPI的实现类，在自己的项目中直接对接异常架构，如此您的系统就可以享受 <code>zero-ams</code> 带来的完整的可配置异常架构和函数模型，若您使用的是 Zero 框架，则不需要做任何对接，默认的 <code>zero-co</code> 中已经包含了和 Zero 相关的所有实现。</p>
+</div>
+<div class="exampleblock">
+<div class="content">
+<div class="paragraph">
+<p>最后需说明一点，上述接口的实现在 JVM 中会出现三种不同场景，都和类加载器有关：</p>
+</div>
+<div class="ulist">
+<ul>
+<li>
+<p>标准场景：直接使用单个JVM运行 jar 程序，这种模式下无需额外配置。</p>
+</li>
+<li>
+<p>OSGI场景：由于OSGI场景下类加载器是相互隔离或独立的，所以在实现 <code>HorizonIo</code> 的过程中，您需要先精确定位类加载器，再读取相关配置才可以。</p>
+</li>
+<li>
+<p>Spring场景：Spring 框架对类加载器本身做过调整，特别是IO读取文件这一层，若要对接 Spring 您必须保证底层 IO 访问的资源是可达的。</p>
+</li>
+</ul>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="footer">
+<div id="footer-text">
+Last updated 2023-11-19 10:06:49 +0800
+</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,8 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 核心缓存
+
+include::02.01.core-cache-sd.adoc[]
+include::02.02.core-cache-cc.adoc[]
+include::02.03.core-cache-hh.adoc[]

@@ -10,7 +10,7 @@
 :sectnums:
 :sectnumlevels: 5
 :email: silentbalanceyh@126.com
-:revnumber: v2.01
+:revnumber: v0.21
 :revdate: 2023年11月13日
 :toc: left
 :toclevels: 3
@@ -24,31 +24,7 @@
 :linkattrs:
 :page-width: 16in
 
-[options="header",title="版本修订历史",cols="15,15,15,55"]
-|====
-|版本|作者|时间|描述
-|2.01|Lang|2023-11-13|前端命名语义
-|2.00|Lang|2023-11-09|2.0版本文档
-|1.70|Lang|2023-10-25|工作流功能升级
-|1.60|Lang|2023-09-07|自定义表单、办公协同（ONLYOFFICE）
-|1.52|Lang|2023-09-04|列操作定制
-|1.51|Lang|2023-08-29|上传/下载详解
-|1.50|Lang|2023-08-15|CRUD实战
-|1.40|Lang|2023-07-20|前端基础教程
-|1.30|Lang|2023-06-04|AOP分流器文档
-|1.20|Lang|2023-05-02|Agreed Metadata Specification
-|1.10|Lang|2023-04-17|前端基础
-|1.09|Lang|2023-03-26|附件、文档管理
-|1.08|Lang|2023-03-23|工作流引擎配置
-|1.07|Lang|2023-03-22|Zero Extension详细介绍
-|1.06|Lang|2023-03-20|模块化配置/文档修订
-|1.05|Lang|2023-03-16|Qr查询引擎（前后端）
-|1.04|Lang|2023-03-11|配置/实施规范中的权限管理
-|1.03|Lang|2023-02-22|前端样式规范补充
-|1.02|Lang|2023-02-14|前端结构规范补充
-|1.01|Lang|2023-02-12|动态建模平台一键式部署修订
-|1.00|Lang|2023-02-07|起草基本云平台规范
-|====
+include::00-intro/00.__.version.adoc[]
 
 [CAUTION]
 ====
@@ -83,10 +59,6 @@ include::01-spec/02.02.spec-frontend-style.adoc[]
 include::01-spec/02.03.spec-frontend-src.adoc[]
 include::01-spec/02.04.spec-frontend-name.adoc[]
 include::01-spec/03.01.@spec-is.adoc[]
-
-= 高阶设计
-
-include::01-spec-hd/00.@ams.adoc[]
 
 = 前端实施
 
@@ -132,19 +104,23 @@ include::03-delivery/10.@config-wf.adoc[]
 
 == 模块开发
 
-include::06-action/01.@module.adoc[]
+include::04-action/01.@module.adoc[]
 
 == 辅助模块开发
 
-include::06-action/02.@assist.adoc[]
+include::04-action/02.@assist.adoc[]
 
 = 核心原理
 
-include::04-critial/01.@core-qr.adoc[]
-include::04-critial/02.@core-cache.adoc[]
+include::11-critial/01.@core-qr.adoc[]
+include::11-critial/02.@core-cache.adoc[]
+
+= 高阶设计
+
+include::12-hd/00.@ams.adoc[]
 
 = 开发中心（低代码）
 
-include::05-development/01.config-dev.adoc[]
+include::13-development/01.config-dev.adoc[]
 
 == 待定

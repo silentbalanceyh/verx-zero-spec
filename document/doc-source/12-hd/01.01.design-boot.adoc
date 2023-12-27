@@ -1,0 +1,10 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+=== 启动器架构
+
+Zero新版的启动器架构可用于启动**任意容器**（不局限于 Vert.x），提供核心高阶支持，现阶段版本已经在两种容器种实验完成：
+
+- Zero标准容器（ Vert.x 和 Netty ）
+- OSGI标准容器（ Felix 和 Jetty ）
+

@@ -1,6 +1,0 @@
-ifndef::imagesdir[:imagesdir: ../images]
-:data-uri:
-:table-caption!:
-
-=== 「B/3」多子表记录
-
