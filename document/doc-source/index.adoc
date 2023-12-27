@@ -24,6 +24,8 @@
 :linkattrs:
 :page-width: 16in
 
+[tree]
+
 include::00-intro/00.__.version.adoc[]
 
 [CAUTION]
@@ -35,7 +37,6 @@ include::00-intro/00.__.version.adoc[]
 - 目录：/Zero Framework/video-training
 ====
 
-[tree]
 = 环境标准
 
 include::00-intro/00.00.requirement.adoc[]
