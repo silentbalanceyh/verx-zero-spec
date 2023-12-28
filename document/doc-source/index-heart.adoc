@@ -1,0 +1,37 @@
+:doctype: book
+:icons: font
+:page-previous-text: 上一页
+:page-next-text: 下一页
+
+= Zero机器之心
+:author: 虞浪
+:partnums:
+:part-signifier: Chapter
+:sectnums:
+:sectnumlevels: 5
+:email: silentbalanceyh@126.com
+:revnumber: v0.21
+:revdate: 2023年11月13日
+:toc: left
+:toclevels: 3
+:toc-title: 目录
+:description:
+:source-highlighter: highlightjs
+:imagesdir: ./images
+:data-uri:
+:table-caption!:
+:sectlinks:
+:linkattrs:
+:page-width: 16in
+
+[tree]
+include::11-critial/00.__.version.adoc[]
+
+= 核心原理
+
+include::11-critial/01.@core-qr.adoc[]
+include::11-critial/02.@core-cache.adoc[]
+
+= 高阶设计
+
+include::12-hd/00.@ams.adoc[]

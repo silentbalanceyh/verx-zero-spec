@@ -1,0 +1,10 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+
+== 版本修订
+
+[options="header",title="版本修订历史",cols="15,15,15,55"]
+|====
+|版本|作者|时间|描述
+|0.21|Lang|2023-11-13|起草最新版本
+|====

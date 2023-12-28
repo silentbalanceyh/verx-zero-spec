@@ -3,7 +3,7 @@
 :page-previous-text: 上一页
 :page-next-text: 下一页
 
-= Zero云平台白皮书
+= Zero实施白皮书
 :author: 虞浪
 :partnums:
 :part-signifier: Chapter
@@ -35,6 +35,11 @@ include::00-intro/00.__.version.adoc[]
 - 链接: <https://pan.baidu.com/s/19ykMgAZLfOxA-fIxy71pUw>
 - 提取码: mbk8
 - 目录：/Zero Framework/video-training
+
+高级教程：
+
+- link:index-dev.html[开发中心, window="_blank"]
+- link:index-heart.html[机器之心, window="_blank"]
 ====
 
 = 环境标准
@@ -110,18 +115,3 @@ include::04-action/01.@module.adoc[]
 == 辅助模块开发
 
 include::04-action/02.@assist.adoc[]
-
-= 核心原理
-
-include::11-critial/01.@core-qr.adoc[]
-include::11-critial/02.@core-cache.adoc[]
-
-= 高阶设计
-
-include::12-hd/00.@ams.adoc[]
-
-= 开发中心（低代码）
-
-include::13-development/01.config-dev.adoc[]
-
-== 待定
