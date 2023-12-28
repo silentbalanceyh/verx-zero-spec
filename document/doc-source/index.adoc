@@ -24,10 +24,6 @@
 :linkattrs:
 :page-width: 16in
 
-[tree]
-
-include::00-intro/00.__.version.adoc[]
-
 [CAUTION]
 ====
 前后端视频教程（持续更新）
@@ -41,6 +37,12 @@ include::00-intro/00.__.version.adoc[]
 - link:index-dev.html[开发中心, window="_blank"]
 - link:index-heart.html[机器之心, window="_blank"]
 ====
+
+[tree]
+
+include::00-intro/00.__.version.adoc[]
+
+
 
 = 环境标准
 
