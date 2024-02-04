@@ -534,3 +534,250 @@ export default Ui.smartList({
 若您仔细阅读了前边章节的列表定制，那么这样两份代码是没有任何难度的；除了本章提到的扩展以外，实际在定制过程中还有很多扩展方式无法一一梳理，也没法书写相关细节，等到后续案例章节来一一说明。
 ====
 
+
+==== 批量区域
+
+本章节通过另外一个例子讲解批量区域的行为定制，主要完成如下任务：
+
+- 定制批量按钮
+- 统一批量按钮和单量按钮
+
+[TIP]
+====
+注：此处的例子中批量和单量的打开函数都使用同一个自定义函数，访问后端的批量读取接口，加载相关数据。
+====
+
+===== 按钮配置
+
+参考如下配置：`Ui.smartList` 的调用模式：
+
+[source,java]
+----
+{
+    "_grid": {
+        "options": {
+            "search.advanced": false,
+            "tabs.edit": "待结算单据",
+            "op.extension.settlement": {
+                "text": "处理选中",
+                "icon": "edit",
+                "region": "op.batch.settle",
+                "config": {
+                    "executor": "rxSettleBatch"
+                }
+            }
+        },
+        "table": {
+            "columns": [
+                {
+                    "title": "操作",
+                    "dataIndex": "key",
+                    "fixed": "left",
+                    "$render": "EXECUTOR",
+                    "$option": [
+                        {
+                            "text": "处理结算",
+                            "executor": "rxSettle"
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}
+----
+
+上述配置中定制了两处：
+
+1. 直接在 `options` 中追加扩展配置，扩展配置的属性如下：
++
+--
+[options="header",cols="3,7"]
+|====
+|属性|含义
+|`text`|按钮中的文字、链接显示的文字。
+|`icon`|按钮对应的图标、链接对应的图标。
+|`region` a|区域标识，此处区域标识是根据标识命名前缀来判断扩展的区域：
+
+- `op.open.xx`：添加按钮区域。
+- `op.batch.xx`：批量按钮区域。
+- `op.extra.xx`：右上角附加区域。
+|`config`|区域中对应的附加配置信息，其中 `executor` 为**行为函数**挂载专用，用来自定义操作函数。
+|====
+--
+2. 在 `table.columns` 中自定义**行区域**，一旦使用了自定义的**行区域**，那么选项中的 `op.row.edit` 和 `op.row.delete` 会彻底失效，最终的行操作根据您的自定义配置来计算。
++
+--
+如果你想要保持 **编辑/删除** 的默认配置，应该追加如下配置：
+
+[source,json]
+----
+{
+    "table": {
+        "columns": [
+            {
+                "title": "操作",
+                "dataIndex": "key",
+                "fixed": "left",
+                "$render": "EXECUTOR",
+                "$option": [
+                    {
+                        "text": "编辑",
+                        "executor": "fnEdit"
+                    },
+                    "divider",
+                    {
+                        "text": "删除",
+                        "executor": "fnDelete",
+                        "confirm": "确认删除选择的会员卡记录？"
+                    }
+                ]
+            }
+        ]
+    }
+}
+----
+
+列表中的默认函数是 `fnEdit / fnDelete / fnView`，若不定制这三个函数，您可以使用默认的行为（单条数据读取），否则您需要重新定义函数信息。
+--
+
+参考上边的教程，您就可以初步实现 **批量行为** 定义和 **行行为** 定义，但此处的配置仅仅会更改界面显示，不会对行为的按钮逻辑进行定义，参考如下：
+
+image:exp-list-action-b.png[,800]
+
+此处需强调两个定制规则：
+
+- **批量区域** 中自定义的内容会在您的 `op.extension.xx` 存在时以显示或隐藏的方式来区分，只要配置了就一定会显示出来，没有配置则不会显示，但是在触发函数的时候可能会出现函数无法调用的情况。
+- **行区域** 中定义的按钮除了配置以外，还依赖配置的函数信息，如上边截图可以看到，虽然行定义中存在 `rxSettle` 的回调，但由于此函数并未出现在列表配置中，为不合法的回调，所以行区域中并没有显示**处理结算**的按钮。
+
+====
+上述两个规则因为历史原因而存在，并没有完全统一，但不影响**自定义流程**，从标准实施上考虑，一旦要自定义行为，**配置**和**函数**是同时存在的，不应该出现缺斤少两的情况或独立存在的情况。
+====
+
+===== 行为定制
+
+行为定制主要是给 `ExListXx` 的组件注入 `$executor` 和 `$op` 属性来完成函数定制，参考如下 `Ui.smartList` 中的代码。
+
+[source,js]
+----
+    yoOp: () => ({
+        // 批量处理
+        rxSettleBatch: (ref, config) => (event) => {
+            console.log(ref, config, event);
+        }
+    }),
+    yoExecutor: () => ({
+        // 行处理
+        rxSettle: (key = {},record = {}, metadata = {}) => {
+            console.log(key, record, metadata);
+        }
+    })
+----
+
+**`$op` 定制** 主要用于三个区域：`op.open, op.batch, op.extra`，这三个区域的按钮的特征如下：
+
+函数本身是一个二阶函数，如 `rxSettleBatch` 的签名，它的参数如下：
+
+[options="header",cols="2,1,7"]
+|====
+|参数|阶数|含义
+|`event` |一|类型：`SyntheticBaseEvent`，直接映射到HTML中的原生参数。
+|`ref` |二|类型：`React Component`，注意此处的**组件引用**是 `ExListXx` 组件的引用而并非外层组件引用。
+|`config` |二|类型：`Object`，此处配置为当前按钮的所有配置，您可以在配置中追加内容来逐一解析，对应到扩展配置的 `config` 属性。
+|====
+
+**`$executor` 定制** 则主要用于行区域，这个区域的按钮特征如下：
+
+函数本身是一个一阶函数，如 `rxSettle` 的签名，它的参数如下：
+
+[options="header",cols="2,1,7"]
+|====
+|参数|阶数|含义
+|`key` |一|类型：`String`，当前数据记录绑定的 `EXECUTOR` 部分的字段值，默认使用 `key`，也可以自定义更改默认字段。
+|`record` |一|类型：`Object`，当前数据行记录完整信息，此属性作为辅助数据使用，您可以提取记录完整信息。
+|`metadata` |一 a|类型：`Object`，核心数据结构如：
+
+- `config`：完整的**列配置**信息，您可以根据所需提取相关内容。
+- `reference`：`React Component` 组件信息，此处**组件引用**为 `ExListXx` 组件，并非外层引用。
+- `parameters`：附加参数，用于扩展专用，参考工作流列表组件配置。
+|====
+
+上述函数注入之后，则您就可以直接测试打印结果了：
+
+
+image:exp-list-action-b1.png[,800]
+
+===== 统一行操作
+
+默认场景下 `ExListXx` 的相关配置中，批量区域一般使用弹框，而行操作一般使用页签，为了让二者实现统一，本章节详细讲解 `rxSettle / rxSettleBatch` 两个按钮的行为，提供参考代码。
+
+[source,js]
+----
+    yoOp: () => ({
+        // 批量处理
+        rxSettleBatch: (ref, config) => (event) => {
+            const { $selected = []} = ref.state;
+            rxOpen(ref, $selected);
+        }
+    }),
+    yoExecutor: () => ({
+        // 行处理
+        rxSettle: (key = {},data = {}, metadata = {}) => {
+            const ref = metadata.reference;
+            rxOpen(ref, [key]);
+        }
+    })
+----
+
+其中 `rxOpen` 函数如下：
+
+[source,js]
+----
+const rxOpen = (reference, keys = []) => {
+    // 打开加载效果
+    Ux.of(reference).spinning()
+        .future(() => Ux.ajaxPost("/api/settlement/batch", {
+            $body: keys
+            /*
+             * debts: [],
+             * items: [],
+             * settlements: [],
+             * transactions: []
+             */
+        }))
+        .then(response => {
+            const key = keys[0];
+            // Ex.rxTabOpen
+            Ex.rxTabOpen(reference)(key, {
+                ...response,
+                key
+            });
+        })
+}
+----
+
+上述代码中，和标准列表的区别在于：
+
+- 标准列表中读取数据采用了 `rxView`，它会根据 `ajax.get.uri` 配置中的数据提取 **单记录** 响应信息来完成数据的加载。
+- 此处的代码直接访问了 **批量** 和 **单量** 统一的接口 `/api/settlement/batch` 来实现记录提取。
+
+响应处理完成后，代码调用 `Ex.rxTabOpen`（二阶函数）接口直接在当前列表中打开一个新的页签。
+
+===== 编辑表单
+
+最后需说明的是编辑表单的定制，定制过程中只需关注 `props` 属性下的 `$inited` 数据即可，此处 `$inited` 数据为响应数据信息，其內容如：
+
+[source,js]
+----
+{
+    "key": "xxx",
+    "debts": [],
+    "settlements": [],
+    "transactions": [],
+    "items": []
+}
+----
+
+====
+后续表单的定制就可以直接参考表单章节来完成完整的表单界面制作。
+====
