@@ -1,0 +1,515 @@
+ifndef::imagesdir[:imagesdir: ../images]
+:data-uri:
+:table-caption!:
+
+=== 提醒：站内消息
+
+本章主要讲解 **提供** 功能，提醒功能的开发主要覆盖以下几个点：
+
+- 核心框架提供开发提醒的专用注解。
+- 针对个人设置提醒定制在 `zero-tpl` 模块中会包含相关定义，包括个人配置、消息模板等（包括短信、邮件）。
+- 现阶段主要用于站内信功能，前后端同时开启 `websocket` 配置即可。
+
+[TIP]
+====
+Zero 中的 WebSocket 默认启用 STOMP 协议，前端则使用 `stompjs` 库来和后端集成通信。
+====
+
+==== 环境配置
+
+===== 后端配置
+
+后端配置主要在 `vertx-server.yml` 文件中，您可以在你的 `server` 节点追加如下配置
+
+[source,yaml]
+----
+server:
+  # .....
+  - name: ht-ws
+    type: sock
+    config:
+      port: 7085
+      webSocketSubProtocols:        # 协议版本
+        - v12.stomp
+        - v11.stomp
+        - v10.stomp
+    websocket:
+      # publish: /ws/               # 是否开启非安全模式的 WebSocket 端
+      component: io.vertx.up.plugin.stomp.websocket.AresStomp
+      # STOMP 协议专用配置
+      config:
+        stomp:
+          port: 7085                        # 禁止 TCP
+          secured: true                     # 开启安全模式
+          websocketBridge: true             # 是否桥接 SockJS
+          websocketPath: /api/web-socket    # WebSocket 标准 EndPoint
+          # stomp:                          # STOMP 处理器相关配置
+          # bridge:                         # Bridge 和 `PermittedOptions` 有关的桥接配置
+          # handler:                        # Handler 标准处理器配置
+      ## server:                            # Sock / Stomp 服务器独立配置
+----
+
+===== 配置说明
+
+上述配置完成之后，您可以启动 Zero 容器，在您的启动环境中会看到如下信息，就证明容器中的 WebSocket 已经启用：
+
+1. 配置提取：
++
+--
+image:zis-sock-start-1.png[0,960]
+
+**注**：WebSocket 的 Server 类型为 `SOCK`，它的端口号可以和 `HTTP` 服务器端口号相同，二者不冲突，若您想要不同的端口号，则可以为它设置独立的配置：`config -> server`，目前此处配置为保留配置。
+--
+2. STOMP 组件启动：
++
+--
+image:zis-sock-stomp.png[0,960]
+
+- Stomp 组件在现阶段版本中必须提供，若您想要自定义则可以参考 `AresStomp` 组件的代码书写自己的 Socket 处理组件。
+- 若开启了 `secured` 安全模式，则您的 `websocketPath` 要在 `/api/`（安全配置）之下，配置匹配完成之后，会开启安全验证功能，那么在尝试创建 WebSocket 连接时就会先验证您的身份是否合法，不合法会抛出 401 异常。
+--
+3. WebSocket 组件扫描：
++
+--
+image:zis-sock-start-2.png[0,960]
+
+- 若您打开 WebSocket 功能之后，您开发的 WebSocket 组件会被框架扫描并生成不同订阅地址下的端。
+- socket 属性地址是前端开启 websocket 的专用地址。
+- address 则是后端 EventBus 中触发专用地址，除计划任务之外，Socket 请求可以在后端直接通过此地址被触发。
+--
+
+====
+参数本身在配置示例的注解中已经有所说明，此处就不赘述。
+====
+
+===== 前端配置
+
+zero-ui 前端框架在配置 WebSocket 时需执行如下基本步骤：
+
+1. 关闭默认的：`ws://<domain>:<port>/ws`，由于React框架本身自带了 WebSocket 功能，所以在环境变量中追加如下配置：
++
+--
+[source,properties]
+----
+WSD_OK=No
+----
+
+上述配置可以关掉默认的 WebSocket 功能。
+--
+2. 开启和后端匹配的 `WebSocket` 地址：
++
+--
+[source,properties]
+----
+Z_SOCK=/api/web-socket
+----
+
+此处配置地址和后端一定要匹配。
+--
+
+[IMPORTANT]
+====
+前端两个环境变量会影响最终的 WebSocket 地址生成，所以在配置过程中推荐遵循如下基本规则：
+
+- `Z_ENDPOINT` 配置尽量不以 `/` 结尾。
+- `Z_SOCK` 以 `/` 开始，类似 `/api/web-socket` 这种。
+
+前端配置的 `Z_SOCK` 环境变量的值要和 `vertx-server.yml` 中 `config/stomp/websocketPath` 相同！
+====
+
+==== 开发流程
+
+> 最新版本，1.0.0-SNAPSHOT 中支持！
+
+===== 新注解
+
+您可以在代码中追加如下两种注解：
+
+[source,java]
+----
+import io.vertx.up.annotations.Address;
+import io.vertx.up.annotations.Subscribe;
+----
+
+- `@Subscribe` 为前端订阅地址，最终地址构成如：`<Z_SOCK> + <@Subscribe>`，若想要设置不同的频道或分流，可在不同的 Java 方法上追加订阅地址，这样开发人员就可以直接开发类似 **主题** 的专用方法。
+- `@Address` 为后端内部通信地址，Zero 框架基于 Vert.x 执行内部通信，此处地址为触发此方法的入口：
++
+--
+- 任务 `Job` 的最后一个地址会绑定到此处——任务触发模式。
+- 接口 `Api` 的注解可直接绑定到此处——手动触发模式。
+--
+- 动态建模中的 `Job` 和 `Api` 遵循同样的执行逻辑，最终保证整体统一，这样可维持**全框架**的执行逻辑统一。
+
+===== 流程图
+
+WebSocket的完整工作流程如下：
+
+image:zis-sock-flow.png[0,]
+
+[NOTE]
+====
+流程图中包含了 `@Job` 的定义部分如何触发提醒的过程，它和 `@EndPoint` 中的定义是统一流程处理，除开内部的 `@Address` 通信以外，其他流程完成了全框架统一的核心设计。
+====
+
+===== 组件开发
+
+下边是 `@EndPoint` 的代码示例：
+
+[source,java]
+----
+package cn.vertxup.hotel.micro.workflow;
+
+import com.needee.eon.Addr;
+import io.vertx.core.json.JsonObject;
+import io.vertx.up.annotations.Address;
+import io.vertx.up.annotations.EndPoint;
+import io.vertx.up.annotations.Off;
+import jakarta.ws.rs.*;
+
+/**
+ * @author lang : 2023-06-26
+ */
+@EndPoint
+@Path("/api")
+public interface BeginApi {
+
+    @POST
+    @Path("/order/standard/submit")
+    @Address(Addr.Order.ORDER_STD)
+    @Off(address = Addr.Notify.ORDER_SUBMIT)        // 发送地址
+    JsonObject submitStandard(@BodyParam JsonObject params);
+}
+----
+
+下边是 **提醒组件** 的代码示例：
+
+[source,java]
+----
+package com.needee.uca.notification;
+
+import com.needee.atom.HCV;
+import com.needee.eon.Addr;
+import io.horizon.spi.feature.Transit;
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
+import io.vertx.up.annotations.Address;
+import io.vertx.up.annotations.Subscribe;
+import io.vertx.up.commune.config.XHeader;
+import io.vertx.up.eon.KName;
+import io.vertx.up.unity.Ux;
+
+public class NotifyOrder {
+
+    @Subscribe("order-submit")                      // 前端订阅地址，结合 Z_SOCK 计算
+    @Address(Addr.Notify.ORDER_SUBMIT)              // 接收地址
+    public Future<JsonObject> submitNotify(final JsonObject input, final XHeader header) {
+        final JsonObject params = NotifyParam.normalized(input, header);
+        params.put(KName.MESSAGE, HCV.NotifyCode.NOTIFY_ORDER_SUBMIT);
+        return Ux.channel(Transit.class, JsonObject::new, stub -> stub.message(params))
+            .compose(message -> Ux.future(NotifyParam.response(message, input)));
+    }
+}
+----
+
+上述代码构造了流程图中的完整提醒流程，注意几点：
+
+1. API定义中使用的发送地址和 `@Job` 中的地址统一，使用注解 `io.vertx.up.annotations.Off` 进行描述。
+2. **提醒组件** 中接受数据的地址则使用注解 `@Address` 进行描述。
+3. **提醒组件** 中的前端订阅地址使用注解 `io.vertx.up.annotations.Subscribe` 进行描述。
+
+完成上述两个组件开发之后，当您的请求发送到 API 时，产生响应的同时会去触发提醒组件中的方法执行，并且将消息传回到客户端中。
+
+[TIP]
+====
+关于提醒组件的方法签名基本和 Zero 中的 Worker 组件保持一致，所以在提醒组件中也可以直接拿到您想要的任意扩展数据结构，如此处的 `XHeader`，这点也是为了维持执行流程整体的标准化。
+====
+
+==== 配置/定制
+
+===== 消息格式
+
+前文中搭建了整体提醒流程，但此时还没牵涉到内容返回部分，在示例中只是看到了类似：
+
+[source,java]
+----
+NotifyParam.response(message, input)
+----
+
+上述代码生成了 `zero-ui` 所需的消息响应格式，其数据结构如下：
+
+[source,json]
+----
+{
+    "message": "",
+    "subject": "",
+    "status": "",
+    "type": "",
+    "request": {}
+}
+----
+
+====
+本质上讲，响应格式可以是任意的Json格式，此处的标准化格式主要用于和 `zero-ui` 集成，且后端会对接**消息处理器**以实现和消息模板对接的功能，并且采用您的响应数据直接为当前请求生成对应格式。
+====
+
+响应参数：
+
+[options="header",cols="2,8"]
+|====
+|参数名|含义
+|`message`| 消息内容主体，此处生成的消息是最终消息，内容可包含 HTML 代码，但不可再包含表达式，当然未来版本中可以支持表达式继续在前端扩展，但目前版本即使您使用了表达式，最终也只会在前端呈现此表达式，并不会带有任何代码逻辑。
+|`subject`| 消息标题
+|`status` a| 消息状态
+
+- `PENDING`：消息等待发送，消息处理器执行失败时，使用此状态标记下一次将要发送的消息清单。
+- `SENT`：成功发送，此状态标记消息已经成功发送到客户端。
+- `HISTORY`：当客户端阅读了此消息之后转换成历史状态（站内信、邮箱功能专用）。
+|`type` a| 消息类型
+
+- `EMAIL`：邮件
+- `SMS`：短信
+- `MESSAGE`：站内消息（本章类型）
+|`request` | 触发当前消息的原始请求数据，部分消息内容构造可能依赖此原始请求以实现请求和响应流程的幂等性。
+|====
+
+===== 消息处理器
+
+Zero 新版中支持 **短信、邮件、消息** 的模板化定义功能（扩展模块 `zero-tpl` ），并在标题和内容上支持 `JEXL` 的表达式功能，此处消息处理器会直接走 `SPI` 通道为当前请求构造消息响应。先看示例中的通道调用代码：
+
+[source,java]
+----
+return Ux.channel(Transit.class, JsonObject::new, stub -> stub.message(params))
+----
+
+此处调用了消息处理器，接口 `io.horizon.spi.feature` 的定义如下：
+
+[source,java]
+----
+package io.horizon.spi.feature;
+
+import io.vertx.core.Future;
+import io.vertx.core.json.JsonObject;
+
+/**
+ * 消息处理器，主要对接 zero-tpl 来实现消息的构造流程
+ *
+ * @author lang : 2024-04-04
+ */
+public interface Transit {
+    /*
+     * 根据参数构造消息相关信息，此处的消息必须包含
+     * {
+     *     "sigma": "统一标识",
+     *     "appId": "应用标识",
+     *     "data": {},
+     *     "message": "TPL_MESSAGE 中的 code"
+     * }
+     * 响应格式
+     * {
+     *     "message": "",
+     *     "subject": "",
+     *     "status": "",
+     *     "type": "",
+     *     ”request": {}
+     * }
+     */
+    Future<JsonObject> message(JsonObject input);
+}
+----
+
+
+消息处理器的输入参数：
+
+[options="header",cols="2,8"]
+|====
+|参数名|含义
+|`sigma` | 统一标识符（略）。
+|`appId` | 应用主键（略）。
+|`data` | 您构造的数据，此处数据格式一般是 `Worker` 发送回客户端的 HTTP 响应数据（最终生成数据），您可以在构造消息过程中使用这份数据作输入，职中可能包含部分业务信息，如订单号等。
+|`message` | 消息模板标识符，`zero` 扩展中对应 `zero-tpl` 中 `TPL_MESSAGE` 表的 `CODE` 字段。
+|====
+
+===== 消息模板
+
+消息模板是 Zero Extension 提供的新扩展模板 `zero-tpl` 中的内容，这个扩展模块包含了：**模板定义** 和 **个人设置** 两个核心定制化功能，其中消息模板定义位于表 `TPL_MESSAGE` 中，本章节针对该表进行说明（常用内置字段除外）。
+
+[options="header",title="消息模板表结构",cols="15,15,70"]
+|====
+|属性|字段|含义
+|`key` | `KEY` | 消息模板的系统内置主键，一般是 UUID 格式。
+|`name` | `NAME` | 消息模板名称，可呈现在界面提供给人工阅读并且进行管理的模板名称信息。
+|`code` | `CODE` | 对应消息处理器参数 `message` 的系统内码，内码若在代码中已经定义过则为硬编码模式，这种情况不可更改。
+|`type` | `TYPE` | 消息类型，类型参考响应格式中关于类型的描述。
+|`exprSubject` | `EXPR_SUBJECT` | 支持 JEXL 表达式的消息标题模板，可使用类似 `${xx}` 的格式对参数进行提取（参数位于 `data` 中）。
+|`exprContent` | `EXPR_CONTENT` | 支持 JEXL 表达式的消息内容模板。
+|`exprComponent` | `EXPR_COMPONENT` | （保留）若您想要针对消息内容进行深度扩展，可提供消息模板定义专用组件来完成。
+|`appId` | `APP_ID` | 当前消息模板所属的应用ID。
+|====
+
+消息模板给开发人员自动提供了可定制的空间，您可以在您的 `TPL_MESSAGE` 表中定制任意数量的消息模板信息，这些信息可以在代码中开发使用、也可以在配置中使用，如此执行之后，最终的消息内容就采用：`数据 + 模板` 的构造思路以祛除硬编码模式。
+
+===== 提醒设置
+
+虽然系统开启了消息提醒功能，但对于不同的客户而言，个人提醒在 Zero Extension 扩展模块中是可定制的，`zero-tpl` 上线之后会开启两个新菜单：
+
+- 我的消息
+- 我的提醒（定制）
+
+而我的提醒就是个人根据实际所需定义您所想要开启的消息提醒功能，此功能位于 `MY_NOTIFY` 表中定义，本章节详细解析 `MY_NOTIFY` 表的结构。
+
+[options="header",title="提醒设置",cols="15,15,70"]
+|====
+|属性|字段|含义
+|`key`| `KEY` | 个人提醒设置主键，一般是 UUID 格式。
+|`ownerType` | `OWNER_TYPE` a| 和视图操作一样，此处的拥有者可以包含如：
+
+- `COMPANY`：公司维度。
+- `DEPT`：部门维度。
+- `CUSTOMER`：客户维度。
+- `PROJECT`：项目维度。
+- `GROUP`：用户组维度。
+- `ROLE`：角色维度。
+- `USER`：个人设置（当前版本正在使用的维度）。
+
+不同维度定义可简化消息配置，而个人设置只有在 **我的提醒** 中生成了个人配置数据才会包含个人提醒设置。
+|`ownerId` | `OWNER_ID` | 对应 `ownerType` 的实体记录主键，表示某一个 XXXX 的概念，若是个人提醒则此处是用户 ID。
+|`configInternal` | `CONFIG_INTERNAL` | JSON格式，站内信配置。
+|`configEmail` | `CONFIG_EMAIL` | JSON格式，邮件配置。
+|`configSms` | `CONFIG_SMS` | JSON格式，短信配置。
+|`appId` | `APP_ID` | 当前设置所属的应用ID。
+|====
+
+[TIP]
+====
+此表的唯一键包含：`APP_ID, OWNER_TYPE, OWNER_ID`，语义为：一个应用中某一个类型的唯一实体只能包含一份消息提醒设置。
+====
+
+==== 前端开发
+
+前端开发主要配合 **我的提醒** 定制结果来实现浏览器中针对消息开放的 **主题** 执行订阅，这种订阅是不稳定的，其功能限制如下：
+
+- 消息会提醒之后显示在浏览器中，并在消息消失之后进入**我的站内信**，若用户打断消息接收流程则消息自动丢失。
+- 消息列表只有在后端开启了 `zero-tpl` 扩展模板后才会有对应菜单。
+- 不支持离线站内信提醒：由于启用了 WebSocket 协议，此协议为浏览器到后端的长连接，若离线不登录系统则不会收到任何相关提醒。
+
+===== 容器 container
+
+每个系统对消息主题的定制会有所区别，所以一般消息定义在 `container/` 的模板中进行，不同应用定制会有所区别。
+
+下边示例是 container 外层模板容器的资源配置：
+
+[source,json]
+----
+{
+    "_nav": {
+        "key": "ima",
+        "uri": "$MAIN$",
+        "text": "主页"
+    },
+    "_websocket": {
+        "/job-notify": "wsJobNotify",
+        "/order-submit": "wsOrderSubmit"
+    }
+}
+----
+
+注意此处的 `_websocket` 配置，它的键值分别表示：
+
+- 键：订阅地址，此地址和代码中的地址维持一致。
+- 值：收到消息之后的回调函数，不同地址的回调函数有所区别。
+
+===== 消息接收器
+
+消息接收器用于定义前端在收到消息之后具体做的事情，参考下边示例代码：
+
+[source,js]
+----
+const wsOrderSubmit = (reference) => (response = {}, componentRef) => {
+    // 然后执行后续操作，收到提醒则根据订单数据写消息到系统重
+    const {subject, content} = response;
+    Ux.notifyInfo({message: subject, description: content},
+        // 设置 __MESSAGE 创建站内信
+        __callbackMessageFn(response, componentRef)
+    )
+}
+const WS_RUNNER = {
+    wsJobNotify,            // 略
+    wsOrderSubmit,
+}
+export default {
+    yoWebSocket: (reference) => {
+        const websocket = Ux.inHoc(reference, "websocket");
+        if (!websocket) {
+            return false;
+        }
+        const $websocket = {};
+        Object.keys(websocket).forEach(address => {
+            const executor = websocket[address];
+            const runnerFn = WS_RUNNER[executor];
+            if (Ux.isFunction(runnerFn)) {
+                $websocket[address] = runnerFn(reference);
+            }
+        });
+        return $websocket;
+    }
+}
+----
+
+上述示例代码中有几点需说明：
+
+1. `yoWebSocket` 会在外层 `container` 组件中调用，此处 `reference` 为此容器组件引用。
+2. 此处的 `WS_RUNNER` 中的每一个值都是二阶函数，其参数签名如：
++
+--
+- `(reference)`：外层容器 React 组件引用。
+- `(response, componentRef)`：消息响应数据，内层组件引用（React 组件）。
+--
+3. `response` 除了前文提到的消息响应格式之外，还会多包涵一个 `messageId`，此 `messageId` 由 Stomp 服务器自动生成。
+
+容器定制好所有全局消息行为之后，就可以将整体内容打包传入到 `ExNotify` 中，其代码如：
+
+[source,js]
+----
+    const websocket = Fn.yoWebSocket(this);
+    if (websocket) {
+        inherit.$websocket = websocket;
+    }
+----
+
+[TIP]
+====
+新版 zero-ui 中的 `Ex.yoAmbient` 专用属性传递函数中追加了 `$websocket` 的传递，此处传递内容为全局消息接收器。
+====
+
+上述示例中的效果如：
+
+image:zis-sock-message.png[0,720]
+
+所有订阅过 `/order-submit` 频道的用户都可以在登录系统中收到上述提醒信息。
+
+===== 站内信
+
+站内信功能为 Zero Extension 提供的和消息提醒对接的完整功能，功能截图如下：
+
+_提醒图标_
+
+image:zis-sock-inew.png[0,200]
+
+_站内信管理_
+
+image:zis-sock-imsg.png[0,800]
+
+此功能的**添加、删除、状态变更**主要位于 `zero-is` 模块中，其中 `ExNotify` 组件则依赖 `zero-is` 扩展模块的开启，当然您也可以开发自己的站内信功能，此处主要枚举常用的接口，不再做赘述。
+
+[options="header",title="接口",cols="10,20,70"]
+|====
+|HTTP方法|路径|含义
+|image:im-get.png[0,64]|`/api/message/type/:type` | 按类型读取消息，如此处主要读取的是 `MESSAGE` 站内信。
+|image:im-put.png[0,64]|`/api/message/batch/:status` | 更改消息状态，如全部消息标记成 **已读**。
+|image:im-post.png[0,64]|`/api/message` | 单条消息追加，此追加流程在提醒消失时会自动插入到后端的 `I_MESSAGE` 表中。
+|image:im-delete.png[0,64]| `/api/message/batch` | 批量删除消息（物理删除，非逻辑删除）。
+|====
+
+====
+本章节实际是和 `zero-is` 集成模板强绑定的提醒开发，除开后端开发部分以外，前端开发依赖 Zero Extension，以及前端的 `ExNotify` 组件，当然您也可以只参考前边章节在 Zero 中开发 WebSocket 方法接口（此部分内容是核心框架内容，和站内信部分无关）。
+====

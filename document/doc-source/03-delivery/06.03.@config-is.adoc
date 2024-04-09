@@ -35,3 +35,4 @@ Zero集成服务中主要包含三个主概念：
 include::06.03.01.config-is-store.adoc[]
 include::06.03.02.config-is-i.adoc[]
 include::06.03.03.config-is-upload.adoc[]
+include::06.03.04.config-is-notify.adoc[]
