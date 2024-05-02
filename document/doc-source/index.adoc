@@ -32,88 +32,20 @@
 - 提取码: mbk8
 - 目录：/Zero Framework/video-training
 
-高级教程：
+关联教程：
 
-- link:index-dev.html[开发中心, window="_blank"]
-- link:index-heart.html[机器之心, window="_blank"]
+- link:index-standalone.html[旧版白皮书, window="_blank"]
+- link:index-dev.html[开发者中心, window="_blank"]
+- link:index-heart.html[原理说明, window="_blank"]
+
 ====
 
-[tree]
+= 升级说明
 
-include::00-intro/00.__.version.adoc[]
+include::30-osgi/00.new.arch.adoc[]
 
+= 环境综述
 
-
-= 环境标准
-
-include::00-intro/00.00.requirement.adoc[]
-
-== 流程管理
-
-include::00-intro/01.01.spec-dev.adoc[]
-include::00-intro/01.02.spec-polarion.adoc[]
-
-== 项目初始化
-
-include::00-intro/02.@env.adoc[]
-
-= 工程规范
-
-include::01-spec/01.01.spec-backend.adoc[]
-include::01-spec/01.02.spec-backend-boot.adoc[]
-
-include::01-spec/02.01.spec-frontend.adoc[]
-include::01-spec/02.02.spec-frontend-style.adoc[]
-include::01-spec/02.03.spec-frontend-src.adoc[]
-include::01-spec/02.04.spec-frontend-name.adoc[]
-include::01-spec/03.01.@spec-is.adoc[]
-
-= 前端实施
-
-include::02-web/01.@web.adoc[]
-
-= 后端实施
-
-== 全局环境
-
-include::03-delivery/01.01.config-app.adoc[]
-include::03-delivery/01.02.config-app-hed.adoc[]
-include::03-delivery/01.03.config-app-modulat.adoc[]
-include::03-delivery/01.04.config-app-upload.adoc[]
-include::03-delivery/01.05.config-app-number.adoc[]
-include::03-delivery/01.06.config-app-tabb.adoc[]
-include::03-delivery/01.07.config-app-route.adoc[]
-
-
-include::03-delivery/02.01.mod.adoc[]
-
-
-include::03-delivery/06.01.@config-crud.adoc[]
-include::03-delivery/06.02.@config-modulat.adoc[]
-include::03-delivery/06.03.@config-is.adoc[]
-include::03-delivery/06.04.@config-doc.adoc[]
-
-
-include::03-delivery/07.@config-acl.adoc[]
-
-
-include::03-delivery/08.@config-model.adoc[]
-
-== 动态配置
-
-include::03-delivery/09.config-mod-jet.adoc[]
-include::03-delivery/09.config-mod-web.adoc[]
-
-
-include::03-delivery/10.@config-wf.adoc[]
-
-
-= 场景/技巧
-
-== 模块开发
-
-include::04-action/01.@module.adoc[]
-
-== 辅助模块开发
-
-include::04-action/02.@assist.adoc[]
+include::30-osgi/01.01.env.project.adoc[]
+include::30-osgi/01.02.env.debug.adoc[]
+include::30-osgi/01.03.env.command.adoc[]
