@@ -49,6 +49,7 @@ include::30-osgi/00.new.arch.adoc[]
 include::30-osgi/01.01.env.project.adoc[]
 include::30-osgi/01.02.env.debug.adoc[]
 include::30-osgi/01.03.env.command.adoc[]
+include::30-osgi/01.04.env.release.adoc[]
 
 = 升级流程
 
